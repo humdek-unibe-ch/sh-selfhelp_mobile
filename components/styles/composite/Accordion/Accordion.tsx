@@ -1,0 +1,28 @@
+/**
+ * Mantine Accordion equivalent.
+ *
+ * Children are `accordion-item` sections; each one consults
+ * `useAccordionContext()` to decide whether to render its body.
+ */
+
+import { View } from 'react-native';
+
+import type { IStyleProps } from '@/components/renderer/types';
+import { Children } from '@/components/renderer/Children';
+import { buildSectionClasses } from '@/styles/sectionClasses';
+import { readBooleanField } from '@/components/renderer/useField';
+
+import { AccordionContext, useAccordionState } from './Accordion.hooks';
+
+export function Accordion({ section, values }: IStyleProps): React.ReactElement {
+    const multiple = readBooleanField(section, 'mantine_accordion_multiple', false);
+    const ctx = useAccordionState(multiple);
+
+    return (
+        <View className={buildSectionClasses(section)}>
+            <AccordionContext.Provider value={ctx}>
+                <Children sections={(section as { children?: never }).children as never} values={values} />
+            </AccordionContext.Provider>
+        </View>
+    );
+}

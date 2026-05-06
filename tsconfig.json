@@ -1,0 +1,38 @@
+{
+    "extends": "expo/tsconfig.base",
+    "compilerOptions": {
+        "strict": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "noFallthroughCasesInSwitch": true,
+        "esModuleInterop": true,
+        "isolatedModules": true,
+        "skipLibCheck": true,
+        "moduleResolution": "Bundler",
+        "resolveJsonModule": true,
+        "jsx": "react-jsx",
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./*"],
+            "@components/*": ["./components/*"],
+            "@hooks/*": ["./hooks/*"],
+            "@providers/*": ["./providers/*"],
+            "@services/*": ["./services/*"],
+            "@stores/*": ["./stores/*"],
+            "@types/*": ["./types/*"],
+            "@styles/*": ["./styles/*"],
+            "@config/*": ["./config/*"],
+            "@constants/*": ["./constants/*"]
+        },
+        "types": ["expo", "react-native", "node"]
+    },
+    "include": [
+        "**/*.ts",
+        "**/*.tsx",
+        ".expo/types/**/*.ts",
+        "expo-env.d.ts"
+    ],
+    "exclude": ["node_modules", "dist", ".expo"]
+}

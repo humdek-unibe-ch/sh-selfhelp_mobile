@@ -1,0 +1,15 @@
+import { View } from 'react-native';
+import type { IStyleProps } from '@/components/renderer/types';
+import { Children } from '@/components/renderer/Children';
+import { buildSectionClasses } from '@/styles/sectionClasses';
+
+export function ProgressRoot({ section, values }: IStyleProps): React.ReactElement {
+    return (
+        <View
+            className={buildSectionClasses(section)}
+            style={{ flexDirection: 'row', height: 10, backgroundColor: '#e9ecef', borderRadius: 4, overflow: 'hidden', marginVertical: 6 }}
+        >
+            <Children sections={(section as { children?: never }).children as never} values={values} />
+        </View>
+    );
+}

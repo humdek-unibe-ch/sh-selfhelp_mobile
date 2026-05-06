@@ -1,0 +1,14 @@
+@import 'tailwindcss';
+@import 'uniwind';
+
+@import 'heroui-native/styles';
+
+/* Tailwind v4 source scanning. The config-file approach is still
+ * supported via @config below; we point Tailwind at the HeroUI
+ * library so its internal class names are tokenised at build time. */
+@source './node_modules/heroui-native/lib';
+@source './app/**/*.{ts,tsx}';
+@source './components/**/*.{ts,tsx}';
+@source './providers/**/*.{ts,tsx}';
+
+@config './tailwind.config.js';

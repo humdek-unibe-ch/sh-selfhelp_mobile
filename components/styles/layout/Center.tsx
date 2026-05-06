@@ -1,0 +1,12 @@
+import { View } from 'react-native';
+import type { IStyleProps } from '@/components/renderer/types';
+import { Children } from '@/components/renderer/Children';
+import { buildSectionClasses } from '@/styles/sectionClasses';
+
+export function Center({ section, values }: IStyleProps): React.ReactElement {
+    return (
+        <View className={buildSectionClasses(section)} style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <Children sections={(section as { children?: never }).children as never} values={values} />
+        </View>
+    );
+}

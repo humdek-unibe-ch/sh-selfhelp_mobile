@@ -1,0 +1,95 @@
+{
+    "cli": {
+        "version": ">= 12.0.0",
+        "appVersionSource": "remote"
+    },
+    "build": {
+        "development": {
+            "developmentClient": true,
+            "distribution": "internal",
+            "channel": "development",
+            "env": {
+                "APP_INSTANCE_SLUG": "dev"
+            },
+            "android": {
+                "buildType": "apk",
+                "gradleCommand": ":app:assembleDebug"
+            },
+            "ios": {
+                "simulator": true
+            }
+        },
+        "preview": {
+            "distribution": "internal",
+            "channel": "preview",
+            "env": {
+                "APP_INSTANCE_SLUG": "preview"
+            },
+            "android": { "buildType": "apk" },
+            "ios": {
+                "simulator": false
+            }
+        },
+        "production": {
+            "channel": "production",
+            "autoIncrement": true,
+            "env": {
+                "APP_INSTANCE_SLUG": "dev"
+            },
+            "android": { "buildType": "app-bundle" }
+        },
+        "production-tpf": {
+            "extends": "production",
+            "channel": "production-tpf",
+            "env": {
+                "APP_INSTANCE_SLUG": "tpf",
+                "APP_NAME_OVERRIDE": "TPF SelfHelp",
+                "APP_BACKEND_URL": "https://api.tpf.example.com",
+                "APP_BUNDLE_ID": "com.selfhelp.tpf",
+                "APP_PACKAGE_NAME": "com.selfhelp.tpf",
+                "APP_SCHEME": "selfhelp-tpf",
+                "APP_UNIVERSAL_LINK_DOMAIN": "tpf.example.com"
+            }
+        },
+        "production-unibe": {
+            "extends": "production",
+            "channel": "production-unibe",
+            "env": {
+                "APP_INSTANCE_SLUG": "unibe",
+                "APP_NAME_OVERRIDE": "Unibe SelfHelp",
+                "APP_BACKEND_URL": "https://selfhelp.unibe.ch",
+                "APP_BUNDLE_ID": "ch.unibe.selfhelp",
+                "APP_PACKAGE_NAME": "ch.unibe.selfhelp",
+                "APP_SCHEME": "selfhelp-unibe",
+                "APP_UNIVERSAL_LINK_DOMAIN": "selfhelp.unibe.ch"
+            }
+        }
+    },
+    "submit": {
+        "production": {},
+        "production-tpf": {
+            "android": {
+                "serviceAccountKeyPath": "./secrets/play-tpf.json",
+                "track": "internal",
+                "releaseStatus": "draft"
+            },
+            "ios": {
+                "appleId": "PLACEHOLDER",
+                "ascAppId": "PLACEHOLDER",
+                "appleTeamId": "PLACEHOLDER"
+            }
+        },
+        "production-unibe": {
+            "android": {
+                "serviceAccountKeyPath": "./secrets/play-unibe.json",
+                "track": "internal",
+                "releaseStatus": "draft"
+            },
+            "ios": {
+                "appleId": "PLACEHOLDER",
+                "ascAppId": "PLACEHOLDER",
+                "appleTeamId": "PLACEHOLDER"
+            }
+        }
+    }
+}
