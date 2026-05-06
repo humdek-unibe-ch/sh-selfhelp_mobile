@@ -1,82 +1,119 @@
 /**
- * Phone-shaped viewport wrapper for the web preview.
+ * Phone-shaped viewport frame for the web preview.
  *
- * On native (iOS / Android) this component is a no-op — the OS already
- * gives us the right viewport. It is only used when running the app on
- * the web preview build that doubles as a "preview your CMS site"
- * deployment.
+ * Implementation note: the previous version wrapped `<Stack>` in a
+ * custom `<View>` to crop the viewport. That works for plain React,
+ * but Expo Router's web root container needs an unconstrained parent
+ * to mount the navigator correctly — wrapping it produced a blank
+ * page on first mount. So instead we inject a `<style>` tag that
+ * constrains `<body>` and the root container via CSS, and render no
+ * JSX at all. The React tree is untouched; only the visible chrome is
+ * tweaked. Toggling the frame on/off is just inserting/removing the
+ * tag.
  *
- * In dev/preview builds the wrapper:
+ * Geometry:
  *
- *   - Constrains the inner viewport to a phone-sized rect (default
- *     iPhone 14: 390 × 844 logical px).
- *   - Adds a subtle device chrome (shadow, rounded corners, dark
- *     surrounding background) so it's obvious you're previewing on
- *     mobile geometry.
- *   - Listens to the dev-mode toggle (`useDevModeStore.phoneFrame`) so
- *     the user can flip to a fullscreen browser viewport for QA.
+ *   - Use as much vertical space as possible — content height is
+ *     `100vh - top - bottom`.
+ *   - Width is derived from a 9 : 19.5 aspect ratio (iPhone 14/15
+ *     class), so the frame looks like a real modern phone.
+ *   - Capped to the browser viewport width minus a small horizontal
+ *     gutter, so a narrow window doesn't push past the edges.
  *
- * On very narrow desktop viewports we fall back to fullscreen so we
- * don't double-clip on phones used for the preview deployment.
+ * Native (iOS / Android) and production builds: this component is a
+ * no-op.
  */
 
-import { Platform, useWindowDimensions, View } from 'react-native';
-import type { ReactNode } from 'react';
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
 
 import { runtimeConfig } from '@/config/runtime';
 import { useDevModeStore } from '@/stores/devModeStore';
 
-interface IPhoneFrameProps {
-    children: ReactNode;
+const STYLE_TAG_ID = 'sh-phone-frame-style';
+
+/**
+ * Phone frame is applied via two targeted rules:
+ *
+ *   1. `html, body` get a dark backdrop and become a flex container so
+ *      the root is centered on the page.
+ *   2. The Expo Router root container (`#root` on Expo web, fallback
+ *      `#__next`) is sized like a phone — height fills the viewport
+ *      minus a 16px gutter, width derived from a 9 : 19.5 modern phone
+ *      aspect ratio, capped to the viewport.
+ *
+ * We deliberately do NOT use `body > div` because Expo / React Native
+ * Web mounts a couple of portal containers as siblings of the main
+ * root (animations, modals). Styling all of them produced three frames
+ * in the previous iteration.
+ */
+const FRAME_CSS = `
+    html, body {
+        background-color: #0b0d0f !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        height: 100% !important;
+        min-height: 100% !important;
+    }
+    body {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        overflow: hidden !important;
+    }
+    body > #root,
+    body > #__next {
+        flex: 0 0 auto !important;
+        flex-grow: 0 !important;
+        flex-shrink: 0 !important;
+        height: calc(100vh - 32px) !important;
+        max-height: calc(100vh - 32px) !important;
+        aspect-ratio: 9 / 19.5 !important;
+        width: auto !important;
+        max-width: calc(100vw - 32px) !important;
+        border-radius: 36px !important;
+        overflow: hidden !important;
+        background-color: #ffffff !important;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.4) !important;
+        border: 8px solid #1f2933 !important;
+        box-sizing: border-box !important;
+        position: relative !important;
+    }
+    /* Pin sibling portal/modal containers behind the frame so they
+       don't show as duplicate empty rectangles. */
+    body > div:not(#root):not(#__next) {
+        position: fixed !important;
+        inset: 0 !important;
+        pointer-events: none !important;
+        background: transparent !important;
+    }
+`;
+
+export function PhoneFrame(): React.ReactElement | null {
+    if (Platform.OS !== 'web') return null;
+    if (!runtimeConfig.isDevInstance) return null;
+    return <PhoneFrameInner />;
 }
 
-const FRAME_WIDTH = 390;
-const FRAME_HEIGHT = 844;
+function PhoneFrameInner(): React.ReactElement | null {
+    const enabled = useDevModeStore((s) => s.phoneFrame);
 
-export function PhoneFrame({ children }: IPhoneFrameProps): React.ReactElement {
-    if (Platform.OS !== 'web') return <>{children}</> as unknown as React.ReactElement;
-    if (!runtimeConfig.isDevInstance) return <>{children}</> as unknown as React.ReactElement;
-    return <PhoneFrameInner>{children}</PhoneFrameInner>;
-}
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+        const existing = document.getElementById(STYLE_TAG_ID);
+        if (!enabled) {
+            if (existing) existing.remove();
+            return;
+        }
+        if (existing) return;
+        const tag = document.createElement('style');
+        tag.id = STYLE_TAG_ID;
+        tag.innerHTML = FRAME_CSS;
+        document.head.appendChild(tag);
+        return () => {
+            tag.remove();
+        };
+    }, [enabled]);
 
-function PhoneFrameInner({ children }: IPhoneFrameProps): React.ReactElement {
-    const phoneFrame = useDevModeStore((s) => s.phoneFrame);
-    const { width: vw, height: vh } = useWindowDimensions();
-
-    const tooNarrow = vw < FRAME_WIDTH + 80;
-    const enabled = phoneFrame && !tooNarrow;
-
-    if (!enabled) return <>{children}</> as unknown as React.ReactElement;
-
-    return (
-        <View
-            style={{
-                flex: 1,
-                width: '100%',
-                height: '100%',
-                backgroundColor: '#0b0d0f',
-                alignItems: 'center',
-                justifyContent: 'center',
-            }}
-        >
-            <View
-                style={{
-                    width: FRAME_WIDTH,
-                    height: Math.min(FRAME_HEIGHT, vh - 32),
-                    borderRadius: 40,
-                    overflow: 'hidden',
-                    backgroundColor: '#fff',
-                    borderWidth: 8,
-                    borderColor: '#1f2933',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 12 },
-                    shadowOpacity: 0.35,
-                    shadowRadius: 32,
-                    elevation: 12,
-                }}
-            >
-                {children}
-            </View>
-        </View>
-    );
+    return null;
 }

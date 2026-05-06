@@ -93,10 +93,9 @@ function RootStackInner(): React.ReactElement {
 export default function RootLayout(): React.ReactElement {
     return (
         <AppProviders>
-            <PhoneFrame>
-                <GateController />
-                <RootStackInner />
-            </PhoneFrame>
+            <PhoneFrame />
+            <GateController />
+            <RootStackInner />
             <FloatingDebugPanel />
         </AppProviders>
     );
