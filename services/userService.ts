@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 import { ENDPOINTS, type IUserData, type IUserDataResponse } from '@selfhelp/shared';
 
 import { getApiClient } from '@/services/apiClient';

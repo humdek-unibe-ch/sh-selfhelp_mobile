@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # Add a new SelfHelp instance
 
 Each customer gets their own production-grade build profile (`production-{slug}`), bundle id, package name, deep-link scheme, and store listing. This is how a single codebase ships as N apps.

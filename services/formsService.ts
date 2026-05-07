@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Centralised form-submission helpers used by `form-log`, `form-record`,
  * and `entryRecordDelete`. Wraps the three `/forms/*` endpoints, normalises

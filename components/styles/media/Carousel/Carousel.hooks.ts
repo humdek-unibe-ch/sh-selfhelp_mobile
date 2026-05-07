@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Carousel state hooks: pagination index + scroll-to helpers. Pulled
  * out of the render file so the render reads as plain JSX.

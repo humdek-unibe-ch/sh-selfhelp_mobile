@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Keys used with `expo-secure-store`. Centralised so we don't rely on
  * stringly-typed access scattered across the app.

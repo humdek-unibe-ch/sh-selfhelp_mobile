@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # Update shared types
 
 The `sh-selfhelp_shared` package is consumed by both the web frontend and the mobile app via `file:` deps. Bumping types means updating both sides in lockstep.

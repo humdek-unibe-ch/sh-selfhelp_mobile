@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # Component pattern
 
 For non-trivial styles, use a 4-file split. For trivial leaves (≤ ~30 lines), a single file is fine.

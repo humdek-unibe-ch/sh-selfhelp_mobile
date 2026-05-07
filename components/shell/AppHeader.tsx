@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Lightweight header rendered above each app screen. Hosts the
  * language switcher, a logout shortcut, and a hamburger button that

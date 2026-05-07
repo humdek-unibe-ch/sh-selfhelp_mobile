@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Default backend URLs offered in the dev server picker. Users can also
  * type their own URL. The selection is persisted in `expo-secure-store`.

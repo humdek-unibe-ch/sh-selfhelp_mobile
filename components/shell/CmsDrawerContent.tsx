@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Drawer content — lists CMS menu pages (only those with a
  * `navPosition`), in tree order. Children are indented and inherit

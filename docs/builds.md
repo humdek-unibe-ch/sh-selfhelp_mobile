@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # Builds
 
 Cloud builds use **EAS Build**. Profiles live in `eas.json`.

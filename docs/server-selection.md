@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # Server selection
 
 Mobile builds are either **multi-tenant** (dev / preview) or **single-tenant** (production).

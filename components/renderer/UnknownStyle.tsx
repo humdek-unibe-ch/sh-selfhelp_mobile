@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Fallback for any `style_name` that isn't yet registered on mobile.
  * Renders a discreet warning in dev and an empty `<View>` in production

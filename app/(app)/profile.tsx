@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Profile screen — renders the CMS `profile` page if available;
  * otherwise displays a minimal account view with the current user info.

@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 import { useEvent } from 'expo';
 import { Text, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';

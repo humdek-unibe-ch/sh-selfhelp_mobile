@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Floating debug panel for the mobile app — modelled after the web
  * frontend's `DebugMenu`.

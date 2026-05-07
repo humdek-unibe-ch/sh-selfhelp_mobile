@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Helper used by container styles to render their children. Always
  * routes through `BasicStyle` so condition + debug + registry lookup

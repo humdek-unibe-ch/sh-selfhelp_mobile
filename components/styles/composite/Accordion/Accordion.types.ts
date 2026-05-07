@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Local types for the Accordion style. Kept out of the main file so the
  * render and the hooks can import them without pulling each other.

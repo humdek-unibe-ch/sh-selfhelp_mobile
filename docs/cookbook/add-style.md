@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # Add a new CMS style
 
 End-to-end recipe for introducing a new style (web + mobile).

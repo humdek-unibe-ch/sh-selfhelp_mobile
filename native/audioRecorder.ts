@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Thin wrapper over `expo-audio` for recording. The form-style audio
  * recorder uses this module so the UI and the hardware concerns stay

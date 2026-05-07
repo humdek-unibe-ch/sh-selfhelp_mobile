@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # Setup
 
 End-to-end installation guide for the SelfHelp Mobile app. If you only want to run the app on web for fast iteration, jump straight to **Web preview**.

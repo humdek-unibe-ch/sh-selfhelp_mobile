@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Bootstraps the server URL store from `runtimeConfig` (production builds)
  * or from SecureStore (dev/preview). Renders nothing visible.

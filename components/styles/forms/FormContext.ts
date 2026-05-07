@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Per-form context shared between the form container and the input
  * styles inside it. Mirrors react-hook-form's `FormProvider`/`useForm`

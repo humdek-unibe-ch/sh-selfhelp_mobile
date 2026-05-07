@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { SECURE_STORE_KEYS } from '@/constants/secureStore';

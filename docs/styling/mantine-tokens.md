@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # Mantine tokens on mobile
 
 The CMS speaks "Mantine" — fields like `mantine_size`, `mantine_radius`, `mantine_color`, `mantine_variant`, and `mantine_spacing_margin_padding`. The mobile renderer maps these to Tailwind / Uniwind / HeroUI primitives so the visual language is identical on web and mobile.

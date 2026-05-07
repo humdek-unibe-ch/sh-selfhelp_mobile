@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * V1 carousel — horizontal FlatList with snap-to-page and prev/next
  * arrows. Swap to `react-native-reanimated-carousel` if autoplay /

@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Navigation helpers shared by the drawer, the bottom tab bar, the
  * menu fallback list, and the segmented child-tabs renderer.

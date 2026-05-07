@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # Add a non-style component
 
 Use this when you need a UI piece that isn't tied to a CMS style — e.g. a debug overlay, a custom navigation header, a bespoke screen.

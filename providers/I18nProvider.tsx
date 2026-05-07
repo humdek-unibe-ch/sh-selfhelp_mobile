@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * i18next bootstrap with `expo-localization` for device defaults and
  * `expo-secure-store` to remember the user's choice.

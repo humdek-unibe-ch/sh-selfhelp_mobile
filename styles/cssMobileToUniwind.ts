@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Translates a `css_mobile` field value into the className string fed to
  * Uniwind/HeroUI. Routes every class through the shared

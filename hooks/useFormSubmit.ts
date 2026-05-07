@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Optional helper for screens that want react-hook-form + zod for
  * client-side UX (instant feedback while typing) AND need to map

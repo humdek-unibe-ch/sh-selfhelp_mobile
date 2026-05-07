@@ -2,6 +2,7 @@
     "name": "selfhelp-mobile",
     "version": "0.1.0",
     "private": true,
+    "license": "MPL-2.0",
     "main": "expo-router/entry",
     "scripts": {
         "start": "expo start",
@@ -25,7 +26,10 @@
         "update:prod": "eas update --branch production",
         "instance:add": "node scripts/add-instance.mjs",
         "instance:validate": "node scripts/validate-instance.mjs",
-        "test": "node --test \"__tests__/**/*.test.mjs\""
+        "test": "node --test \"__tests__/**/*.test.mjs\"",
+        "headers:check": "license-check-and-add check -f license-check-and-add-config.json",
+        "headers:add": "license-check-and-add add -f license-check-and-add-config.json",
+        "headers:remove": "license-check-and-add remove -f license-check-and-add-config.json"
     },
     "dependencies": {
         "@gorhom/bottom-sheet": "^5.2.8",
@@ -84,6 +88,7 @@
         "@types/react": "~19.2.14",
         "eslint": "^9.32.0",
         "eslint-config-expo": "~55.0.0",
+        "license-check-and-add": "^4.0.5",
         "typescript": "~5.9.3"
     },
     "engines": {

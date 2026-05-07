@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Cross-platform secure storage. Uses `expo-secure-store` on native and
  * falls back to `localStorage` on web (dev preview only — production

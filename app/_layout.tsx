@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Root layout — wraps every route in the provider stack and mounts the
  * deep-link handler. Authenticated and public routes are split into

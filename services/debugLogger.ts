@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Lightweight in-memory debug log buffer used by the floating debug
  * panel. Mirrors the spirit of `sh-selfhelp_frontend`'s debug-logger

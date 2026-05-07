@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Bottom tab bar — first `MAX_BOTTOM_TABS` top-level menu pages.
  *

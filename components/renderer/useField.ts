@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Convenience hooks for style components to read fields out of a section
  * without constantly typing `section.fields?.foo?.content as string`.

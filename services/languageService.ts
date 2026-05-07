@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Language API helpers. Loads the public catalog of languages
  * and pushes the user's pick to `/auth/set-language` (which also

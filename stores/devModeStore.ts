@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Dev-only mode flags surfaced from the floating debug panel and the
  * server picker. Never available in production builds (the panel and

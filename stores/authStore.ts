@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Auth state. The access token is held in memory only; the refresh
  * token lives in `expo-secure-store` (mobile) or `localStorage` (web,

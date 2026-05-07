@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Helper hook: ties a CMS form field to the surrounding form context.
  * Returns the current value, error, and a setter. Falls back to local

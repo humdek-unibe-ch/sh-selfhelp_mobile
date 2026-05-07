@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # Deep linking
 
 The app handles three classes of link, all routed through `native/deepLinks.ts`:

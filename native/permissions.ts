@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Centralised permission helpers for camera, microphone, and media-library.
  * Each helper checks current state and only prompts when needed.

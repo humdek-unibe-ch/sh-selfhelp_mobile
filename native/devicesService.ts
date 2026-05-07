@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Reports the current device's push token to the backend. The
  * endpoint is `/auth/devices` (legacy SelfHelp). If your backend

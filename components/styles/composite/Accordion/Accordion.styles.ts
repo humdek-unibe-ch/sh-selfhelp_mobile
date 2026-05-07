@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Visual chunks for the Accordion style. Right now there's no static
  * styling — everything comes from the CMS via `buildSectionClasses`.

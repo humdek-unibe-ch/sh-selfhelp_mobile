@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # SelfHelp Mobile
 
 Expo / React Native + HeroUI Native + Uniwind app that renders SelfHelp content for end users on iOS, Android, and (for development) web.
@@ -55,3 +59,37 @@ See `docs/` for the full guide. Highlights:
 - Each style is a 4-file component (`Component.tsx`, `Component.styles.ts`, `Component.types.ts`, `index.ts`). Add hooks in `Component.hooks.ts` only when needed.
 - Mobile reads the `css_mobile` field only — never `css`. Tailwind classes go through the shared allow-list + remap before Uniwind sees them.
 - Keep web and mobile in lockstep: a new field on a style means updating the shared interface and both renderers.
+
+## License
+
+Licensed under the [Mozilla Public License 2.0](LICENSE). Copyright (c) 2026 Humdek, University of Bern.
+
+### SPDX headers
+
+Every TS/TSX/JS file should carry a two-line SPDX header:
+
+```ts
+/*
+ * SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+ * SPDX-License-Identifier: MPL-2.0
+ */
+```
+
+The header text lives in [`header.txt`](header.txt). Header insertion / verification / removal is automated with [`license-check-and-add`](https://www.npmjs.com/package/license-check-and-add) using [`license-check-and-add-config.json`](license-check-and-add-config.json).
+
+```bash
+# One-time install (already in devDependencies):
+npm install
+
+# Add the header to every .ts/.tsx/.js/.jsx/.mjs/.cjs file
+# (excluding node_modules, .expo, ios/, android/, dist/, build/).
+npm run headers:add
+
+# Verify (CI-friendly: exits 1 if any file is missing the header).
+npm run headers:check
+
+# Strip the header (rarely needed; e.g. before re-licensing).
+npm run headers:remove
+```
+
+The tool also reads `.gitignore` so build/cache directories are auto-excluded. Extra exclusions live in the `exact_paths` section of the config.

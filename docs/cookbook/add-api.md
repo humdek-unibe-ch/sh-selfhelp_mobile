@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # Add a new API request
 
 The mobile app talks to the Symfony backend exclusively through `/cms-api/v1/*`. Adding a new request usually involves three small edits.

@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Top-level page renderer. Iterates over `page.sections`, builds the
  * interpolation context once (page-keyword + system vars), and dispatches

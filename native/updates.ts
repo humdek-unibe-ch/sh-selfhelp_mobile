@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * EAS Update (OTA) bootstrap. Production builds will silently check
  * for updates on launch and on app foreground; if found, the bundle

@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Thin service wrapping `/cms-api/v1/pages/by-keyword/{keyword}` and
  * the page list endpoint. The mobile app consumes pages by keyword

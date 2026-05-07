@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Fetch a page by keyword via TanStack Query. Cached per
  * (keyword, languageId, preview) so language switches and preview-mode

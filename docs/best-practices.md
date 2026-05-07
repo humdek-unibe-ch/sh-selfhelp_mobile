@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # Best practices
 
 Project-specific dos and don'ts. Cross-cutting RN best practices (keys in lists, avoid inline arrow handlers in hot paths, etc.) still apply.

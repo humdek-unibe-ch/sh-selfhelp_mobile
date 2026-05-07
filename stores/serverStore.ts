@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Server URL state. In dev/preview builds the user can change this at
  * runtime via the picker; the chosen value is persisted to SecureStore

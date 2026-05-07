@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # CMS Tailwind classes (`css_mobile`)
 
 The mobile renderer only reads the `css_mobile` field, never `css`. Editors are encouraged to author web styles in `css` and mobile-specific overrides in `css_mobile`.

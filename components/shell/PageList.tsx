@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 /**
  * Auto-generated navigation list — used by the menu screen as a
  * fallback when the CMS instance does not provide a custom `menu`
