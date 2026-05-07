@@ -34,6 +34,7 @@ flowchart LR
         api_client[axios + JWT + X-Client-Type: mobile]
         secure[expo-secure-store refresh]
         picker[Dev server picker]
+        aclsse[Mercure SSE direct subscribe]
         router[Expo Router + deep links]
         renderer[BasicStyle dispatcher]
         themeMap[Mantine -> HeroUI tokens]
@@ -46,6 +47,8 @@ flowchart LR
     sharedRegistry --> renderer
     shared --> api_client
     api_client --> renderer
+    api_client --> aclsse
+    aclsse --> renderer
     renderer --> router
     renderer --> themeMap
     themeMap --> heroui
@@ -68,7 +71,7 @@ sequenceDiagram
     API-->>App: 200 page tree (mobile-filtered)
     App->>API: GET /pages/by-keyword/x (expired access)
     API-->>App: 401
-    App->>API: POST /auth/refresh
+    App->>API: POST /auth/refresh-token
     API-->>App: 200 access_token (rotated refresh_token)
     App->>Store: write rotated refresh_token
     App->>API: GET /pages/by-keyword/x (retry)
@@ -77,7 +80,7 @@ sequenceDiagram
 
 ## Layers
 
-1. **Providers** (`providers/`) — `ErrorBoundary`, `ServerProvider`, `QueryProvider`, `I18nProvider`, `ThemeProvider`, `AuthProvider`, `NativeBootstrap`. Composed by `AppProviders.tsx`. They run in this order so that, e.g., `AuthProvider` always sees the configured base URL.
+1. **Providers** (`providers/`) — `ErrorBoundary`, `ServerProvider`, `QueryProvider`, `I18nProvider`, `ThemeProvider`, `AuthProvider`, `SessionSyncProvider`, `NativeBootstrap`. Composed by `AppProviders.tsx`. They run in this order so that auth restore waits for the configured base URL before any protected page/menu work is enabled.
 2. **Stores** (`stores/`) — Zustand: `serverStore` (URL), `authStore` (access token + user), `languageStore` (locale + available languages).
 3. **Services** (`services/`) — typed wrappers around the API: `apiClient.ts` (singleton axios), `pageService.ts`, `formsService.ts`, `authService.ts`, `languageService.ts`, `secureStore.ts`.
 4. **Hooks** (`hooks/`) — TanStack Query wrappers: `usePageContent`, `useLanguages`, `useFormSubmit`.
@@ -97,8 +100,9 @@ For every section in the tree:
 
 ## State + cache
 
-- TanStack Query with `createAsyncStoragePersister` persists page caches across cold starts so the home page loads instantly while a fresh fetch runs in the background.
-- Auth state is in-memory (`accessToken`) + SecureStore (`refresh_token`) so a phone reboot doesn't kick the user out, but a memory dump can't reveal the access token.
+- TanStack Query with `createAsyncStoragePersister` persists page caches across cold starts. Query keys include server URL and auth scope so anonymous/stale data cannot satisfy logged-in menu/page requests after a reload.
+- Auth state is in-memory (`accessToken`) + SecureStore (`refresh_token`) so a phone reboot doesn't kick the user out, but a memory dump can't reveal the access token. See [auth-bootstrap.md](auth-bootstrap.md) for the exact restore order, refresh queue, direct reload behavior, and live-update fallback.
+- `SessionSyncProvider` holds the authenticated `user-data` query, watches `acl_version`, and subscribes directly to Mercure via `hooks/useAclEventStream.ts`. On Expo Web this is still a direct hub connection, not a same-origin BFF proxy; the browser host therefore must be allow-listed in both Symfony API CORS and the Mercure hub `cors_origins`.
 
 ## Related docs
 

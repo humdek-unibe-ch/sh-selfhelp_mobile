@@ -44,6 +44,7 @@ The dev server picker appears on first launch in dev/preview builds — pick you
 
 See `docs/` for the full guide. Highlights:
 - `docs/architecture.md` — how the renderer + shared package + backend fit together.
+- `docs/auth-bootstrap.md` — server restore, auth persistence, refresh, direct reloads, and live updates.
 - `docs/builds.md` — EAS profiles, signing, store submission.
 - `docs/server-selection.md` — dev picker vs baked URL.
 - `docs/cookbook/add-style.md` — add a new CMS style end-to-end.

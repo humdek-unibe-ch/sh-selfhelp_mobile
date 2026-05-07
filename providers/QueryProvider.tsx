@@ -4,51 +4,45 @@
  *
  * Stale time defaults to 30s so language switches refetch quickly; per-
  * query overrides win.
+ *
+ * **Important:** `persistOptions` MUST keep the same reference across
+ * renders. `PersistQueryClientProvider` re-runs its restore-cache
+ * effect whenever `persistOptions` changes by reference, which means
+ * an inline literal would re-trigger restoration on every render —
+ * the entire subtree would unmount, the suspense fallback would re-
+ * appear, ServerProvider's effect would fire again, and the auth
+ * bootstrap would never complete. Define it once at module scope.
  */
 
-import { type ReactNode, useMemo } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { QueryClient } from '@tanstack/react-query';
+import { type ReactNode } from 'react';
+import { Platform } from 'react-native';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+
+import { appQueryClient, QUERY_CACHE_BUSTER, queryPersister } from '@/services/queryClient';
 
 interface IQueryProviderProps {
     children: ReactNode;
 }
 
-const ONE_MINUTE = 60_000;
+const PERSIST_OPTIONS = {
+    persister: queryPersister,
+    maxAge: 24 * 60 * 60_000,
+    buster: QUERY_CACHE_BUSTER,
+} as const;
 
 export function QueryProvider({ children }: IQueryProviderProps): ReactNode {
-    const client = useMemo(
-        () =>
-            new QueryClient({
-                defaultOptions: {
-                    queries: {
-                        staleTime: 30 * 1000,
-                        gcTime: 24 * 60 * ONE_MINUTE,
-                        retry: 1,
-                        refetchOnWindowFocus: false,
-                    },
-                    mutations: { retry: 0 },
-                },
-            }),
-        []
-    );
-
-    const persister = useMemo(
-        () => createAsyncStoragePersister({ storage: AsyncStorage, key: 'sh.rq' }),
-        []
-    );
+    // Expo Web preview is primarily a CMS preview surface. Keeping the
+    // browser reload/auth bootstrap stable matters more there than
+    // persisting query cache across refreshes, and the persist/restore
+    // path has proven eager to remount the tree during startup. Native
+    // keeps the persisted cache; web uses the same QueryClient in-memory.
+    if (Platform.OS === 'web') {
+        return <QueryClientProvider client={appQueryClient}>{children}</QueryClientProvider>;
+    }
 
     return (
-        <PersistQueryClientProvider
-            client={client}
-            persistOptions={{
-                persister,
-                maxAge: 24 * 60 * ONE_MINUTE,
-                buster: '0.1.0',
-            }}
-        >
+        <PersistQueryClientProvider client={appQueryClient} persistOptions={PERSIST_OPTIONS}>
             {children}
         </PersistQueryClientProvider>
     );

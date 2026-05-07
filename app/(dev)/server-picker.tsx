@@ -1,24 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
 
 import { DEFAULT_DEV_SERVERS } from '@/config/dev-servers';
 import { runtimeConfig } from '@/config/runtime';
 import { SECURE_STORE_KEYS } from '@/constants/secureStore';
 import { secureStore } from '@/services/secureStore';
+import { clearAuthSession } from '@/services/sessionService';
 import {
+    canonicalizeLoopbackHost,
     fetchServerSelectionOptions,
     looksLikeWebFrontendUrl,
     normalizeServerUrlInput,
     type IServerSelectionOption,
 } from '@/services/serverSelectionService';
-import { useAuthStore } from '@/stores/authStore';
 import { useServerStore } from '@/stores/serverStore';
 
 export default function ServerPicker(): React.ReactElement {
-    const queryClient = useQueryClient();
     const { redirect } = useLocalSearchParams<{ redirect?: string }>();
     const [custom, setCustom] = useState('');
     const [selectedUrl, setSelectedUrl] = useState<string>(DEFAULT_DEV_SERVERS[0]?.url ?? '');
@@ -77,6 +76,10 @@ export default function ServerPicker(): React.ReactElement {
             return;
         }
 
+        if (Platform.OS === 'web') {
+            normalized = canonicalizeLoopbackHost(normalized, 'localhost');
+        }
+
         if (!normalized) return;
 
         if (looksLikeWebFrontendUrl(normalized)) {
@@ -86,9 +89,8 @@ export default function ServerPicker(): React.ReactElement {
             return;
         }
 
-        await secureStore.remove(SECURE_STORE_KEYS.REFRESH_TOKEN);
-        useAuthStore.getState().clear();
-        queryClient.clear();
+        await clearAuthSession({ clearQueries: true, reason: 'server-switch' });
+        await secureStore.set(SECURE_STORE_KEYS.SERVER_URL, normalized);
         setServerUrl(normalized);
         router.replace(redirect && redirect !== '/server-picker' ? redirect : '/');
     };

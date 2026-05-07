@@ -39,6 +39,15 @@ function notify(): void {
     });
 }
 
+/* eslint-disable no-console */
+const CONSOLE_FN: Record<TDebugLevel, (...args: unknown[]) => void> = {
+    debug: (...args) => console.debug(...args),
+    info: (...args) => console.info(...args),
+    warn: (...args) => console.warn(...args),
+    error: (...args) => console.error(...args),
+};
+/* eslint-enable no-console */
+
 function push(level: TDebugLevel, component: string | null, message: string, data?: unknown): void {
     if (!__DEV__) return;
     entries.unshift({
@@ -50,6 +59,15 @@ function push(level: TDebugLevel, component: string | null, message: string, dat
         level,
     });
     if (entries.length > MAX_ENTRIES) entries.length = MAX_ENTRIES;
+    // Also surface the entry on the standard browser/native console so
+    // developers can grep-search the log without opening the floating
+    // panel. The prefix mirrors the panel format: `[component] message`.
+    const prefix = component ? `[sh:${component}]` : '[sh]';
+    if (data !== undefined) {
+        CONSOLE_FN[level](prefix, message, data);
+    } else {
+        CONSOLE_FN[level](prefix, message);
+    }
     notify();
 }
 

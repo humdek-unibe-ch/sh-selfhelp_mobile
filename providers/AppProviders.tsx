@@ -7,7 +7,8 @@
  *           └─ I18nProvider            (i18next, depends on QueryClient)
  *              └─ ThemeProvider        (HeroUI Native)
  *                 └─ AuthProvider      (refresh-token bootstrap)
- *                    └─ children       (router)
+ *                    └─ SessionSyncProvider
+ *                       └─ children    (router)
  */
 
 import { type ReactNode } from 'react';
@@ -17,6 +18,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { I18nProvider } from './I18nProvider';
 import { NativeBootstrap } from './NativeBootstrap';
 import { QueryProvider } from './QueryProvider';
+import { SessionSyncProvider } from './SessionSyncProvider';
 import { ServerProvider } from './ServerProvider';
 import { ThemeProvider } from './ThemeProvider';
 
@@ -32,8 +34,10 @@ export function AppProviders({ children }: IAppProvidersProps): ReactNode {
                     <I18nProvider>
                         <ThemeProvider>
                             <AuthProvider>
-                                <NativeBootstrap />
-                                {children}
+                                <SessionSyncProvider>
+                                    <NativeBootstrap />
+                                    {children}
+                                </SessionSyncProvider>
                             </AuthProvider>
                         </ThemeProvider>
                     </I18nProvider>

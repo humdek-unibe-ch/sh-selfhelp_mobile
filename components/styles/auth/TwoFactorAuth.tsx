@@ -25,7 +25,7 @@ export function TwoFactorAuth({ section, values }: IStyleProps): React.ReactElem
         }
         setBusy(true);
         setErr(null);
-        const res = await verifyTwoFactor({ user_id: Number(params.user_id), code });
+        const res = await verifyTwoFactor({ id_users: Number(params.user_id), code });
         setBusy(false);
         if (res.kind === 'ok') router.replace('/');
         else if (res.kind === 'error') setErr(res.message);

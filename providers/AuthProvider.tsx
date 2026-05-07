@@ -1,29 +1,46 @@
 /**
- * Bootstraps auth state on app launch.
+ * Bootstraps auth state on app launch / browser reload.
  *
- * Reads the refresh token from SecureStore (native) or localStorage (web
- * preview) and exchanges it for a fresh access token + user payload.
+ * Boot order is strict:
  *
- * This runs *after* the server URL is resolved by `ServerProvider`. We
- * subscribe to the server store so a hard browser reload (where the
- * server URL is hydrated asynchronously from localStorage) still triggers
- * the refresh flow exactly once, instead of bailing out when `serverUrl`
- * is momentarily `null`.
+ *   1. Wait for `useServerStore.hydrated` so we have a base URL and
+ *      know whether the user can switch servers (dev/preview).
+ *   2. Read the persisted refresh token (`SECURE_STORE_KEYS.REFRESH_TOKEN`,
+ *      backed by `expo-secure-store` on native and `localStorage` on
+ *      web preview) and exchange it for a fresh access token through
+ *      the shared `refreshAccessToken()` singleton.
+ *   3. Hydrate the user data (`/auth/user-data`) so the rest of the
+ *      app can render with permissions / menu filtered correctly.
+ *   4. Mark `bootstrapped = true` so the router/Stack mounts and the
+ *      gated CMS queries (`pages`, `page`) are allowed to fire.
+ *
+ * The bootstrap promise is **module-scoped**, so React StrictMode
+ * double-invocation, parent re-mounts, and Fast Refresh in dev all
+ * join the same in-flight call. Without this guard, the second mount
+ * would burn the (already rotated) refresh token, the backend would
+ * reject it, and `clearAuthSession()` would wipe the credential —
+ * exactly the "login lost on reload" symptom we used to see.
+ *
+ * Failure handling:
+ *
+ *   - Phase 1 (refresh): credential rejection (400 / 401 / 403) is
+ *     handled inside `refreshAccessToken()`, which clears the auth
+ *     session. Network/timeout failures keep the refresh token so the
+ *     next launch can recover.
+ *   - Phase 2 (user-data): never clears tokens. Any 401 there will
+ *     trigger the normal apiClient interceptor on the next request.
+ *
+ * A hard ceiling timer guarantees `bootstrapped = true` within
+ * `BOOTSTRAP_HARD_CEILING_MS` even if the network silently hangs, so
+ * the splash never strands the UI.
  */
 
 import { useEffect, type ReactNode } from 'react';
 
-import {
-    CLIENT_TYPE_MOBILE,
-    ENDPOINTS,
-    HEADER_CLIENT_TYPE,
-    type IRefreshSuccessResponse,
-    type IUserDataResponse,
-} from '@selfhelp/shared';
-import axios from 'axios';
-
-import { SECURE_STORE_KEYS } from '@/constants/secureStore';
-import { secureStore } from '@/services/secureStore';
+import { debugLogger } from '@/services/debugLogger';
+import { appQueryClient } from '@/services/queryClient';
+import { refreshAccessToken } from '@/services/tokenRefreshService';
+import { fetchCurrentUser, userDataQueryKey } from '@/services/userService';
 import { useAuthStore } from '@/stores/authStore';
 import { useServerStore } from '@/stores/serverStore';
 
@@ -31,83 +48,134 @@ interface IAuthProviderProps {
     children: ReactNode;
 }
 
-async function bootstrapWith(baseURL: string, abort: () => boolean): Promise<void> {
-    const refreshToken = await secureStore.get(SECURE_STORE_KEYS.REFRESH_TOKEN);
-    if (!refreshToken) {
-        if (!abort()) useAuthStore.getState().setBootstrapped(true);
+const BOOTSTRAP_HARD_CEILING_MS = 12_000;
+
+/**
+ * Module-scoped guards. Once `bootstrapStarted = true` no other React
+ * mount can re-enter the bootstrap, even when the parent re-renders
+ * or StrictMode double-invokes the provider's effect. `ceilingTimer`
+ * is module-scoped for the same reason: a single timer for the
+ * lifetime of the app.
+ */
+let bootstrapPromise: Promise<void> | null = null;
+let ceilingScheduled = false;
+
+function markBootstrapped(reason: string): void {
+    if (useAuthStore.getState().bootstrapped) return;
+    debugLogger.info(`bootstrapped (${reason})`, 'AuthProvider');
+    useAuthStore.getState().setBootstrapped(true);
+}
+
+function ensureCeiling(): void {
+    if (ceilingScheduled) return;
+    ceilingScheduled = true;
+    setTimeout(() => {
+        if (useAuthStore.getState().bootstrapped) return;
+        debugLogger.warn(
+            `bootstrap hit ${BOOTSTRAP_HARD_CEILING_MS}ms ceiling — releasing splash`,
+            'AuthProvider'
+        );
+        markBootstrapped('ceiling');
+    }, BOOTSTRAP_HARD_CEILING_MS);
+}
+
+async function runBootstrap(baseURL: string): Promise<void> {
+    debugLogger.info(`bootstrap start (${baseURL})`, 'AuthProvider');
+
+    // Phase 1 — refresh. The shared singleton:
+    //   - reads the refresh token from secure storage,
+    //   - calls `/auth/refresh-token` with a 7s timeout,
+    //   - persists the rotated refresh token,
+    //   - sets the access token in the auth store,
+    //   - on 400/401/403 clears the auth session,
+    //   - on network/5xx returns null but leaves the token in place.
+    const accessToken = await refreshAccessToken();
+    if (!accessToken) {
+        debugLogger.warn('bootstrap refresh returned no access token', 'AuthProvider');
+        markBootstrapped('refresh-failed');
         return;
     }
+    debugLogger.info('bootstrap refresh ok — fetching user-data', 'AuthProvider');
 
+    // Phase 2 — user-data. Best-effort. A failure here MUST NOT clear
+    // the access token: it's freshly minted and any later 401 from a
+    // real CMS request will be handled by the apiClient interceptor.
     try {
-        const refresh = await axios.post<IRefreshSuccessResponse>(
-            `${baseURL}${ENDPOINTS.AUTH.REFRESH}`,
-            { refresh_token: refreshToken },
-            { headers: { [HEADER_CLIENT_TYPE]: CLIENT_TYPE_MOBILE } }
+        const user = await fetchCurrentUser();
+        if (user) {
+            useAuthStore.getState().setUser(user);
+            appQueryClient.setQueryData(userDataQueryKey(baseURL), user);
+            debugLogger.info('bootstrap user-data ok', 'AuthProvider');
+        }
+    } catch (e) {
+        debugLogger.warn(
+            `bootstrap user-data failed: ${(e as Error).message} (keeping access token)`,
+            'AuthProvider'
         );
-
-        const accessToken = refresh.data.data?.access_token;
-        if (!accessToken) {
-            await secureStore.remove(SECURE_STORE_KEYS.REFRESH_TOKEN);
-            if (!abort()) useAuthStore.getState().setBootstrapped(true);
-            return;
-        }
-
-        if (refresh.data.data?.refresh_token) {
-            await secureStore.set(SECURE_STORE_KEYS.REFRESH_TOKEN, refresh.data.data.refresh_token);
-        }
-        useAuthStore.getState().setAccessToken(accessToken);
-
-        const me = await axios.get<IUserDataResponse>(`${baseURL}${ENDPOINTS.AUTH.USER_DATA}`, {
-            headers: {
-                [HEADER_CLIENT_TYPE]: CLIENT_TYPE_MOBILE,
-                Authorization: `Bearer ${accessToken}`,
-            },
-        });
-        if (!abort() && me.data.data) {
-            useAuthStore.getState().setUser(me.data.data);
-        }
-    } catch {
-        await secureStore.remove(SECURE_STORE_KEYS.REFRESH_TOKEN);
-        if (!abort()) useAuthStore.getState().clear();
     } finally {
-        if (!abort()) useAuthStore.getState().setBootstrapped(true);
+        markBootstrapped('refresh-ok');
     }
 }
 
+/** The URL we last bootstrapped against, so dev server switches re-run bootstrap. */
+let bootstrapBaseURL: string | null = null;
+
+function startBootstrapOnce(baseURL: string | null): void {
+    // If we already finished a bootstrap for this exact server, don't
+    // run another one. But if the user just switched server, fall
+    // through and start a fresh bootstrap (the picker has already
+    // cleared the auth store + queries via `clearAuthSession()`).
+    if (bootstrapPromise && bootstrapBaseURL === baseURL) return;
+
+    bootstrapBaseURL = baseURL;
+
+    if (!baseURL) {
+        // No server selected (dev/preview before picker). Mark the
+        // splash as done so the gate controller can route to the
+        // picker instead of stranding the UI.
+        bootstrapPromise = Promise.resolve();
+        markBootstrapped('no-server');
+        return;
+    }
+
+    // Server switched while running — make sure the gate routes to
+    // the splash again until the new bootstrap commits.
+    if (useAuthStore.getState().bootstrapped) {
+        useAuthStore.getState().setBootstrapped(false);
+    }
+
+    bootstrapPromise = runBootstrap(baseURL).catch((e) => {
+        debugLogger.error(`bootstrap unexpected error: ${(e as Error).message}`, 'AuthProvider');
+        markBootstrapped('error');
+    });
+}
+
 export function AuthProvider({ children }: IAuthProviderProps): ReactNode {
+    // Use Zustand selectors so the effect re-fires whenever the values
+    // change AND survives parent remounts (e.g. PersistQueryClient's
+    // suspense fallback). A previous version subscribed inside an
+    // empty-deps `useEffect`, but if AuthProvider was remounted while
+    // ServerProvider's async hydration was still in flight, the
+    // subscriber was torn down before the `setHydrated(true)` event
+    // fired and the bootstrap never started.
+    const hydrated = useServerStore((s) => s.hydrated);
+    const serverUrl = useServerStore((s) => s.serverUrl);
+
     useEffect(() => {
-        let cancelled = false;
-        let started = false;
-
-        const tryBootstrap = (baseURL: string | null): void => {
-            if (started || cancelled) return;
-            if (!baseURL) return;
-            started = true;
-            void bootstrapWith(baseURL, () => cancelled);
-        };
-
-        // Run immediately if the URL is already known (warm reload, baked URL).
-        tryBootstrap(useServerStore.getState().serverUrl);
-
-        // Otherwise wait for ServerProvider to hydrate it.
-        const unsubscribe = useServerStore.subscribe((state) => {
-            tryBootstrap(state.serverUrl);
-        });
-
-        // Failsafe: if no server URL appears within a tick, mark bootstrapped
-        // so the gate controller can route the user to the picker.
-        const failsafe = setTimeout(() => {
-            if (!started && !cancelled) {
-                useAuthStore.getState().setBootstrapped(true);
-            }
-        }, 1500);
-
-        return () => {
-            cancelled = true;
-            clearTimeout(failsafe);
-            unsubscribe();
-        };
+        ensureCeiling();
     }, []);
 
+    useEffect(() => {
+        if (!hydrated) return;
+        startBootstrapOnce(serverUrl);
+    }, [hydrated, serverUrl]);
+
     return children;
+}
+
+/** Test-only: reset module-level guards between unit tests. */
+export function _resetAuthBootstrapGuards(): void {
+    bootstrapPromise = null;
+    bootstrapBaseURL = null;
+    ceilingScheduled = false;
 }

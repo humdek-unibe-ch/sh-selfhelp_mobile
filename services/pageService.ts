@@ -7,7 +7,14 @@
  * between published and draft content via the debug panel.
  */
 
-import { ENDPOINTS, type IGetPageResponse, type IGetPagesResponse, type IPageContent, type IPageItem } from '@selfhelp/shared';
+import {
+    ENDPOINTS,
+    transformPagesData,
+    type IGetPageResponse,
+    type IGetPagesResponse,
+    type IPageContent,
+    type IPageItem,
+} from '@selfhelp/shared';
 
 import { getApiClient } from '@/services/apiClient';
 
@@ -33,5 +40,8 @@ export async function fetchPages(languageId?: number): Promise<IPageItem[]> {
     const client = getApiClient();
     const url = languageId ? ENDPOINTS.PAGES.LIST_WITH_LANGUAGE(languageId) : ENDPOINTS.PAGES.LIST;
     const resp = await client.get<IGetPagesResponse>(url);
-    return resp.data.data ?? [];
+    // Symfony returns snake_case fields (`nav_position`, `parent`,
+    // `id_pages`). Normalise to the shared camelCase shape so all menu
+    // filters work the same on web + mobile.
+    return transformPagesData((resp.data.data ?? []) as unknown as Parameters<typeof transformPagesData>[0]);
 }

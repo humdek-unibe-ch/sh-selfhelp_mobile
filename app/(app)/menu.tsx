@@ -5,6 +5,9 @@
  */
 
 import { ScrollView } from 'react-native';
+import { AxiosError } from 'axios';
+import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,12 +15,24 @@ import { LoadingScreen } from '@/components/feedback/LoadingScreen';
 import { PageRenderer } from '@/components/renderer/PageRenderer';
 import { PageList } from '@/components/shell/PageList';
 import { usePageContent } from '@/hooks/usePageContent';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function MenuScreen(): React.ReactElement {
     const { t } = useTranslation();
-    const { data, isLoading, error, refetch } = usePageContent('menu');
+    const { data, isLoading, error } = usePageContent('menu');
+    const accessToken = useAuthStore((s) => s.accessToken);
+    const shouldRedirectToLogin = !accessToken && isAuthError(error);
+
+    useEffect(() => {
+        if (!shouldRedirectToLogin) return;
+        router.replace({
+            pathname: '/(public)/login',
+            params: { redirect: '/menu' },
+        });
+    }, [shouldRedirectToLogin]);
 
     if (isLoading) return <LoadingScreen message={t('loading')} />;
+    if (shouldRedirectToLogin) return <LoadingScreen message={t('loading')} />;
 
     // 404 / no `menu` keyword on this CMS instance → fall back to the
     // auto-generated nav list so the drawer entry is never a dead end.
@@ -36,4 +51,10 @@ export default function MenuScreen(): React.ReactElement {
             <PageRenderer page={data} />
         </SafeAreaView>
     );
+}
+
+function isAuthError(error: Error | null): boolean {
+    if (!(error instanceof AxiosError)) return false;
+    const status = error.response?.status;
+    return status === 401 || status === 403;
 }

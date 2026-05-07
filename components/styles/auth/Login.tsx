@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
@@ -9,6 +9,7 @@ import { login } from '@/services/authService';
 import { FieldShell } from '@/components/styles/forms/_FieldShell';
 
 export function Login({ section, values }: IStyleProps): React.ReactElement {
+    const { redirect } = useLocalSearchParams<{ redirect?: string }>();
     const labelEmail = useInterpolatedField(section, 'label_user', values) || 'Email';
     const labelPassword = useInterpolatedField(section, 'label_pw', values) || 'Password';
     const labelLogin = useInterpolatedField(section, 'label_login', values) || 'Login';
@@ -25,7 +26,7 @@ export function Login({ section, values }: IStyleProps): React.ReactElement {
         const res = await login({ email, password });
         setBusy(false);
         if (res.kind === 'ok') {
-            router.replace('/');
+            router.replace(redirect && redirect !== '/login' ? redirect : '/');
         } else if (res.kind === '2fa') {
             router.replace({ pathname: '/two-factor', params: { user_id: String(res.userId) } });
         } else {

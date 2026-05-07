@@ -1,13 +1,16 @@
 /**
  * Axios instance shared across the app.
  *
- * - baseURL is wired from `useServerStore.serverUrl` at provider mount.
- * - `X-Client-Type: mobile` header is attached on every request so the
- *   backend filters pages and evaluates conditions for the mobile platform.
- * - Access token (in-memory) is added if present.
- * - On 401, attempts a single refresh using the SecureStore-stored
- *   refresh token; if that succeeds the original request is retried,
- *   otherwise the auth store is cleared.
+ * - `baseURL` is read from `useServerStore.serverUrl` on every request,
+ *   so a server switch immediately routes to the new host without
+ *   recreating the client.
+ * - `X-Client-Type: mobile` is attached on every request so the backend
+ *   filters pages and evaluates conditions for the mobile platform.
+ * - Access token (in-memory) is attached when present.
+ * - On 401 the request is retried once after a single refresh through
+ *   `tokenRefreshService.refreshAccessToken()`. Parallel 401s share the
+ *   same in-flight refresh promise, so the rotated refresh token is
+ *   only spent once even when several queries fail concurrently.
  */
 
 import axios, {
@@ -16,59 +19,29 @@ import axios, {
     type AxiosRequestConfig,
     type InternalAxiosRequestConfig,
 } from 'axios';
-import {
-    CLIENT_TYPE_MOBILE,
-    ENDPOINTS,
-    HEADER_CLIENT_TYPE,
-    type IRefreshSuccessResponse,
-} from '@selfhelp/shared';
+import { CLIENT_TYPE_MOBILE, HEADER_CLIENT_TYPE } from '@selfhelp/shared';
 
 import { useAuthStore } from '@/stores/authStore';
 import { useServerStore } from '@/stores/serverStore';
-import { secureStore } from '@/services/secureStore';
-import { SECURE_STORE_KEYS } from '@/constants/secureStore';
 import { debugLogger } from '@/services/debugLogger';
+import { refreshAccessToken } from '@/services/tokenRefreshService';
 
 interface IRetriableConfig extends InternalAxiosRequestConfig {
     _retry?: boolean;
+    _skipAuthRefresh?: boolean;
+    _shStartedAt?: number;
 }
 
 let client: AxiosInstance | null = null;
-let refreshInFlight: Promise<string | null> | null = null;
 
-async function attemptRefresh(): Promise<string | null> {
-    if (refreshInFlight) return refreshInFlight;
-
-    refreshInFlight = (async () => {
-        try {
-            const refresh = await secureStore.get(SECURE_STORE_KEYS.REFRESH_TOKEN);
-            if (!refresh) return null;
-            const baseURL = useServerStore.getState().serverUrl;
-            if (!baseURL) return null;
-
-            const resp = await axios.post<IRefreshSuccessResponse>(
-                `${baseURL}${ENDPOINTS.AUTH.REFRESH}`,
-                { refresh_token: refresh },
-                { headers: { [HEADER_CLIENT_TYPE]: CLIENT_TYPE_MOBILE } }
-            );
-            const next = resp.data.data;
-            if (!next?.access_token) return null;
-
-            useAuthStore.getState().setAccessToken(next.access_token);
-            if (next.refresh_token) {
-                await secureStore.set(SECURE_STORE_KEYS.REFRESH_TOKEN, next.refresh_token);
-            }
-            return next.access_token;
-        } catch {
-            useAuthStore.getState().clear();
-            await secureStore.remove(SECURE_STORE_KEYS.REFRESH_TOKEN);
-            return null;
-        } finally {
-            refreshInFlight = null;
-        }
-    })();
-
-    return refreshInFlight;
+function logFullUrl(cfg: { baseURL?: string; url?: string; params?: unknown }): string {
+    const base = cfg.baseURL ?? '';
+    const path = cfg.url ?? '';
+    const search =
+        cfg.params && typeof cfg.params === 'object'
+            ? `?${new URLSearchParams(cfg.params as Record<string, string>).toString()}`
+            : '';
+    return `${base}${path}${search}`;
 }
 
 export function getApiClient(): AxiosInstance {
@@ -96,37 +69,61 @@ export function getApiClient(): AxiosInstance {
         if (locale && cfg.headers) {
             cfg.headers.set('Accept-Language', locale);
         }
-        debugLogger.debug(`→ ${cfg.method?.toUpperCase()} ${cfg.url}`, 'apiClient', {
-            params: cfg.params,
-            authenticated: Boolean(token),
-        });
+
+        (cfg as IRetriableConfig)._shStartedAt = Date.now();
+        debugLogger.info(
+            `→ ${cfg.method?.toUpperCase() ?? 'GET'} ${logFullUrl(cfg)}`,
+            'api',
+            { authenticated: Boolean(token), retry: Boolean((cfg as IRetriableConfig)._retry) }
+        );
         return cfg;
     });
 
     client.interceptors.response.use(
         (resp) => {
-            debugLogger.debug(
-                `← ${resp.status} ${resp.config.method?.toUpperCase()} ${resp.config.url}`,
-                'apiClient'
+            const cfg = resp.config as IRetriableConfig;
+            const ms = cfg._shStartedAt ? Date.now() - cfg._shStartedAt : null;
+            debugLogger.info(
+                `← ${resp.status} ${cfg.method?.toUpperCase() ?? 'GET'} ${logFullUrl(cfg)}${
+                    ms !== null ? ` (${ms}ms)` : ''
+                }`,
+                'api'
             );
             return resp;
         },
         async (error: AxiosError) => {
             const cfg = error.config as IRetriableConfig | undefined;
             const status = error.response?.status;
+            const ms = cfg?._shStartedAt ? Date.now() - cfg._shStartedAt : null;
             debugLogger.warn(
-                `× ${status ?? 'ERR'} ${cfg?.method?.toUpperCase() ?? '?'} ${cfg?.url ?? '?'}`,
-                'apiClient',
-                { message: error.message }
+                `× ${status ?? 'ERR'} ${cfg?.method?.toUpperCase() ?? '?'} ${
+                    cfg ? logFullUrl(cfg) : '?'
+                }${ms !== null ? ` (${ms}ms)` : ''}`,
+                'api',
+                { message: error.message, retry: Boolean(cfg?._retry) }
             );
-            if (!cfg || cfg._retry) throw error;
+            if (!cfg || cfg._retry || cfg._skipAuthRefresh) throw error;
             if (status !== 401) throw error;
 
-            const next = await attemptRefresh();
-            if (!next) throw error;
+            debugLogger.info(
+                `↻ 401 → refresh attempt for ${cfg.method?.toUpperCase()} ${cfg.url}`,
+                'api'
+            );
+            const next = await refreshAccessToken();
+            if (!next) {
+                debugLogger.warn(
+                    `↻ refresh failed — propagating 401 for ${cfg.method?.toUpperCase()} ${cfg.url}`,
+                    'api'
+                );
+                throw error;
+            }
 
             cfg._retry = true;
             cfg.headers?.set?.('Authorization', `Bearer ${next}`);
+            debugLogger.info(
+                `↻ replaying request with new access token: ${cfg.method?.toUpperCase()} ${cfg.url}`,
+                'api'
+            );
             return client!.request(cfg);
         }
     );
