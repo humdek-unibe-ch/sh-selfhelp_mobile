@@ -29,6 +29,7 @@
 - Prepared the project for iOS, Android, and web preview.
 - Added local run scripts plus build/update commands for development, preview, and production flows.
 - Added instance/build configuration so different environments can point to different backends cleanly.
+- Added clearer setup notes for Expo Go testing, including local-network backend access, Apache LAN access, and Symfony trusted-host configuration.
 
 ### Session and backend connection
 - Added login, logout, refresh-token restore, and session bootstrap so users can come back after reload.

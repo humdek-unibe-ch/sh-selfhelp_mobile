@@ -15,8 +15,6 @@ export interface IDevServer {
 }
 
 export const DEFAULT_DEV_SERVERS: readonly IDevServer[] = [
-    { label: 'Local Symfony (Android emulator)', url: 'http://10.0.2.2:8000' },
-    { label: 'Local Symfony (iOS simulator / web)', url: 'http://localhost:8000' },
     { label: 'Local Symfony Apache alias', url: 'http://localhost/symfony' },
-    { label: 'Local Symfony LAN', url: 'http://192.168.1.10:8000' },
+    { label: 'Local Symfony LAN', url: 'http://192.168.1.58/symfony' },
 ];

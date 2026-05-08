@@ -46,6 +46,74 @@ Then open `/t1` in the mobile preview/app. The mobile route uses `t1` as the CMS
 {backend}/cms-api/v1/pages/by-keyword/t1
 ```
 
+## Expo Go on a real device
+
+When testing with Expo Go on a phone, the backend URL must be reachable from that phone over the local network.
+
+Important:
+- `http://localhost/...` will not work on the phone
+- `localhost` on the phone means the phone itself, not your computer
+- you should use your computer's LAN IP instead, for example `http://192.168.1.58/symfony`
+
+### Checklist
+
+1. Connect the phone and development machine to the same Wi-Fi or local network.
+2. Open the backend URL in the phone's browser first, for example:
+
+```text
+http://192.168.1.58/symfony/cms-api/v1/languages
+```
+
+3. Only after that works, use the same base URL in the mobile app's server picker.
+
+If the browser on the phone cannot reach the backend, Expo Go cannot reach it either.
+
+### Apache / local web server
+
+Your local web server must be reachable from another device on the network.
+
+For Apache-based setups this usually means:
+- the server listens on the LAN interface, not only on `localhost`
+- the active vhost can answer requests for the LAN IP
+- development-only access rules that say `Require local` are changed to `Require all granted` for the backend you want to test from the phone
+- the OS firewall allows incoming traffic on the HTTP port
+
+Example of the access rule you may need during local-device testing:
+
+```apache
+<Directory "D:/path/to/your/symfony/public">
+    AllowOverride All
+    Require all granted
+</Directory>
+```
+
+Be careful to apply this only to your intended local development setup.
+
+### Symfony trusted hosts
+
+If the backend is opened through the machine's LAN IP, Symfony must trust that host too.
+
+Example:
+
+```dotenv
+SYMFONY_TRUSTED_HOSTS='^(localhost|127\.0\.0\.1|192\.168\.1\.58)'
+```
+
+Replace `192.168.1.58` with your current LAN IP.
+
+If your IP changes often, update the value before testing again, or reserve a stable local IP in your router.
+
+### Static IP?
+
+A static IP is not strictly required.
+
+What matters is:
+- the phone can reach the machine over the network
+- the backend is listening on that network interface
+- the LAN IP in the mobile app and trusted-host config matches the machine's current address
+
+Using a reserved or stable LAN IP is helpful because it avoids updating the picker and Symfony config every time the address changes.
+
 ## Production builds
 
 Each customer (instance) gets a build profile in `eas.json`, e.g. `production-tpf` or `production-mp`. Each profile sets:

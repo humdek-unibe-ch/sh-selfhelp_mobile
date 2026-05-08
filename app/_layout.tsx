@@ -177,6 +177,7 @@ function ServerStatusGate({
     serverUrl,
 }: IServerStatusGateProps): React.ReactElement {
     const router = useRouter();
+    const pathname = usePathname();
     const inDev = (useSegments() as readonly string[])[0] === '(dev)';
 
     const health = useQuery({
@@ -186,6 +187,10 @@ function ServerStatusGate({
         retry: false,
         staleTime: 30_000,
     });
+
+    if (inDev) {
+        return children;
+    }
 
     if (health.error) {
         return (
@@ -198,7 +203,11 @@ function ServerStatusGate({
                 actionLabel={canSwitchServers ? 'Change server' : undefined}
                 onAction={
                     canSwitchServers
-                        ? () => router.replace('/(dev)/server-picker')
+                        ? () =>
+                              router.replace({
+                                  pathname: '/(dev)/server-picker',
+                                  params: { redirect: pathname },
+                              })
                         : undefined
                 }
             />

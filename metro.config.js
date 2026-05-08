@@ -27,7 +27,6 @@ config.watchFolders = [sharedRoot];
 
 config.resolver = {
     ...config.resolver,
-    unstable_enableSymlinks: true,
     nodeModulesPaths: [
         path.resolve(projectRoot, 'node_modules'),
         path.resolve(sharedRoot, 'node_modules'),

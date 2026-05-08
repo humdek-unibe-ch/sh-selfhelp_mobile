@@ -23,6 +23,34 @@ npm run ios        # macOS only
 
 The dev server picker appears on first launch in dev/preview builds — pick your backend or paste a custom URL. Production builds skip this and use the URL baked into the build profile in `eas.json`.
 
+## Expo Go testing
+
+For Expo Go on a real iPhone or Android device, do not use `http://localhost/...` as the backend URL. On the phone, `localhost` points to the phone itself, not your development machine.
+
+Use your computer's LAN IP instead, for example:
+
+```text
+http://192.168.1.58/symfony
+```
+
+For this to work:
+- the phone and computer must be on the same local network
+- Apache/Symfony must be reachable from other devices on that network
+- the backend should answer on the LAN IP, not only on `localhost`
+- Windows/macOS firewall must allow incoming traffic to the web server port
+
+If you serve Symfony through Apache, make sure the site is accessible from the local network and not restricted to localhost-only access. In practice that usually means:
+- Apache listens on the LAN interface as well as localhost
+- any directory or vhost rule that currently says `Require local` is changed to `Require all granted` for the development setup you want to reach from the phone
+
+If the mobile app points to a LAN IP, Symfony must trust that host too. Example:
+
+```dotenv
+SYMFONY_TRUSTED_HOSTS='^(localhost|127\.0\.0\.1|192\.168\.1\.58)'
+```
+
+Replace `192.168.1.58` with your machine's current LAN IP. See [docs/server-selection.md](docs/server-selection.md) for the full Expo Go and backend setup.
+
 ## Repo layout
 
 | Path           | Contents                                                            |
@@ -50,7 +78,7 @@ See `docs/` for the full guide. Highlights:
 - `docs/architecture.md` — how the renderer + shared package + backend fit together.
 - `docs/auth-bootstrap.md` — server restore, auth persistence, refresh, direct reloads, and live updates.
 - `docs/builds.md` — EAS profiles, signing, store submission.
-- `docs/server-selection.md` — dev picker vs baked URL.
+- `docs/server-selection.md` — dev picker vs baked URL, Expo Go testing, and LAN backend setup.
 - `docs/cookbook/add-style.md` — add a new CMS style end-to-end.
 
 ## Contributing
