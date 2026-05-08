@@ -10,9 +10,11 @@ SPDX-License-Identifier: MPL-2.0
  *   - `previewMode`: when true, page fetches add `?preview=true` so we
  *     see draft/unpublished CMS content. Mirrors the web frontend's
  *     `sh_preview` cookie.
- *   - `phoneFrame`: web preview wraps the app in a phone-sized frame so
- *     content is laid out the way it will look on a real device. Toggle
- *     it off to use the full browser viewport for screenshots/QA.
+ *   - `deviceFrameEnabled` / `previewDevice` / `previewOrientation`:
+ *     web preview can render inside a fixed phone or tablet viewport,
+ *     with portrait/landscape rotation, so layout QA behaves like a
+ *     real embedded device view. Toggle it off to use the full browser
+ *     viewport for screenshots/QA.
  *
  * Persistence is hand-rolled (not zustand/middleware/persist) because
  * `zustand/esm/middleware.mjs` ships `import.meta.env` checks that
@@ -32,13 +34,23 @@ const STORAGE_KEY = SECURE_STORE_KEYS.DEV_MODE;
 interface IPersistedShape {
     previewMode?: boolean;
     phoneFrame?: boolean;
+    deviceFrameEnabled?: boolean;
+    previewDevice?: TPreviewDevice;
+    previewOrientation?: TPreviewOrientation;
 }
+
+export type TPreviewDevice = 'phone' | 'tablet';
+export type TPreviewOrientation = 'portrait' | 'landscape';
 
 interface IDevModeState {
     previewMode: boolean;
-    phoneFrame: boolean;
+    deviceFrameEnabled: boolean;
+    previewDevice: TPreviewDevice;
+    previewOrientation: TPreviewOrientation;
     setPreviewMode: (value: boolean) => void;
-    setPhoneFrame: (value: boolean) => void;
+    setDeviceFrameEnabled: (value: boolean) => void;
+    setPreviewDevice: (value: TPreviewDevice) => void;
+    setPreviewOrientation: (value: TPreviewOrientation) => void;
 }
 
 let writeDebounce: ReturnType<typeof setTimeout> | null = null;
@@ -48,7 +60,9 @@ function schedulePersist(state: IDevModeState): void {
     writeDebounce = setTimeout(() => {
         const payload: IPersistedShape = {
             previewMode: state.previewMode,
-            phoneFrame: state.phoneFrame,
+            deviceFrameEnabled: state.deviceFrameEnabled,
+            previewDevice: state.previewDevice,
+            previewOrientation: state.previewOrientation,
         };
         void secureStore.set(STORAGE_KEY, JSON.stringify(payload));
     }, 100);
@@ -56,13 +70,23 @@ function schedulePersist(state: IDevModeState): void {
 
 export const useDevModeStore = create<IDevModeState>((set, get) => ({
     previewMode: false,
-    phoneFrame: true,
+    deviceFrameEnabled: true,
+    previewDevice: 'phone',
+    previewOrientation: 'portrait',
     setPreviewMode: (value) => {
         set({ previewMode: value });
         schedulePersist(get());
     },
-    setPhoneFrame: (value) => {
-        set({ phoneFrame: value });
+    setDeviceFrameEnabled: (value) => {
+        set({ deviceFrameEnabled: value });
+        schedulePersist(get());
+    },
+    setPreviewDevice: (value) => {
+        set({ previewDevice: value });
+        schedulePersist(get());
+    },
+    setPreviewOrientation: (value) => {
+        set({ previewOrientation: value });
         schedulePersist(get());
     },
 }));
@@ -74,7 +98,9 @@ void (async () => {
         const parsed = JSON.parse(raw) as IPersistedShape;
         useDevModeStore.setState({
             previewMode: parsed.previewMode ?? false,
-            phoneFrame: parsed.phoneFrame ?? true,
+            deviceFrameEnabled: parsed.deviceFrameEnabled ?? parsed.phoneFrame ?? true,
+            previewDevice: parsed.previewDevice ?? 'phone',
+            previewOrientation: parsed.previewOrientation ?? 'portrait',
         });
     } catch {
         /* corrupt payload — fall back to defaults */

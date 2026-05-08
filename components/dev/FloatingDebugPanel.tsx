@@ -247,9 +247,13 @@ function ServerTab(): React.ReactElement {
     const serverUrl = useServerStore((s) => s.serverUrl);
     const canSwitch = useServerStore((s) => s.canSwitchServers);
     const previewMode = useDevModeStore((s) => s.previewMode);
-    const phoneFrame = useDevModeStore((s) => s.phoneFrame);
+    const deviceFrameEnabled = useDevModeStore((s) => s.deviceFrameEnabled);
+    const previewDevice = useDevModeStore((s) => s.previewDevice);
+    const previewOrientation = useDevModeStore((s) => s.previewOrientation);
     const setPreview = useDevModeStore((s) => s.setPreviewMode);
-    const setFrame = useDevModeStore((s) => s.setPhoneFrame);
+    const setDeviceFrameEnabled = useDevModeStore((s) => s.setDeviceFrameEnabled);
+    const setPreviewDevice = useDevModeStore((s) => s.setPreviewDevice);
+    const setPreviewOrientation = useDevModeStore((s) => s.setPreviewOrientation);
 
     return (
         <ScrollView style={{ flex: 1 }}>
@@ -263,12 +267,32 @@ function ServerTab(): React.ReactElement {
                 hint="Show draft / unpublished CMS content"
             />
             {Platform.OS === 'web' && (
-                <ToggleRow
-                    label="Phone frame (web preview)"
-                    value={phoneFrame}
-                    onChange={setFrame}
-                    hint="Wrap the app in a 390×844 phone-shaped viewport"
-                />
+                <>
+                    <ToggleRow
+                        label="Device frame (web preview)"
+                        value={deviceFrameEnabled}
+                        onChange={setDeviceFrameEnabled}
+                        hint="Clip the preview to a fixed device viewport"
+                    />
+                    <SegmentedChoiceRow
+                        label="Device"
+                        value={previewDevice}
+                        options={[
+                            { label: 'Phone', value: 'phone' },
+                            { label: 'Tablet', value: 'tablet' },
+                        ]}
+                        onChange={setPreviewDevice}
+                    />
+                    <SegmentedChoiceRow
+                        label="Orientation"
+                        value={previewOrientation}
+                        options={[
+                            { label: 'Portrait', value: 'portrait' },
+                            { label: 'Landscape', value: 'landscape' },
+                        ]}
+                        onChange={setPreviewOrientation}
+                    />
+                </>
             )}
         </ScrollView>
     );
@@ -315,6 +339,48 @@ function ToggleRow({
                 {hint ? <Text style={styles.muted}>{hint}</Text> : null}
             </View>
             <Switch value={value} onValueChange={onChange} />
+        </View>
+    );
+}
+
+function SegmentedChoiceRow<TValue extends string>({
+    label,
+    value,
+    options,
+    onChange,
+}: {
+    label: string;
+    value: TValue;
+    options: readonly { label: string; value: TValue }[];
+    onChange: (value: TValue) => void;
+}): React.ReactElement {
+    return (
+        <View style={styles.segmentedRow}>
+            <Text style={styles.rowLabel}>{label}</Text>
+            <View style={styles.segmentedControl}>
+                {options.map((option) => {
+                    const selected = option.value === value;
+                    return (
+                        <Pressable
+                            key={option.value}
+                            onPress={() => onChange(option.value)}
+                            style={[
+                                styles.segmentedOption,
+                                selected && styles.segmentedOptionActive,
+                            ]}
+                        >
+                            <Text
+                                style={[
+                                    styles.segmentedOptionText,
+                                    selected && styles.segmentedOptionTextActive,
+                                ]}
+                            >
+                                {option.label}
+                            </Text>
+                        </Pressable>
+                    );
+                })}
+            </View>
         </View>
     );
 }
@@ -424,6 +490,19 @@ const styles = StyleSheet.create({
     rowLabel: { fontSize: 12, color: '#495057', fontWeight: '600' },
     rowValue: { fontSize: 12, color: '#212529', flex: 1, textAlign: 'right' },
     toggleRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 12, borderBottomWidth: 1, borderBottomColor: '#f1f3f5' },
+    segmentedRow: { paddingVertical: 8, gap: 8, borderBottomWidth: 1, borderBottomColor: '#f1f3f5' },
+    segmentedControl: { flexDirection: 'row', gap: 8 },
+    segmentedOption: {
+        flex: 1,
+        paddingVertical: 8,
+        paddingHorizontal: 10,
+        borderRadius: 999,
+        backgroundColor: '#f1f3f5',
+        alignItems: 'center',
+    },
+    segmentedOptionActive: { backgroundColor: '#212529' },
+    segmentedOptionText: { color: '#495057', fontSize: 12, fontWeight: '600' },
+    segmentedOptionTextActive: { color: '#fff' },
     divider: { height: 1, backgroundColor: '#dee2e6', marginVertical: 8 },
     muted: { fontSize: 11, color: '#868e96' },
 });

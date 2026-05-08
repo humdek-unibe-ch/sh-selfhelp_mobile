@@ -41,6 +41,20 @@ Implications:
 - Layout/typography/forms render via Uniwind classes only on web. Components that rely on HeroUI Native's runtime context (e.g. its `Sheet`, `BottomSheet`) won't behave identically — verify those on a real iOS / Android build before shipping.
 - The "good enough" rule of thumb: if it looks right on web preview, it'll look right on device. If it looks broken on web preview, run `npm run android` / `npm run ios` before assuming the bug is real.
 
+### Device frame controls
+
+The Expo Web preview includes a dev-only device frame so we can QA layouts inside a fixed viewport instead of the full browser window.
+
+- Open the floating `D` button and switch to the `Server` tab.
+- `Device frame (web preview)` turns clipping on or off.
+- `Device` switches between `Phone` and `Tablet`.
+- `Orientation` switches between `Portrait` and `Landscape`.
+
+Behavior:
+- The frame is injected with CSS only on web; native builds are unaffected.
+- The app root and web portal siblings share the same clipped viewport so dialogs, bottom sheets, and overlays inherit the selected device size.
+- Tablet portrait keeps the tablet aspect ratio but uses a slightly smaller visual width cap on desktop so it stays comfortable to inspect.
+
 ## Working with the shared package
 
 The shared package is a TypeScript-only build (`tsc`) consumed via `file:`.

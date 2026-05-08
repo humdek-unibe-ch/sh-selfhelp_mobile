@@ -254,8 +254,8 @@ Implementation details:
 In dev/preview, the Floating Debug Panel exposes:
 
 - **Auth tab**: `bootstrapped`, has-access-token, current user id.
-- **Server tab**: selected URL + the dev-only preview/phone-frame
-  toggles.
+- **Server tab**: selected URL + the dev-only web preview controls
+  (`Device frame`, `Device`, `Orientation`, and `Preview content`).
 - **Queries tab**: every cached key, including the persisted ones.
 - **Logs tab**: the in-memory log buffer (`debugLogger`). Every API
   call also lands on the standard browser/native `console` so you can

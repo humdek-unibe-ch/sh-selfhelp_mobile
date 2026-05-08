@@ -21,7 +21,21 @@ npm run android    # requires Android emulator / connected device
 npm run ios        # macOS only
 ```
 
-The dev server picker appears on first launch in dev/preview builds — pick your backend or paste a custom URL. Production builds skip this and use the URL baked into the build profile in `eas.json`.
+The dev server picker appears on first launch in dev/preview builds - pick your backend or paste a custom URL. Production builds skip this and use the URL baked into the build profile in `eas.json`.
+
+## Web preview device frame
+
+The browser preview can simulate a fixed device viewport without affecting iOS or Android builds.
+
+- Open the floating `D` debug button, then go to the `Server` tab.
+- Turn on `Device frame (web preview)` to clip the preview to a device viewport.
+- Switch `Device` between `Phone` and `Tablet`.
+- Switch `Orientation` between `Portrait` and `Landscape`.
+
+Notes:
+- The frame is web-only and exists for layout QA in Expo Web.
+- Modals and overlay portals are clipped into the same viewport, so nothing should render outside the selected device frame.
+- Tablet portrait is intentionally a bit narrower than the raw device width so it stays practical on desktop screens while preserving the tablet aspect ratio.
 
 ## Expo Go testing
 
@@ -53,39 +67,40 @@ Replace `192.168.1.58` with your machine's current LAN IP. See [docs/server-sele
 
 ## Repo layout
 
-| Path           | Contents                                                            |
-| -------------- | ------------------------------------------------------------------- |
-| `app/`         | Expo Router screens (`(public)`, `(app)`, deep-link entry).         |
-| `components/`  | UI components: shared primitives + per-style implementations.       |
-| `providers/`   | `AuthProvider`, `ServerProvider`, `QueryProvider`, `HeroUIProvider`.|
-| `services/`    | `apiClient`, auth/page/forms services.                              |
-| `stores/`      | Zustand stores (server URL, JWT, language).                         |
-| `hooks/`       | `usePageContent`, `useAuth`, `useServerUrl`, etc.                   |
-| `styles/`      | `cssMobileToUniwind`, mantine token resolver, spacing parser.       |
-| `config/`      | Runtime config (instance slug, baked URL, dev servers).             |
-| `constants/`   | Stable constants (SecureStore keys, query keys).                    |
-| `assets/`      | Splash, icons, fonts.                                               |
-| `docs/`        | Setup, builds, deep-linking, push-notifications, cookbook.          |
-| `scripts/`     | Build / test helpers.                                               |
-| `app.config.ts`| Per-instance Expo config (reads env vars).                          |
-| `eas.json`     | EAS Build / Submit profiles (`development`, `preview`, `production-{slug}`). |
-| `metro.config.js` | Metro config aware of the sibling shared package.               |
-| `babel.config.js` | Babel preset (Expo) + Uniwind + Reanimated.                     |
+| Path | Contents |
+| --- | --- |
+| `app/` | Expo Router screens (`(public)`, `(app)`, deep-link entry). |
+| `components/` | UI components: shared primitives + per-style implementations. |
+| `providers/` | `AuthProvider`, `ServerProvider`, `QueryProvider`, `HeroUIProvider`. |
+| `services/` | `apiClient`, auth/page/forms services. |
+| `stores/` | Zustand stores (server URL, JWT, language). |
+| `hooks/` | `usePageContent`, `useAuth`, `useServerUrl`, etc. |
+| `styles/` | `cssMobileToUniwind`, mantine token resolver, spacing parser. |
+| `config/` | Runtime config (instance slug, baked URL, dev servers). |
+| `constants/` | Stable constants (SecureStore keys, query keys). |
+| `assets/` | Splash, icons, fonts. |
+| `docs/` | Setup, builds, deep-linking, push-notifications, cookbook. |
+| `scripts/` | Build / test helpers. |
+| `app.config.ts` | Per-instance Expo config (reads env vars). |
+| `eas.json` | EAS Build / Submit profiles (`development`, `preview`, `production-{slug}`). |
+| `metro.config.js` | Metro config aware of the sibling shared package. |
+| `babel.config.js` | Babel preset (Expo) + Uniwind + Reanimated. |
 
 ## Documentation
 
 See `docs/` for the full guide. Highlights:
-- `docs/architecture.md` — how the renderer + shared package + backend fit together.
-- `docs/auth-bootstrap.md` — server restore, auth persistence, refresh, direct reloads, and live updates.
-- `docs/builds.md` — EAS profiles, signing, store submission.
-- `docs/server-selection.md` — dev picker vs baked URL, Expo Go testing, and LAN backend setup.
-- `docs/cookbook/add-style.md` — add a new CMS style end-to-end.
+- `docs/architecture.md` - how the renderer + shared package + backend fit together.
+- `docs/auth-bootstrap.md` - server restore, auth persistence, refresh, direct reloads, and live updates.
+- `docs/builds.md` - EAS profiles, signing, store submission.
+- `docs/development.md` - daily workflow, debug tools, and web preview device-frame controls.
+- `docs/server-selection.md` - dev picker vs baked URL, Expo Go testing, and LAN backend setup.
+- `docs/cookbook/add-style.md` - add a new CMS style end-to-end.
 
 ## Contributing
 
 - One source of truth lives in `../sh-selfhelp_shared`. Don't fork shared types here.
 - Each style is a 4-file component (`Component.tsx`, `Component.styles.ts`, `Component.types.ts`, `index.ts`). Add hooks in `Component.hooks.ts` only when needed.
-- Mobile reads the `css_mobile` field only — never `css`. Tailwind classes go through the shared allow-list + remap before Uniwind sees them.
+- Mobile reads the `css_mobile` field only - never `css`. Tailwind classes go through the shared allow-list + remap before Uniwind sees them.
 - Keep web and mobile in lockstep: a new field on a style means updating the shared interface and both renderers.
 
 ## License
