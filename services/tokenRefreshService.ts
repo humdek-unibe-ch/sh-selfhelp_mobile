@@ -37,6 +37,7 @@ import { SECURE_STORE_KEYS } from '@/constants/secureStore';
 import { secureStore } from '@/services/secureStore';
 import { debugLogger } from '@/services/debugLogger';
 import { clearAuthSession } from '@/services/sessionService';
+import { persistAuthSession, persistRefreshToken } from '@/services/authSessionPersistence';
 import { useAuthStore } from '@/stores/authStore';
 import { useServerStore } from '@/stores/serverStore';
 
@@ -104,15 +105,23 @@ export function refreshAccessToken(): Promise<string | null> {
             // the new access token in memory. Otherwise a parallel
             // request could trigger a second refresh with the (now
             // invalid) old token and the backend would reject it.
-            if (next?.refresh_token) {
-                try {
-                    await secureStore.set(SECURE_STORE_KEYS.REFRESH_TOKEN, next.refresh_token);
-                } catch (e) {
-                    debugLogger.warn(
-                        `refresh token persistence failed: ${(e as Error).message}`,
-                        'tokenRefresh'
-                    );
+            const user = useAuthStore.getState().user;
+            try {
+                if (user) {
+                    await persistAuthSession({
+                        accessToken: newAccess,
+                        refreshToken: next?.refresh_token,
+                        serverUrl: baseURL,
+                        user,
+                    });
+                } else if (next?.refresh_token) {
+                    await persistRefreshToken(next.refresh_token);
                 }
+            } catch (e) {
+                debugLogger.warn(
+                    `refresh token persistence failed: ${(e as Error).message}`,
+                    'tokenRefresh'
+                );
             }
 
             useAuthStore.getState().setAccessToken(newAccess);

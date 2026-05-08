@@ -37,7 +37,7 @@ import {
     useRouter,
     useSegments,
 } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useQuery } from '@tanstack/react-query';
@@ -61,6 +61,9 @@ function GateController(): null {
     const params = useGlobalSearchParams<{ redirect?: string }>();
     const segments = useSegments() as readonly string[];
     const navState = useRootNavigationState();
+    const routeGroup = segments[0];
+    const routeName = segments[1];
+    const lastRedirectRef = useRef<string | null>(null);
 
     const accessToken = useAuthStore((s) => s.accessToken);
     const bootstrapped = useAuthStore((s) => s.bootstrapped);
@@ -69,16 +72,26 @@ function GateController(): null {
     const canSwitchServers = useServerStore((s) => s.canSwitchServers);
 
     useEffect(() => {
+        lastRedirectRef.current = null;
+    }, [pathname]);
+
+    useEffect(() => {
         if (!navState?.key) return;
         if (!serverHydrated) return;
 
-        const inPublic = segments[0] === '(public)';
-        const inDev = segments[0] === '(dev)';
-        const onPicker = inDev && segments[1] === 'server-picker';
-        const onLogin = inPublic && segments[1] === 'login';
+        const replaceOnce = (key: string, href: Parameters<typeof router.replace>[0]): void => {
+            if (lastRedirectRef.current === key) return;
+            lastRedirectRef.current = key;
+            router.replace(href);
+        };
+
+        const inPublic = routeGroup === '(public)';
+        const inDev = routeGroup === '(dev)';
+        const onPicker = inDev && routeName === 'server-picker';
+        const onLogin = inPublic && routeName === 'login';
 
         if (canSwitchServers && !serverUrl && !onPicker) {
-            router.replace({
+            replaceOnce('server-picker', {
                 pathname: '/(dev)/server-picker',
                 params: { redirect: pathname },
             });
@@ -90,7 +103,8 @@ function GateController(): null {
         // 3. Logged in but currently on the login screen → push into the app.
         if (accessToken && onLogin) {
             const redirect = typeof params.redirect === 'string' ? params.redirect : null;
-            router.replace(redirect && redirect !== '/login' ? redirect : '/(app)/');
+            const target = redirect && redirect !== '/login' ? redirect : '/(app)/';
+            replaceOnce(`login:${target}`, target);
             return;
         }
 
@@ -103,8 +117,9 @@ function GateController(): null {
         navState?.key,
         params.redirect,
         pathname,
+        routeGroup,
+        routeName,
         router,
-        segments,
         serverHydrated,
         serverUrl,
     ]);

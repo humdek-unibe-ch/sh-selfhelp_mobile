@@ -25,45 +25,51 @@ interface IServerProviderProps {
     children: ReactNode;
 }
 
+let hydrationPromise: Promise<void> | null = null;
+
+async function hydrateServerStore(): Promise<void> {
+    if (useServerStore.getState().hydrated) return;
+
+    const normalizeForCurrentPlatform = (url: string): string =>
+        Platform.OS === 'web' ? canonicalizeLoopbackHost(url, 'localhost') : url;
+
+    debugLogger.info('hydration start', 'ServerProvider', {
+        bakedBackendUrl: runtimeConfig.bakedBackendUrl,
+        isDevInstance: runtimeConfig.isDevInstance,
+    });
+    useServerStore.setState({
+        bakedBackendUrl: runtimeConfig.bakedBackendUrl,
+        isDevInstance: runtimeConfig.isDevInstance,
+        canSwitchServers: runtimeConfig.isDevInstance,
+    });
+
+    try {
+        if (!runtimeConfig.isDevInstance && runtimeConfig.bakedBackendUrl) {
+            const normalized = normalizeForCurrentPlatform(runtimeConfig.bakedBackendUrl);
+            useServerStore.getState().setServerUrl(normalized);
+            debugLogger.info(`using baked URL ${normalized}`, 'ServerProvider');
+            return;
+        }
+
+        const stored = await secureStore.get(SECURE_STORE_KEYS.SERVER_URL);
+        if (stored) {
+            const normalized = normalizeForCurrentPlatform(stored);
+            debugLogger.info(`restored server URL ${normalized}`, 'ServerProvider');
+            useServerStore.getState().setServerUrl(normalized);
+        } else {
+            debugLogger.info('no stored server URL -> picker required', 'ServerProvider');
+        }
+    } finally {
+        useServerStore.getState().setHydrated(true);
+        debugLogger.info('hydrated', 'ServerProvider');
+    }
+}
+
 export function ServerProvider({ children }: IServerProviderProps): ReactNode {
     useEffect(() => {
-        const normalizeForCurrentPlatform = (url: string): string =>
-            Platform.OS === 'web' ? canonicalizeLoopbackHost(url, 'localhost') : url;
-
-        const initialise = async (): Promise<void> => {
-            debugLogger.info('hydration start', 'ServerProvider', {
-                bakedBackendUrl: runtimeConfig.bakedBackendUrl,
-                isDevInstance: runtimeConfig.isDevInstance,
-            });
-            useServerStore.setState({
-                bakedBackendUrl: runtimeConfig.bakedBackendUrl,
-                isDevInstance: runtimeConfig.isDevInstance,
-                canSwitchServers: runtimeConfig.isDevInstance,
-            });
-
-            try {
-                if (!runtimeConfig.isDevInstance && runtimeConfig.bakedBackendUrl) {
-                    const normalized = normalizeForCurrentPlatform(runtimeConfig.bakedBackendUrl);
-                    useServerStore.getState().setServerUrl(normalized);
-                    debugLogger.info(`using baked URL ${normalized}`, 'ServerProvider');
-                    return;
-                }
-
-                const stored = await secureStore.get(SECURE_STORE_KEYS.SERVER_URL);
-                if (stored) {
-                    const normalized = normalizeForCurrentPlatform(stored);
-                    debugLogger.info(`restored server URL ${normalized}`, 'ServerProvider');
-                    useServerStore.getState().setServerUrl(normalized);
-                } else {
-                    debugLogger.info('no stored server URL -> picker required', 'ServerProvider');
-                }
-            } finally {
-                useServerStore.getState().setHydrated(true);
-                debugLogger.info('hydrated', 'ServerProvider');
-            }
-        };
-
-        void initialise();
+        if (!hydrationPromise) {
+            hydrationPromise = hydrateServerStore();
+        }
 
         const unsubscribe = useServerStore.subscribe((state, prev) => {
             if (state.serverUrl === prev.serverUrl) return;

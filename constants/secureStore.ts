@@ -8,6 +8,7 @@ SPDX-License-Identifier: MPL-2.0
  */
 
 export const SECURE_STORE_KEYS = {
+    AUTH_SESSION: 'sh.auth_session',
     REFRESH_TOKEN: 'sh.refresh_token',
     SERVER_URL: 'sh.server_url',
     LANGUAGE_LOCALE: 'sh.language_locale',

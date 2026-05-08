@@ -9,10 +9,10 @@ SPDX-License-Identifier: MPL-2.0
  *
  *   1. Wait for `useServerStore.hydrated` so we have a base URL and
  *      know whether the user can switch servers (dev/preview).
- *   2. Read the persisted refresh token (`SECURE_STORE_KEYS.REFRESH_TOKEN`,
- *      backed by `expo-secure-store` on native and `localStorage` on
- *      web preview) and exchange it for a fresh access token through
- *      the shared `refreshAccessToken()` singleton.
+ *   2. Restore a persisted, unexpired access-token snapshot for the
+ *      selected server. If none exists, read the persisted refresh token
+ *      (`SECURE_STORE_KEYS.REFRESH_TOKEN`) and exchange it for a fresh
+ *      access token through the shared `refreshAccessToken()` singleton.
  *   3. Hydrate the user data (`/auth/user-data`) so the rest of the
  *      app can render with permissions / menu filtered correctly.
  *   4. Mark `bootstrapped = true` so the router/Stack mounts and the
@@ -42,6 +42,10 @@ SPDX-License-Identifier: MPL-2.0
 import { useEffect, type ReactNode } from 'react';
 
 import { debugLogger } from '@/services/debugLogger';
+import {
+    loadPersistedAuthSession,
+    persistAuthSession,
+} from '@/services/authSessionPersistence';
 import { appQueryClient } from '@/services/queryClient';
 import { refreshAccessToken } from '@/services/tokenRefreshService';
 import { fetchCurrentUser, userDataQueryKey } from '@/services/userService';
@@ -86,6 +90,21 @@ function ensureCeiling(): void {
 async function runBootstrap(baseURL: string): Promise<void> {
     debugLogger.info(`bootstrap start (${baseURL})`, 'AuthProvider');
 
+    const persistedSession = await loadPersistedAuthSession(baseURL);
+    if (persistedSession) {
+        useAuthStore.getState().setSession(persistedSession.accessToken, persistedSession.user);
+        appQueryClient.setQueryData(userDataQueryKey(baseURL), persistedSession.user);
+        markBootstrapped('persisted-session');
+
+        void syncCurrentUser(baseURL, persistedSession.accessToken, 'persisted-session').catch((e) => {
+            debugLogger.warn(
+                `persisted-session user-data refresh failed: ${(e as Error).message}`,
+                'AuthProvider'
+            );
+        });
+        return;
+    }
+
     // Phase 1 — refresh. The shared singleton:
     //   - reads the refresh token from secure storage,
     //   - calls `/auth/refresh-token` with a 7s timeout,
@@ -105,12 +124,7 @@ async function runBootstrap(baseURL: string): Promise<void> {
     // the access token: it's freshly minted and any later 401 from a
     // real CMS request will be handled by the apiClient interceptor.
     try {
-        const user = await fetchCurrentUser();
-        if (user) {
-            useAuthStore.getState().setUser(user);
-            appQueryClient.setQueryData(userDataQueryKey(baseURL), user);
-            debugLogger.info('bootstrap user-data ok', 'AuthProvider');
-        }
+        await syncCurrentUser(baseURL, accessToken, 'refresh');
     } catch (e) {
         debugLogger.warn(
             `bootstrap user-data failed: ${(e as Error).message} (keeping access token)`,
@@ -121,15 +135,40 @@ async function runBootstrap(baseURL: string): Promise<void> {
     }
 }
 
+async function syncCurrentUser(baseURL: string, accessToken: string, reason: string): Promise<void> {
+    const user = await fetchCurrentUser();
+    if (!user) return;
+
+    useAuthStore.getState().setUser(user);
+    appQueryClient.setQueryData(userDataQueryKey(baseURL), user);
+
+    try {
+        await persistAuthSession({ accessToken, serverUrl: baseURL, user });
+    } catch (e) {
+        debugLogger.warn(
+            `user-data session persistence failed: ${(e as Error).message}`,
+            'AuthProvider'
+        );
+    }
+
+    debugLogger.info(`bootstrap user-data ok (${reason})`, 'AuthProvider');
+}
+
 /** The URL we last bootstrapped against, so dev server switches re-run bootstrap. */
 let bootstrapBaseURL: string | null = null;
 
 function startBootstrapOnce(baseURL: string | null): void {
-    // If we already finished a bootstrap for this exact server, don't
-    // run another one. But if the user just switched server, fall
-    // through and start a fresh bootstrap (the picker has already
-    // cleared the auth store + queries via `clearAuthSession()`).
+    // If a bootstrap for this exact server is already running, join it.
+    // This protects against StrictMode / web remounts starting parallel
+    // refresh-token exchanges with the same one-time-use refresh token.
     if (bootstrapPromise && bootstrapBaseURL === baseURL) return;
+
+    // If this exact server is already bootstrapped, there is nothing to do.
+    // We intentionally do NOT block on a previously completed promise alone:
+    // logout, server-switch, or a failed refresh can flip `bootstrapped`
+    // back to false for the same URL, and in that case we must allow a
+    // fresh bootstrap round.
+    if (useAuthStore.getState().bootstrapped && bootstrapBaseURL === baseURL) return;
 
     bootstrapBaseURL = baseURL;
 
@@ -148,10 +187,18 @@ function startBootstrapOnce(baseURL: string | null): void {
         useAuthStore.getState().setBootstrapped(false);
     }
 
-    bootstrapPromise = runBootstrap(baseURL).catch((e) => {
-        debugLogger.error(`bootstrap unexpected error: ${(e as Error).message}`, 'AuthProvider');
-        markBootstrapped('error');
-    });
+    bootstrapPromise = (async () => {
+        try {
+            await runBootstrap(baseURL);
+        } catch (e) {
+            debugLogger.error(`bootstrap unexpected error: ${(e as Error).message}`, 'AuthProvider');
+            markBootstrapped('error');
+        } finally {
+            if (bootstrapBaseURL === baseURL) {
+                bootstrapPromise = null;
+            }
+        }
+    })();
 }
 
 export function AuthProvider({ children }: IAuthProviderProps): ReactNode {
@@ -164,6 +211,7 @@ export function AuthProvider({ children }: IAuthProviderProps): ReactNode {
     // fired and the bootstrap never started.
     const hydrated = useServerStore((s) => s.hydrated);
     const serverUrl = useServerStore((s) => s.serverUrl);
+    const bootstrapped = useAuthStore((s) => s.bootstrapped);
 
     useEffect(() => {
         ensureCeiling();
@@ -171,8 +219,9 @@ export function AuthProvider({ children }: IAuthProviderProps): ReactNode {
 
     useEffect(() => {
         if (!hydrated) return;
+        if (bootstrapped) return;
         startBootstrapOnce(serverUrl);
-    }, [hydrated, serverUrl]);
+    }, [bootstrapped, hydrated, serverUrl]);
 
     return children;
 }

@@ -10,7 +10,7 @@ SPDX-License-Identifier: MPL-2.0
  */
 
 import { Pressable, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import Constants from 'expo-constants';
 
 import { useAuthStore } from '@/stores/authStore';
@@ -26,10 +26,14 @@ export function AppHeader({ onOpenDrawer }: IAppHeaderProps): React.ReactElement
     const user = useAuthStore((s) => s.user);
     const canSwitchServers = useServerStore((s) => s.canSwitchServers);
     const appName = Constants.expoConfig?.name ?? 'SelfHelp';
+    const pathname = usePathname();
 
     const onLogout = async (): Promise<void> => {
         await logout();
-        router.replace('/login');
+        router.replace({
+            pathname: '/(public)/login',
+            params: { redirect: pathname },
+        });
     };
 
     return (
@@ -56,7 +60,14 @@ export function AppHeader({ onOpenDrawer }: IAppHeaderProps): React.ReactElement
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <LanguageSwitcher compact />
                 {canSwitchServers ? (
-                    <Pressable onPress={() => router.push('/server-picker')}>
+                    <Pressable
+                        onPress={() =>
+                            router.push({
+                                pathname: '/(dev)/server-picker',
+                                params: { redirect: pathname },
+                            })
+                        }
+                    >
                         <Text style={{ color: '#228be6', marginLeft: 12, fontWeight: '600' }}>Server</Text>
                     </Pressable>
                 ) : null}
@@ -65,7 +76,14 @@ export function AppHeader({ onOpenDrawer }: IAppHeaderProps): React.ReactElement
                         <Text style={{ color: '#fa5252', marginLeft: 12, fontWeight: '600' }}>Logout</Text>
                     </Pressable>
                 ) : (
-                    <Pressable onPress={() => router.push('/login')}>
+                    <Pressable
+                        onPress={() =>
+                            router.push({
+                                pathname: '/(public)/login',
+                                params: { redirect: pathname },
+                            })
+                        }
+                    >
                         <Text style={{ color: '#228be6', marginLeft: 12, fontWeight: '600' }}>Login</Text>
                     </Pressable>
                 )}

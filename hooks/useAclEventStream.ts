@@ -184,6 +184,16 @@ export function useAclEventStream(): void {
                 return;
             }
 
+            debugLogger.info(
+                `bootstrap ok (${transport})`,
+                'aclEvents',
+                transport === 'cookie'
+                    ? {
+                          note: 'mercureAuthorization is HttpOnly; check browser storage/network headers, not document.cookie',
+                      }
+                    : { hasToken: Boolean(bootstrap.token) }
+            );
+
             const url = `${bootstrap.hubUrl}?topic=${encodeURIComponent(bootstrap.topic)}`;
             debugLogger.info(`subscribe ${url}`, 'aclEvents');
 

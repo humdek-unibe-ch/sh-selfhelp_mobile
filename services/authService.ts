@@ -40,6 +40,7 @@ import { secureStore } from '@/services/secureStore';
 import { SECURE_STORE_KEYS } from '@/constants/secureStore';
 import { debugLogger } from '@/services/debugLogger';
 import { appQueryClient } from '@/services/queryClient';
+import { persistAuthSession } from '@/services/authSessionPersistence';
 import {
     clearAuthSession,
     invalidateAuthScopedQueries,
@@ -100,13 +101,18 @@ export async function logout(): Promise<void> {
     try {
         const baseURL = useServerStore.getState().serverUrl;
         const accessToken = useAuthStore.getState().accessToken;
+        const refreshToken = await secureStore.get(SECURE_STORE_KEYS.REFRESH_TOKEN).catch(() => null);
         if (baseURL && accessToken) {
-            await axios.post(`${baseURL}${ENDPOINTS.AUTH.LOGOUT}`, undefined, {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    [HEADER_CLIENT_TYPE]: CLIENT_TYPE_MOBILE,
-                },
-            });
+            await axios.post(
+                `${baseURL}${ENDPOINTS.AUTH.LOGOUT}`,
+                refreshToken ? { refresh_token: refreshToken } : undefined,
+                {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        [HEADER_CLIENT_TYPE]: CLIENT_TYPE_MOBILE,
+                    },
+                }
+            );
         }
     } catch {
         // Ignore — clearing local state is what matters.
@@ -138,22 +144,16 @@ async function commitAuthSuccess(
     refreshToken: string | undefined,
     user: ILoginSuccessResponse['data']['user']
 ): Promise<void> {
-    useAuthStore.getState().setSession(accessToken, user);
-
-    if (refreshToken) {
-        try {
-            await secureStore.set(SECURE_STORE_KEYS.REFRESH_TOKEN, refreshToken);
-            debugLogger.info('login: refresh token saved', 'authService');
-        } catch (e) {
-            debugLogger.warn(
-                `login: refresh token persistence failed: ${(e as Error).message}`,
-                'authService'
-            );
-        }
-    } else {
-        debugLogger.warn('login: response had NO refresh_token', 'authService');
+    try {
+        await persistAuthSession({ accessToken, refreshToken, serverUrl: baseURL, user });
+    } catch (e) {
+        debugLogger.warn(
+            `login: session persistence failed: ${(e as Error).message}`,
+            'authService'
+        );
     }
 
+    useAuthStore.getState().setSession(accessToken, user);
     removeAuthScopedQueries();
 
     try {

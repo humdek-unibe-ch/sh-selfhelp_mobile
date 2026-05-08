@@ -2,9 +2,9 @@
 SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { AxiosError } from 'axios';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -29,14 +29,22 @@ export function CmsPageScreen({ keyword }: ICmsPageScreenProps): React.ReactElem
     const { data, isLoading, error, refetch } = usePageContent(keyword);
     const accessToken = useAuthStore((s) => s.accessToken);
     const shouldRedirectToLogin = !accessToken && isAuthError(error);
+    const pathname = usePathname();
+    const redirectedRef = useRef(false);
 
     useEffect(() => {
-        if (!shouldRedirectToLogin) return;
+        if (!shouldRedirectToLogin) {
+            redirectedRef.current = false;
+            return;
+        }
+        if (pathname === '/login' || redirectedRef.current) return;
+
+        redirectedRef.current = true;
         router.replace({
             pathname: '/(public)/login',
             params: { redirect: `/${keyword}` },
         });
-    }, [keyword, shouldRedirectToLogin]);
+    }, [keyword, pathname, shouldRedirectToLogin]);
 
     if (shouldRedirectToLogin) {
         return <LoadingScreen message={t('loading')} />;

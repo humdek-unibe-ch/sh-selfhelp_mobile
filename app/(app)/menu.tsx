@@ -10,8 +10,8 @@ SPDX-License-Identifier: MPL-2.0
 
 import { ScrollView } from 'react-native';
 import { AxiosError } from 'axios';
-import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { router, usePathname } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -26,14 +26,22 @@ export default function MenuScreen(): React.ReactElement {
     const { data, isLoading, error } = usePageContent('menu');
     const accessToken = useAuthStore((s) => s.accessToken);
     const shouldRedirectToLogin = !accessToken && isAuthError(error);
+    const pathname = usePathname();
+    const redirectedRef = useRef(false);
 
     useEffect(() => {
-        if (!shouldRedirectToLogin) return;
+        if (!shouldRedirectToLogin) {
+            redirectedRef.current = false;
+            return;
+        }
+        if (pathname === '/login' || redirectedRef.current) return;
+
+        redirectedRef.current = true;
         router.replace({
             pathname: '/(public)/login',
             params: { redirect: '/menu' },
         });
-    }, [shouldRedirectToLogin]);
+    }, [pathname, shouldRedirectToLogin]);
 
     if (isLoading) return <LoadingScreen message={t('loading')} />;
     if (shouldRedirectToLogin) return <LoadingScreen message={t('loading')} />;

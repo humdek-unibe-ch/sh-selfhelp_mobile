@@ -30,5 +30,5 @@ export const useAuthStore = create<IAuthState>((set) => ({
     setUser: (user) => set({ user }),
     setAccessToken: (accessToken) => set({ accessToken }),
     setBootstrapped: (b) => set({ bootstrapped: b }),
-    clear: () => set({ accessToken: null, user: null }),
+    clear: () => set({ accessToken: null, user: null, bootstrapped: false }),
 }));

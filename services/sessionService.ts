@@ -8,6 +8,7 @@ import { SECURE_STORE_KEYS } from '@/constants/secureStore';
 import { secureStore } from '@/services/secureStore';
 import { debugLogger } from '@/services/debugLogger';
 import { appQueryClient, QUERY_PERSIST_KEY } from '@/services/queryClient';
+import { clearPersistedAuthSession } from '@/services/authSessionPersistence';
 import { useAuthStore } from '@/stores/authStore';
 
 interface IClearAuthSessionOptions {
@@ -27,11 +28,13 @@ export async function clearAuthSession(options: IClearAuthSessionOptions = {}): 
 
     try {
         await secureStore.remove(SECURE_STORE_KEYS.REFRESH_TOKEN);
+        await clearPersistedAuthSession();
     } catch {
         /* ignore */
     }
 
     useAuthStore.getState().clear();
+    useAuthStore.getState().setBootstrapped(false);
 
     if (options.clearQueries) {
         appQueryClient.clear();
