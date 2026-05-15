@@ -4,7 +4,7 @@ Before returning anything print in chat `❤️AGENTS.md` so that we know the ru
 
 ## Project Overview
 
-This repository is the SelfHelp mobile app. It renders CMS-driven SelfHelp content for iOS, Android, and Expo Web preview. The app talks to a Symfony backend through `/cms-api/v1/*`, renders pages by CMS keyword, and relies on `@selfhelp/shared` for shared API endpoints, DTOs, CMS style types, registry keys, Tailwind/Mantine tokens, condition evaluation, and class allow-listing.
+This repository is the SelfHelp mobile frontend app. It displays end-user pages and forms that were already configured in the SelfHelp CMS/web system. Mobile users cannot create, configure, edit, or administer CMS pages from this app; all CMS authoring and configuration happens in the web/admin side of the SelfHelp system. The app talks to a Symfony backend through `/cms-api/v1/*`, fetches page payloads by CMS keyword, and relies on `@selfhelp/shared` for shared API endpoints, DTOs, CMS style types, registry keys, Tailwind/Mantine tokens, condition evaluation, and class allow-listing.
 
 ## Tech Stack
 
@@ -22,8 +22,8 @@ This repository is the SelfHelp mobile app. It renders CMS-driven SelfHelp conte
 ## Repository Structure
 
 - `app/`: Expo Router routes. `(app)` is the drawer-based authenticated shell, `(public)` contains login, `(dev)` contains the server picker.
-- `components/renderer/`: CMS page renderer, condition handling, interpolation, debug wrapper, style dispatcher, child rendering helpers.
-- `components/styles/`: CMS style implementations grouped by layout, typography, media, interactive, forms, composite, and auth.
+- `components/renderer/`: presentation renderer for CMS page payloads, condition handling, interpolation, debug wrapper, style dispatcher, child rendering helpers.
+- `components/styles/`: mobile presentation implementations for CMS style payloads, grouped by layout, typography, media, interactive, forms, composite, and auth.
 - `components/shell/`: navigation header, drawer, bottom tabs, page-list helpers.
 - `components/feedback/`: loading and error screens.
 - `providers/`: root provider stack for error boundary, server hydration, query client, i18n, theme, auth bootstrap, session sync, and native side effects.
@@ -42,12 +42,34 @@ This repository is the SelfHelp mobile app. It renders CMS-driven SelfHelp conte
 - Keep the root provider order from `providers/AppProviders.tsx`: `ErrorBoundary -> ServerProvider -> QueryProvider -> I18nProvider -> ThemeProvider -> AuthProvider -> SessionSyncProvider -> NativeBootstrap -> children`.
 - Do not start CMS page/menu queries until server hydration and auth bootstrap are complete.
 - Use Expo Router file routes. CMS pages are fetched by keyword: `home`, `menu`, `profile`, or dynamic `/<keyword>`.
+- Treat this app as a mobile frontend for existing CMS content, not as a CMS editor/admin. Page creation, page configuration, style setup, and content authoring belong to the web/admin/backend side.
+- User form submissions are end-user data entry, not CMS page/content creation.
 - Dev/preview builds can switch backend servers at runtime. Production instance builds use the baked backend URL from Expo config.
 - Server switch and logout must clear auth state and auth-scoped query data.
 - The renderer pipeline is: condition evaluation for `platform: mobile`, interpolation, `css_mobile` allow-list/remap, Mantine token mapping, then dispatch through `styleImpls`.
 - All CMS style implementations must be registered in `components/styles/index.ts`.
 - Render CMS children through `<Children>`, not by directly mapping `section.children`.
 - Unknown styles should fall back safely through `UnknownStyle`.
+
+## Component Design Rules
+
+- Prefer small, focused components instead of large multi-purpose files.
+- Keep CMS style components focused on displaying one CMS style payload.
+- Split components when a file starts mixing rendering, API calls, formatting, field parsing, permissions, validation, and native side effects.
+- Separate responsibilities:
+  - data fetching into `services/` and `hooks/`
+  - CMS field parsing into renderer helpers
+  - layout/rendering into components
+  - native side effects into `native/`
+  - reusable state into `stores/`
+- Reuse renderer helpers before creating new CMS parsing logic.
+- Extract repeated logic into hooks or utilities only when it is used more than once or clearly improves readability.
+- Do not over-abstract too early. Small local duplication is better than a confusing generic abstraction.
+- Prefer composition over large prop-heavy components.
+- Keep props typed with clear interfaces.
+- If a component grows too large, first extract named subcomponents, hooks, styles, and types in the same folder before creating global shared abstractions.
+- Move UI pieces to shared folders only when they are actually reused or clearly domain-independent.
+- Reusable components should not depend on one specific screen unless intentionally scoped.
 
 ## Coding Style
 
@@ -70,6 +92,7 @@ This repository is the SelfHelp mobile app. It renders CMS-driven SelfHelp conte
 - Do not introduce new dependencies without a clear reason and package/config updates.
 - Do not duplicate types, endpoints, tokens, or registry definitions that belong in `@selfhelp/shared`.
 - Do not change public API endpoints, shared DTOs, CMS style names, or EAS build profiles without documenting impact.
+- Do not add CMS authoring, editing, or administration flows to the mobile app unless the product direction explicitly changes.
 - Do not expose or print secrets. Do not read or copy `.env` values into documentation.
 - Preserve user changes in the worktree. Do not revert unrelated edits.
 - Update docs and tests when changing architecture, commands, renderer behavior, API contracts, or build flow.
@@ -135,7 +158,7 @@ This repository is the SelfHelp mobile app. It renders CMS-driven SelfHelp conte
 
 ## Common Tasks
 
-### Add a CMS Style
+### Add Mobile Display Support for a CMS Style
 
 1. Add or update the style type and registry entry in `@selfhelp/shared`.
 2. Build or update the shared package according to the current team workflow.
@@ -145,6 +168,9 @@ This repository is the SelfHelp mobile app. It renders CMS-driven SelfHelp conte
 6. Register the implementation in `components/styles/index.ts`.
 7. Update the web renderer too if the shared registry requires parity.
 8. Run `npm run typecheck`, `npm run lint`, and `npm test`.
+9. Keep the style component small. If it needs complex behavior, split it into local subcomponents, hooks, styles, and types using the 4-file pattern.
+10. Reuse existing renderer helpers before creating new parsing logic.
+11. Do not add CMS page/style authoring UI here. Mobile only displays and interacts with CMS payloads created elsewhere.
 
 ### Add an API Request
 
@@ -177,11 +203,15 @@ This repository is the SelfHelp mobile app. It renders CMS-driven SelfHelp conte
 - Do not render CMS children with `section.children.map(...)`.
 - Do not use the web `css` field on mobile.
 - Do not bypass the shared CMS class allow-list.
+- Do not build CMS page builders, CMS configuration screens, or CMS content editing tools in this mobile app.
 - Do not persist secrets outside `secureStore`.
 - Do not add native modules without updating Expo config and checking build impact.
 - Do not change provider order or auth bootstrap timing casually.
 - Do not change public routes, shared endpoints, or style names without documenting downstream impact.
 - Do not rely on Expo Web preview alone for native-only features.
+- Do not create huge components that handle rendering, API calls, state, validation, and side effects together.
+- Do not move code to shared folders unless it is actually reused or clearly domain-independent.
+- Do not create generic abstractions that make CMS style rendering harder to understand.
 
 ## Open Questions
 
