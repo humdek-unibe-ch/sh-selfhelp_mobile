@@ -85,6 +85,26 @@ This repository is the SelfHelp mobile frontend app. It displays end-user pages 
 - Small style components may stay single-file.
 - Use `debugLogger` or dev-gated logging. Do not add `console.log`; lint warns on it.
 
+## Accessibility Rules
+
+- Treat accessibility as a default requirement for every screen, CMS style component, form, and interactive element, not as a later enhancement.
+- Prefer native React Native controls and HeroUI Native primitives when they provide better built-in accessibility behavior.
+- Every interactive element must have an appropriate accessibility role, readable label, and state when relevant, such as selected, checked, disabled, expanded, or busy.
+- Do not rely on color, opacity, icon-only UI, or motion alone to communicate meaning, validation state, status, or required actions.
+- All tappable controls must have a sufficiently large touch target. If the visual control is small, expand the hit area with `hitSlop` or layout spacing.
+- Images and non-text media that convey meaning must have accessible labels or text alternatives. Decorative media should be hidden from assistive technology when appropriate.
+- Inputs must expose clear labels, required state, current value where useful, and validation errors in a way that screen readers can understand.
+- When showing validation, submission, loading, success, or error states, make sure the change is announced or otherwise exposed accessibly instead of only changing visuals.
+- Preserve logical reading and focus order. Do not create layouts that visually reorder content in a way that becomes confusing for screen readers or keyboard users.
+- After navigation, modal open/close, or major dynamic content changes, ensure focus lands somewhere sensible for keyboard and assistive technology users.
+- Support dynamic type and font scaling. Do not block text scaling unless there is a documented product reason and an explicit review.
+- Keep text contrast and interactive-state contrast high enough to remain readable in real mobile conditions, including low brightness and outdoor use.
+- Avoid flashing, rapid repeated animation, or motion-heavy interactions that can create accessibility or vestibular issues. Respect reduced-motion preferences when feasible.
+- For CMS-rendered content, preserve accessibility metadata during field parsing and style dispatch. Do not strip meaningful labels, headings, helper text, or semantic intent from payloads.
+- Use headings, grouped sections, and descriptive button/link text so screen-reader users can understand structure without reading every node in order.
+- Do not use placeholder text as the only label or instruction for a field.
+- Test both authenticated and public flows with screen-reader and keyboard-style navigation in mind when changing navigation, forms, or renderer behavior.
+
 ## AI Agent Rules
 
 - Inspect nearby code, docs, and existing patterns before changing files.
@@ -137,6 +157,7 @@ This repository is the SelfHelp mobile frontend app. It displays end-user pages 
 - `npm run lint` runs ESLint flat config. Existing warnings are present; do not add new warnings.
 - Add or update tests when changing registry behavior, scripts, shared-contract handling, or parsing/normalization logic.
 - For UI and renderer changes, smoke test with `npm run web`; verify native-only behavior on Android or iOS when it involves push, camera, audio, permissions, or HeroUI Native primitives.
+- For accessibility-sensitive UI changes, verify labels, roles, focus order, dynamic type, contrast, and error messaging with screen-reader-friendly flows on device or emulator when practical.
 
 ## Build / Dev Commands
 
@@ -212,3 +233,6 @@ This repository is the SelfHelp mobile frontend app. It displays end-user pages 
 - Do not create huge components that handle rendering, API calls, state, validation, and side effects together.
 - Do not move code to shared folders unless it is actually reused or clearly domain-independent.
 - Do not create generic abstractions that make CMS style rendering harder to understand.
+- Do not ship interactive UI without accessibility labels, roles, and state when those semantics are required.
+- Do not use color alone to show errors, success, selection, or importance.
+- Do not hide important instructions or validation details inside placeholders only.
