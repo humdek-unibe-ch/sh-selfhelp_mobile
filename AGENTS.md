@@ -105,6 +105,19 @@ This repository is the SelfHelp mobile frontend app. It displays end-user pages 
 - Do not use placeholder text as the only label or instruction for a field.
 - Test both authenticated and public flows with screen-reader and keyboard-style navigation in mind when changing navigation, forms, or renderer behavior.
 
+## Engineering Principles
+
+- Think before coding. State assumptions explicitly when they affect implementation or verification.
+- If multiple interpretations are plausible, prefer the simplest one and mention the alternative briefly when it matters.
+- Ask questions only when ambiguity materially changes the implementation or carries real risk.
+- Prefer the simplest correct solution. Push back on unnecessary complexity, configurability, or abstraction.
+- Implement only what was requested. Avoid speculative helpers, options, and edge-case handling unless there is a realistic need.
+- Make surgical changes: change only what is needed, match the surrounding style, and do not refactor unrelated code.
+- Remove code only when your change makes it clearly unused.
+- Establish success criteria before changing code and verify against them before stopping.
+- For bug fixes: reproduce the issue, identify the minimal cause, implement the smallest reasonable fix, verify it, then stop.
+- For features: define success criteria, implement the minimal solution, verify behavior, then stop.
+
 ## AI Agent Rules
 
 - Inspect nearby code, docs, and existing patterns before changing files.
@@ -117,6 +130,13 @@ This repository is the SelfHelp mobile frontend app. It displays end-user pages 
 - Preserve user changes in the worktree. Do not revert unrelated edits.
 - Update docs and tests when changing architecture, commands, renderer behavior, API contracts, or build flow.
 - Run the relevant checks before handing off: usually `npm run typecheck`, `npm run lint`, and `npm test`.
+
+## Multi-Repository Changes
+
+- Read the `AGENTS.md` of every affected repository before making changes.
+- Follow repository-specific rules even when they differ between repositories.
+- Keep changes isolated to the repository being modified.
+- Do not apply conventions from one repository to another unless that convention is explicitly documented there.
 
 ## Security Rules
 
