@@ -137,6 +137,56 @@ This repository is the SelfHelp mobile frontend app. It displays end-user pages 
 - Follow repository-specific rules even when they differ between repositories.
 - Keep changes isolated to the repository being modified.
 - Do not apply conventions from one repository to another unless that convention is explicitly documented there.
+- Plugin-related work touches this repo plus `D:\TPF\SelfHelp\sh-selfhelp_backend`, `D:\TPF\SelfHelp\sh-selfhelp_frontend`, `D:\TPF\SelfHelp\sh-selfhelp_shared`, and the affected plugin repo under `D:\TPF\SelfHelp\plugins\`. The canonical Multi-Repository AGENTS.md Rule lives at `D:\TPF\SelfHelp\sh-selfhelp_backend\docs\plugins\multi-repo-agents-md.md`.
+
+## Plugin Ecosystem Rules (mobile side)
+
+Mobile plugins ship as a separate npm package (`@<vendor>/<plugin-id>-mobile`). Because React Native cannot safely load arbitrary JavaScript at runtime, mobile plugin support is **bundled per EAS profile**: each CMS instance produces its own mobile binary that includes the plugin packages it needs.
+
+### Extension points only
+
+- The `styleImpls` map in `components/styles/index.ts` becomes seeded with core styles, then merged with plugin styles registered by the SDK at boot.
+- Plugin-supplied style implementations must be registered through `@selfhelp/shared/plugin-sdk` `defineMobilePlugin({ styles: {...} })`. Do not hardcode plugin styles in this repo.
+- Plugin admin/CMS-authoring flows are not supported on mobile. Mobile only displays plugin-supplied participant-facing UI.
+- Unknown plugin styles (declared by the backend but missing on this mobile build) must fall through `UnknownStyle` with an "Open on web" CTA. Never crash, never silently render nothing.
+
+### Per-EAS-profile plugin set
+
+- `selfhelp.plugins.lock.json` from the matching backend deployment is checked into `dist/` (or a known location) as the source of truth for the mobile build.
+- `scripts/sync-plugins.mjs` reads the lock file's `mobile` block and generates `plugins/registered.ts` so Metro bundles only the plugin packages this EAS profile supports.
+- Each production instance therefore has its own pinned plugin set; `eas update --branch <profile>` ships new plugin code to existing installs without store review.
+
+### Realtime, no polling
+
+Plugin progress, dashboards, chat, collaborative editing, file uploads, LLM runs, notifications, and form validation use the mobile equivalent of `usePluginRealtime(pluginId, topic, topicParams)` from `@selfhelp/shared/plugin-sdk` over `react-native-sse`. Polling is allowed ONLY for:
+
+- Initial bootstrap (one-shot manifest fetch + lookup fetch).
+- Offline fallback when SSE is unavailable.
+- Emergency compatibility mode (when Mercure is intentionally disabled per-instance).
+
+The offline fallback presents a manual refresh button + banner "Realtime updates unavailable". It is NOT a `setInterval` poller.
+
+### Version mismatch handling
+
+- Mobile reads the backend manifest at startup. For every style declared by a plugin without a bundled mobile impl, the renderer marks the style as "web-only" and `UnknownStyle` renders an "Open on web" CTA with the deep link.
+- If the backend declares `<plugin>@1.2.0` but the bundled mobile package is `1.0.0`, the renderer shows a yellow "Plugin update required" banner in dev builds; production silently downgrades to web-only.
+- The renderer never crashes on a missing plugin.
+
+### Mobile plugin SDK boundary
+
+The only file mobile plugins should import from the SelfHelp side is `@selfhelp/shared/plugin-sdk`. Do not export new mobile APIs to plugins through ad-hoc paths; extend the SDK in `sh-selfhelp_shared` and depend on it from this repo.
+
+### Plugin version semantics
+
+Same as the rest of the ecosystem:
+
+- **patch** — code change only.
+- **minor** — always carries a DB change on the backend.
+- **major** — breaking change. Mobile may auto-downgrade affected styles until the corresponding EAS update ships.
+
+### Lookup-driven enums
+
+Do not hardcode enum string unions in plugin-related mobile components. Consume lookups through the existing lookup hook (same pattern as the frontend).
 
 ## Security Rules
 

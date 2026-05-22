@@ -27,3 +27,5 @@ secrets/
 
 expo-env.d.ts
 # @end expo-cli
+
+AGENTS.local.md
