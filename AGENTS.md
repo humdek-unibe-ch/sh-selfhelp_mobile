@@ -137,7 +137,7 @@ This repository is the SelfHelp mobile frontend app. It displays end-user pages 
 - Follow repository-specific rules even when they differ between repositories.
 - Keep changes isolated to the repository being modified.
 - Do not apply conventions from one repository to another unless that convention is explicitly documented there.
-- Plugin-related work touches this repo plus `D:\TPF\SelfHelp\sh-selfhelp_backend`, `D:\TPF\SelfHelp\sh-selfhelp_frontend`, `D:\TPF\SelfHelp\sh-selfhelp_shared`, and the affected plugin repo under `D:\TPF\SelfHelp\plugins\`. The canonical Multi-Repository AGENTS.md Rule lives at `D:\TPF\SelfHelp\sh-selfhelp_backend\docs\plugins\multi-repo-agents-md.md`.
+- Plugin-related work touches this repo plus the sibling repositories `sh-selfhelp_backend`, `sh-selfhelp_frontend`, `sh-selfhelp_shared`, and the affected plugin repo under `plugins/<plugin-id>/`. The canonical Multi-Repository AGENTS.md Rule lives at `sh-selfhelp_backend/docs/plugins/multi-repo-agents-md.md`. Use repository-relative paths; never hard-code an absolute path for your local machine.
 
 ## Plugin Ecosystem Rules (mobile side)
 

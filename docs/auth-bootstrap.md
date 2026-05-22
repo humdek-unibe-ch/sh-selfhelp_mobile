@@ -288,5 +288,6 @@ to inspect the SecureStore artefact.
   render would re-trigger the suspense fallback and remount the tree).
 - `hooks/useAclEventStream.ts` — Mercure subscription hook.
 - `app/_layout.tsx` — splash gate + `ServerStatusGate`.
-- `D:/TPF/SelfHelp/sh-selfhelp_backend/docker-compose.mercure.yml` —
-  Mercure hub CORS allow-list (Expo Web origin must be listed).
+- `docker-compose.mercure.yml` in the backend repo
+  (`sh-selfhelp_backend/docker-compose.mercure.yml`) — Mercure hub
+  CORS allow-list (Expo Web origin must be listed).

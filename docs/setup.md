@@ -37,12 +37,14 @@ The `file:` dependency in `package.json` resolves the shared package directly fr
 
 ## Install
 
+Run the commands from inside each repository's root. The `cd` commands below assume the three SelfHelp repositories are checked out as siblings under your workspace folder; substitute your actual path if you keep them elsewhere.
+
 ```bash
-cd D:/TPF/SelfHelp/sh-selfhelp_shared
+cd ../sh-selfhelp_shared
 npm install
 npm run build
 
-cd D:/TPF/SelfHelp/sh-selfhelp_mobile
+cd ../sh-selfhelp_mobile
 npm install
 ```
 
