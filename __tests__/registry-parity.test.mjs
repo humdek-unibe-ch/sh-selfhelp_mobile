@@ -33,10 +33,16 @@ const extractStyleNames = () => {
     const registrySource = readFileSync(registryPath, 'utf-8');
     const implSource = readFileSync(indexPath, 'utf-8');
 
-    // Match keys inside `STYLE_REGISTRY = { ... }` — anything before `:`.
+    // Match keys inside the `BASE_STYLE_REGISTRY = { ... }` block only.
+    // Other `: {` patterns (like helper-function parameter types) must
+    // not be picked up, so we scope the regex to the block first.
     const registryRegex = /^\s+(?:'([^']+)'|([a-zA-Z][a-zA-Z0-9_-]*)):\s*\{/gm;
+    const registryBlockMatch = registrySource.match(
+        /BASE_STYLE_REGISTRY\s*=\s*\{([\s\S]*?)\n\}\s*as\s*const/,
+    );
+    const registryBlock = registryBlockMatch ? registryBlockMatch[1] : '';
     const registryKeys = new Set();
-    for (const m of registrySource.matchAll(registryRegex)) {
+    for (const m of registryBlock.matchAll(registryRegex)) {
         const key = m[1] ?? m[2];
         if (key && !key.startsWith('description') && !key.startsWith('category')) {
             registryKeys.add(key);
@@ -75,13 +81,17 @@ for (const category of KNOWN_CATEGORIES) {
         const registryPath = resolve(ROOT, '..', 'sh-selfhelp_shared', 'src', 'registry', 'styles.registry.ts');
         const source = readFileSync(registryPath, 'utf-8');
 
-        // Match { ... category: 'X' ... } blocks
+        const registryBlockMatch = source.match(
+            /BASE_STYLE_REGISTRY\s*=\s*\{([\s\S]*?)\n\}\s*as\s*const/,
+        );
+        const registryBlock = registryBlockMatch ? registryBlockMatch[1] : '';
+
         const blockRegex = new RegExp(
             `^\\s+(?:'([^']+)'|([a-zA-Z][a-zA-Z0-9_-]*)):\\s*\\{[^}]*category:\\s*'${category}'`,
             'gm'
         );
         const styles = [];
-        for (const m of source.matchAll(blockRegex)) {
+        for (const m of registryBlock.matchAll(blockRegex)) {
             const key = m[1] ?? m[2];
             if (key) styles.push(key);
         }
