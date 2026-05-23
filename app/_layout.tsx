@@ -47,6 +47,7 @@ import { FloatingDebugPanel } from '@/components/dev/FloatingDebugPanel';
 import { PhoneFrame } from '@/components/dev/PhoneFrame';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
 import { LoadingScreen } from '@/components/feedback/LoadingScreen';
+import { PluginVersionMismatchBanner } from '@/components/plugin-runtime/PluginVersionMismatchBanner';
 import { checkSelectedServer } from '@/services/serverSelectionService';
 import { useAuthStore } from '@/stores/authStore';
 import { useServerStore } from '@/stores/serverStore';
@@ -155,11 +156,14 @@ function RootStackInner(): React.ReactElement {
         <>
             <StatusBar style="auto" />
             <ServerStatusGate canSwitchServers={canSwitchServers} serverUrl={serverUrl}>
-                <Stack screenOptions={{ headerShown: false }}>
-                    <Stack.Screen name="(app)" options={{ headerShown: false }} />
-                    <Stack.Screen name="(public)" options={{ headerShown: false }} />
-                    <Stack.Screen name="(dev)" options={{ headerShown: false }} />
-                </Stack>
+                <>
+                    <PluginVersionMismatchBanner />
+                    <Stack screenOptions={{ headerShown: false }}>
+                        <Stack.Screen name="(app)" options={{ headerShown: false }} />
+                        <Stack.Screen name="(public)" options={{ headerShown: false }} />
+                        <Stack.Screen name="(dev)" options={{ headerShown: false }} />
+                    </Stack>
+                </>
             </ServerStatusGate>
         </>
     );

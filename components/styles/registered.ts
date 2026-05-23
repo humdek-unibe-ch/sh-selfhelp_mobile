@@ -28,3 +28,13 @@ export const registeredPluginStyleImpls: TPluginStyleImplMap = {};
  * a deep link to the web host.
  */
 export const registeredPluginStyleOwners: Record<string, string> = {};
+
+/**
+ * Plugin id → version bundled into this EAS build, as recorded by
+ * `plugins-sync.mjs` from `selfhelp.plugins.mobile.lock.json`. The
+ * runtime version-mismatch banner compares each entry here against
+ * the live `/cms-api/v1/plugins/manifest` response and warns the
+ * operator when the host installed a newer plugin release than the
+ * one currently shipped in the app binary (a rebuild is required).
+ */
+export const registeredPluginVersions: Record<string, string> = {};

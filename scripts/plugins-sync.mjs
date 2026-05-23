@@ -156,6 +156,8 @@ function buildRegisteredFile(lock) {
         lines.push('');
         lines.push('export const registeredPluginStyleOwners: Record<string, string> = {};');
         lines.push('');
+        lines.push('export const registeredPluginVersions: Record<string, string> = {};');
+        lines.push('');
         return lines.join('\n');
     }
 
@@ -202,6 +204,15 @@ function buildRegisteredFile(lock) {
 
     lines.push('export const registeredPluginStyleImpls: TPluginStyleImplMap = buildStyleImpls();');
     lines.push('export const registeredPluginStyleOwners: Record<string, string> = buildOwners();');
+    lines.push('');
+
+    lines.push('export const registeredPluginVersions: Record<string, string> = {');
+    for (const plugin of lock.plugins) {
+        const id = JSON.stringify(plugin.id);
+        const version = JSON.stringify(plugin.version);
+        lines.push(`    ${id}: ${version},`);
+    }
+    lines.push('};');
     lines.push('');
 
     return lines.join('\n');

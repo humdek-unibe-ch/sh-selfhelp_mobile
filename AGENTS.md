@@ -152,8 +152,9 @@ Mobile plugins ship as a separate npm package (`@<vendor>/<plugin-id>-mobile`). 
 
 ### Per-EAS-profile plugin set
 
-- `selfhelp.plugins.lock.json` from the matching backend deployment is checked into `dist/` (or a known location) as the source of truth for the mobile build.
-- `scripts/sync-plugins.mjs` reads the lock file's `mobile` block and generates `plugins/registered.ts` so Metro bundles only the plugin packages this EAS profile supports.
+- `selfhelp.plugins.mobile.lock.json` from the matching backend deployment is checked into `dist/` (or a known location) as the source of truth for the mobile build.
+- `scripts/plugins-sync.mjs` reads the lock file and regenerates `components/styles/registered.ts` (plus the matching `package.json` dependencies) so Metro bundles only the plugin packages this EAS profile supports.
+- The generated `registered.ts` also exports `registeredPluginVersions` (plugin id → bundled version). The runtime version-mismatch banner at `components/plugin-runtime/PluginVersionMismatchBanner.tsx` compares it against the live `/cms-api/v1/plugins/manifest` response and warns the operator when the host is on a newer or older plugin release than the app binary.
 - Each production instance therefore has its own pinned plugin set; `eas update --branch <profile>` ships new plugin code to existing installs without store review.
 
 ### Realtime, no polling
