@@ -4,15 +4,13 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 /**
- * Sync mobile plugin packages for an EAS profile.
+ * Sync mobile plugin packages.
  *
  * Reads the live plugin manifest from `/cms-api/v1/plugins/manifest`
- * (or a snapshot lock file pinned to a release), filters to the
- * mobile packages that should be bundled for the given EAS profile,
- * and writes:
+ * (or a snapshot lock file pinned to a release) and writes:
  *
- *   1. `selfhelp.plugins.mobile.lock.json` — pinned per-profile
- *      mobile plugin entries (deterministic CI input).
+ *   1. `selfhelp.plugins.mobile.lock.json` — pinned mobile plugin
+ *      entries (deterministic CI input).
  *   2. `components/styles/registered.ts` — generated TypeScript that
  *      imports every bundled plugin's `registerMobile` and merges the
  *      contributed style impls into the mobile renderer.
@@ -20,9 +18,15 @@ SPDX-License-Identifier: MPL-2.0
  *      under `dependencies` so they are installed by `npm install`
  *      before the EAS build runs.
  *
- * Plugins that ship NO mobile package (or whose mobile package is not
- * bundled in this profile) are NOT included; the runtime falls back
- * to `OpenOnWebFallback` for those styles.
+ * The backend manifest exposes flat fields only:
+ *   - `pluginId`, `version`, `pluginApiVersion`
+ *   - `mobilePackage`, `mobilePackageVersion`
+ *
+ * Plugins without a `mobilePackage` are skipped; the mobile runtime
+ * falls back to `OpenOnWebFallback` for their styles. The `<profile>`
+ * argument is recorded as a label on the lock file (e.g. for audit
+ * trails per EAS build profile) — it does NOT filter the plugin set,
+ * because the backend manifest does not expose per-profile metadata.
  *
  * Usage:
  *   node scripts/plugins-sync.mjs <profile> [--backend URL] [--dry-run]
@@ -99,28 +103,44 @@ async function fetchManifest(url) {
     return payload;
 }
 
-function isBundledForProfile(pluginEntry, requestedProfile) {
-    if (!pluginEntry.mobile) return false;
-    if (Array.isArray(pluginEntry.mobile.profiles) && pluginEntry.mobile.profiles.length > 0) {
-        return pluginEntry.mobile.profiles.includes(requestedProfile);
+function assertPluginShape(plugin, idx) {
+    if (typeof plugin !== 'object' || plugin === null) {
+        throw new Error(`manifest.plugins[${idx}] is not an object.`);
     }
-    return true;
+    if (typeof plugin.pluginId !== 'string' || plugin.pluginId === '') {
+        throw new Error(`manifest.plugins[${idx}].pluginId must be a non-empty string.`);
+    }
+    if (typeof plugin.version !== 'string' || plugin.version === '') {
+        throw new Error(`manifest.plugins[${idx}].version must be a non-empty string.`);
+    }
 }
 
 function buildLock(manifest, requestedProfile) {
     const entries = [];
-    for (const plugin of manifest.plugins ?? []) {
-        if (!isBundledForProfile(plugin, requestedProfile)) continue;
+    const skipped = [];
+    const plugins = manifest.plugins ?? [];
+    for (let i = 0; i < plugins.length; i++) {
+        const plugin = plugins[i];
+        assertPluginShape(plugin, i);
+        if (typeof plugin.mobilePackage !== 'string' || plugin.mobilePackage === '') {
+            skipped.push(plugin.pluginId);
+            continue;
+        }
         entries.push({
-            id: plugin.id,
+            id: plugin.pluginId,
             version: plugin.version,
-            pluginApiVersion: plugin.pluginApiVersion,
-            package: plugin.mobile.package,
-            packageVersion: plugin.mobile.version,
-            readonly: Boolean(plugin.mobile.readonly),
+            pluginApiVersion: plugin.pluginApiVersion ?? null,
+            package: plugin.mobilePackage,
+            packageVersion:
+                typeof plugin.mobilePackageVersion === 'string' && plugin.mobilePackageVersion !== ''
+                    ? plugin.mobilePackageVersion
+                    : plugin.version,
         });
     }
     entries.sort((a, b) => a.id.localeCompare(b.id));
+    if (skipped.length > 0) {
+        console.warn(`plugins-sync: skipping ${skipped.length} plugin(s) without mobilePackage: ${skipped.join(', ')}`);
+    }
     return {
         schemaVersion: '1.0',
         generatedBy: `plugins-sync@${requestedProfile}`,
@@ -148,7 +168,6 @@ function buildRegisteredFile(lock) {
         '',
     ];
 
-    const owners = {};
     const styleEntries = [];
 
     if (lock.plugins.length === 0) {
@@ -270,7 +289,11 @@ async function main() {
             console.log(`plugins-sync: wrote ${lockPath} and ${registeredPath} (${lock.plugins.length} plugin(s) bundled for profile ${profile}).`);
         }
     } catch (err) {
-        console.error('plugins-sync:', err.message ?? err);
+        const message = err.message ?? String(err);
+        console.error('plugins-sync:', message);
+        if (message.startsWith('manifest.plugins') || message.includes('mobilePackage')) {
+            process.exit(2);
+        }
         process.exit(1);
     }
 }

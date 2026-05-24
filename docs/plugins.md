@@ -49,14 +49,17 @@ the current build.
 
 ---
 
-## 2. Bundling Plugins Into a Profile
+## 2. Bundling Plugins Into a Build
 
-The mobile build pipeline operates **per EAS profile**. Each profile
-can bundle a different set of plugin packages — useful when an
-on-premise customer needs a subset of plugins, or when a beta channel
-opts in to a plugin not yet promoted to production.
+The mobile build pipeline pins one plugin set per build, captured in
+the per-profile lock file. The `<profile>` argument is a free-form
+label that is recorded in the lock file so reviewers can tell which
+EAS profile a given lock was generated for — it does **not** filter
+the plugin set, because the public manifest endpoint does not expose
+per-profile metadata. To bundle different plugin sets for different
+profiles, run the sync against different CMS environments.
 
-### One-shot per profile
+### One-shot
 
 ```bash
 SELFHELP_API_TOKEN=eyJ... npm run plugins:sync -- \
@@ -67,20 +70,19 @@ SELFHELP_API_TOKEN=eyJ... npm run plugins:sync -- \
 This:
 
 1. Calls `/cms-api/v1/plugins/manifest` with the bearer token.
-2. Selects plugins whose `mobile` entry is bundled for the
-   `production-default` profile (a plugin can pin
-   `mobile.profiles: ["production-default", "production-bern"]` in the
-   live lock or omit the array to mean "all").
-3. Writes `selfhelp.plugins.mobile.lock.json` — the deterministic
-   per-profile lock used by CI.
+2. Selects every enabled plugin whose `mobilePackage` field is set in
+   the manifest. Plugins without a `mobilePackage` are skipped with a
+   warning so a CI log makes the omission explicit.
+3. Writes `selfhelp.plugins.mobile.lock.json` — the deterministic lock
+   used by CI; the `profile` field records the label supplied above.
 4. Regenerates `components/styles/registered.ts` with one import per
    bundled plugin and a `registeredPluginStyleImpls` map keyed by
    plugin style name.
 5. Updates `package.json` `dependencies` with the bundled plugin
    packages and their versions.
 
-Re-run the command (with the same profile) any time the live manifest
-changes upstream and you want the mobile build to follow.
+Re-run the command any time the live manifest changes upstream and
+you want the mobile build to follow.
 
 ### Dry run
 
@@ -143,9 +145,10 @@ chain:
 The fallback never crashes the page. It is the intended UX for:
 
 - plugins that don't ship a mobile package at all (web-only);
-- plugins whose mobile package is `readonly: true` and the requested
-  section requires an editor;
-- plugins not yet promoted to the current profile.
+- plugins whose backend version is newer than the bundle's resolved
+  SDK range;
+- plugins not yet bundled into the current build (re-run the sync to
+  pick them up).
 
 ---
 
@@ -205,16 +208,16 @@ bundled set. Commit it. A typical entry looks like:
       "version": "1.0.0",
       "pluginApiVersion": "1.0",
       "package": "@selfhelp-mobile/sh2-shp-survey-js",
-      "packageVersion": "1.0.0",
-      "readonly": true
+      "packageVersion": "1.0.0"
     }
   ]
 }
 ```
 
-The `readonly` flag tells the runtime to skip mounting an editor for
-this plugin's style (it won't be rendered at all if the section
-requires editing — the host short-circuits to the web fallback).
+Each entry corresponds 1:1 to the row the backend manifest emits for
+that plugin: `id` ← `pluginId`, `package` ← `mobilePackage`, and
+`packageVersion` ← `mobilePackageVersion` (falling back to `version`
+when the backend leaves the mobile-package version blank).
 
 ---
 
@@ -234,5 +237,5 @@ package from `dependencies`. Commit, build / update.
 | `plugins-sync: --backend <url> is required.`                   | Pass `--backend https://cms.example.com`.                           |
 | 401 fetching `/cms-api/v1/plugins/manifest`                    | Set `SELFHELP_API_TOKEN` in the shell or CI secret store.            |
 | `registered.ts` imports fail at Metro bundle time              | The plugin package version pinned by the lock is not yet on the npm registry; publish it first. |
-| Mobile renders `OpenOnWebFallback` for a style you expected    | Either the plugin is missing from this profile, the version doesn't satisfy the SDK range, or the live backend doesn't yet host the plugin. |
+| Mobile renders `OpenOnWebFallback` for a style you expected    | Either the plugin is missing from the current bundle, the version doesn't satisfy the SDK range, or the live backend doesn't yet host the plugin. |
 | Plugin works in dev but fails in EAS build                     | Run `npm run plugins:sync -- <profile>` before `eas build`; CI must do this in the same job. |
