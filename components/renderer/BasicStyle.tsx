@@ -20,10 +20,13 @@ import { useMemo } from 'react';
 import { evaluateCondition, buildConditionContext } from '@selfhelp/shared';
 import type { TPlatform } from '@selfhelp/shared';
 import type { TStyleRegistryKey } from '@selfhelp/shared/registry';
+import { getStylePluginId, isKnownStyleName } from '@selfhelp/shared/registry';
 
 import { DebugWrapper } from './DebugWrapper';
 import { styleImpls } from '@/components/styles';
+import { registeredPluginStyleImpls, registeredPluginStyleOwners } from '@/components/styles/registered';
 import { UnknownStyle } from './UnknownStyle';
+import { OpenOnWebFallback } from './OpenOnWebFallback';
 import type { IStyleProps } from './types';
 
 const PLATFORM: TPlatform = 'mobile';
@@ -38,13 +41,39 @@ export function BasicStyle({ section, values }: IStyleProps): React.ReactElement
 
     if (!conditionOutcome.visible) return null;
 
-    const styleName = section.style_name as TStyleRegistryKey;
-    const Impl = styleImpls[styleName];
-    const Component = Impl ?? UnknownStyle;
+    const rawName = String(section.style_name ?? '');
+
+    if (isKnownStyleName(rawName)) {
+        const Impl = styleImpls[rawName as TStyleRegistryKey];
+        const Component = Impl ?? UnknownStyle;
+        return (
+            <DebugWrapper section={section} conditionOutcome={conditionOutcome}>
+                <Component section={section} values={values} />
+            </DebugWrapper>
+        );
+    }
+
+    const PluginImpl = registeredPluginStyleImpls[rawName];
+    if (PluginImpl) {
+        return (
+            <DebugWrapper section={section} conditionOutcome={conditionOutcome}>
+                <PluginImpl section={section} values={values} />
+            </DebugWrapper>
+        );
+    }
+
+    const ownerPluginId = registeredPluginStyleOwners[rawName] ?? getStylePluginId(rawName);
+    if (ownerPluginId) {
+        return (
+            <DebugWrapper section={section} conditionOutcome={conditionOutcome}>
+                <OpenOnWebFallback section={section} values={values} pluginId={ownerPluginId} />
+            </DebugWrapper>
+        );
+    }
 
     return (
         <DebugWrapper section={section} conditionOutcome={conditionOutcome}>
-            <Component section={section} values={values} />
+            <UnknownStyle section={section} values={values} />
         </DebugWrapper>
     );
 }

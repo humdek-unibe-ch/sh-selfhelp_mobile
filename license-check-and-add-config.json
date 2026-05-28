@@ -1,17 +1,13 @@
 {
-    "folder": "./",
     "license": "header.txt",
-    "ignore_file": ".gitignore",
-    "exact_paths_method": "EXCLUDE",
-    "exact_paths": [
-        "node_modules",
-        ".expo",
-        "ios",
-        "android",
-        "dist",
-        "build",
+    "ignoreFile": ".gitignore",
+    "ignore": [
+        "ios/**",
+        "android/**",
+        ".expo/**",
+        "dist/**",
+        "build/**",
         "package.json",
-        "package-lock.json",
         "tsconfig.json",
         "eas.json",
         "expo-env.d.ts",
@@ -22,17 +18,16 @@
         "README.md",
         "global.css"
     ],
-    "file_type_method": "INCLUDE",
-    "file_types": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"],
-    "insert_license": false,
-    "license_formats": {
-        "ts|tsx|js|jsx|mjs|cjs": {
+    "licenseFormats": {
+        "d.ts|md": {
             "prepend": "/*",
-            "append": " */",
+            "append": "*/"
+        },
+        "yml|yaml": {
             "eachLine": {
-                "prepend": " * "
+                "prepend": "# "
             }
         }
     },
-    "trailing_whitespace": "TRIM"
+    "trailingWhitespace": "TRIM"
 }

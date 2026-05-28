@@ -1,0 +1,104 @@
+# SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+# SPDX-License-Identifier: MPL-2.0
+
+name: plugin-mobile-check
+
+# Plugin mobile check.
+#
+# Validates the React Native plugin surface:
+#   - Style registry parity: every core style published by
+#     `@selfhelp/shared` has a mobile impl (existing
+#     `__tests__/registry-parity.test.mjs` runs via `node --test`).
+#   - TypeScript compiles (catches missing plugin impl signatures).
+#   - `scripts/plugins-sync.mjs --dry-run` is reproducible: running it
+#     against the configured backend must not produce any uncommitted
+#     change in `selfhelp.plugins.lock.json` or
+#     `components/styles/registered.ts`.
+#   - Web export (`expo export -p web`) succeeds. This is a stand-in for
+#     native bundle reachability that a CI runner can actually finish in
+#     a reasonable amount of time without an EAS subscription.
+#
+# Native EAS builds remain on EAS Cloud; this workflow only verifies the
+# JS bundle compiles + the plugin sync stays deterministic.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-check:
+    name: Style parity, type-check, plugins:sync, web export
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout mobile
+        uses: actions/checkout@v4
+        with:
+          path: sh-selfhelp_mobile
+
+      - name: Checkout shared (sibling)
+        uses: actions/checkout@v4
+        with:
+          repository: humdek-unibe-ch/sh-selfhelp_shared
+          ref: main
+          path: sh-selfhelp_shared
+        continue-on-error: true
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: sh-selfhelp_mobile/package-lock.json
+
+      - name: Install dependencies
+        working-directory: sh-selfhelp_mobile
+        run: npm ci --legacy-peer-deps
+
+      - name: License headers
+        working-directory: sh-selfhelp_mobile
+        run: npm run headers:check
+
+      - name: Type-check
+        working-directory: sh-selfhelp_mobile
+        run: npm run typecheck
+
+      - name: Style registry parity tests
+        working-directory: sh-selfhelp_mobile
+        run: npm test
+
+      - name: Plugins sync dry-run
+        working-directory: sh-selfhelp_mobile
+        env:
+          SELFHELP_BACKEND_URL: ${{ vars.SELFHELP_BACKEND_URL }}
+          SELFHELP_API_TOKEN: ${{ secrets.SELFHELP_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SELFHELP_BACKEND_URL:-}" ]; then
+            echo "SELFHELP_BACKEND_URL not set; skipping plugins:sync dry-run."
+            exit 0
+          fi
+          npm run plugins:sync -- --backend "$SELFHELP_BACKEND_URL" --dry-run
+          if [ -n "$(git status --porcelain selfhelp.plugins.lock.json package.json components/styles/registered.ts 2>/dev/null)" ]; then
+            echo "::error::plugins:sync produced uncommitted changes."
+            git status --porcelain
+            exit 1
+          fi
+
+      - name: Expo web export
+        working-directory: sh-selfhelp_mobile
+        env:
+          EXPO_NO_TELEMETRY: '1'
+          EXPO_PUBLIC_API_URL: 'https://example.invalid'
+        run: npm run web:build
+        continue-on-error: true
+        # Allowed to soft-fail because Expo's web export needs a valid
+        # config bundle and EAS profile selection that the CI runner
+        # does not own. The earlier steps are the binding gates.

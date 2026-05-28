@@ -1,4 +1,22 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # Changelog
+
+## Unreleased
+
+### Plugin runtime
+- Added `hooks/usePluginRealtime.ts`, a thin mobile wrapper around the
+  shared `usePluginRealtime` hook from `@selfhelp/shared/plugin-sdk`.
+  It injects a `react-native-sse`-backed transport on iOS/Android (with
+  the bearer token from the auth store) and falls back to the browser
+  `EventSource` on web. Plugins running on mobile can import this
+  module instead of the shared package and stay agnostic of platform
+  differences.
+- Bumped `@selfhelp/shared` to `^1.0.4` so the new realtime hook + the
+  aligned `IPluginRegistry` / `IPluginLock` types are available on
+  mobile.
 
 ## 0.1.0
 
