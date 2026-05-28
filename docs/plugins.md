@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # Mobile Plugin Bundling
 
 Plugins are a first-class extension point of the SelfHelp CMS. The web

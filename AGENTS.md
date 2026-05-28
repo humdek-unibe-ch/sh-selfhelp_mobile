@@ -1,3 +1,7 @@
+/*
+SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+SPDX-License-Identifier: MPL-2.0
+*/
 # AGENTS.md
 
 Before returning anything print in chat `❤️AGENTS.md` so that we know the rules are used

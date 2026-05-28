@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 # SPDX-License-Identifier: MPL-2.0
-#
+
+name: plugin-mobile-check
+
 # Plugin mobile check.
 #
 # Validates the React Native plugin surface:
@@ -18,8 +20,6 @@
 #
 # Native EAS builds remain on EAS Cloud; this workflow only verifies the
 # JS bundle compiles + the plugin sync stays deterministic.
-
-name: plugin-mobile-check
 
 on:
   pull_request:
