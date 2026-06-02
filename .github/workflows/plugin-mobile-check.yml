@@ -35,8 +35,16 @@ permissions:
   contents: read
 
 jobs:
-  mobile-check:
-    name: Style parity, type-check, plugins:sync, web export
+  # GitHub derives the branch-protection required-check name from the job's
+  # `name:` (falling back to the job id). Both are pinned to `mobile-parity`
+  # so the required check documented in
+  # sh-selfhelp_backend/docs/developer/15-testing-guidelines.md →
+  # "Branch protection" literally exists in GitHub Actions. Keep `name:` and
+  # the job id identical and stable; do not replace `name:` with prose, or the
+  # required check silently renames. (This job runs: style-registry parity,
+  # type-check, plugins:sync dry-run, and the Expo web export.)
+  mobile-parity:
+    name: mobile-parity
     runs-on: ubuntu-latest
     timeout-minutes: 30
 

@@ -21,6 +21,12 @@ SPDX-License-Identifier: MPL-2.0
   `e2e/golden/form-action-job.yaml` (mobile twin of the backend
   form→action→job chain) and the `test:renderer` + `test:e2e` npm
   scripts. `plugin-mobile-check.yml` now runs the renderer-helper tests.
+- Pinned the `plugin-mobile-check.yml` gate to `mobile-parity` (both the job id
+  AND the job `name:`) so the GitHub check run is literally `mobile-parity`,
+  matching the canonical branch-protection required check documented in the
+  backend testing guidelines. GitHub derives the required-check name from the
+  job `name:` (falling back to the job id), so the descriptive name was replaced
+  with `mobile-parity` to keep the required check stable and existent.
 - Added `@types/react-dom` (devDependency) to type the `react-dom/server`
   render harness.
 
