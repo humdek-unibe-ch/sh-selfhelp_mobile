@@ -1,0 +1,77 @@
+# SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+# SPDX-License-Identifier: MPL-2.0
+#
+# Golden workflow (mobile): a QA user submits a CMS form, exercising the
+# same form -> action -> scheduled-job chain the backend
+# `FormActionJobChainTest` and the frontend `form-action-job.spec.ts`
+# cover (plan §19.1, Slice 9). The mobile flow asserts the user-visible
+# outcome (the success message); the job side of the chain is verified by
+# the backend golden test against the DB/queue.
+#
+# RELEASE TIER ONLY — runs on a self-hosted macOS runner with a built app
+# + a prepared QA stack (plan §18.2, §28). It is NOT part of
+# `plugin-mobile-check.yml` (that runs on ubuntu without a simulator).
+#
+# Run:
+#   maestro test e2e/golden/form-action-job.yaml \
+#     -e APP_ID=com.selfhelp.dev \
+#     -e QA_EMAIL=qa.user@qa.selfhelp.test -e QA_PASSWORD=*** \
+#     -e QA_FORM_KEYWORD=qa-feedback
+#
+# Every identifier is env-driven (canonical Testing Rule 14: no
+# developer-machine specifics) and uses the QA prefix (Rule 9). Selectors
+# fall back to visible text/placeholders so they survive minor UI changes;
+# tune them against the real build on the runner.
+appId: ${APP_ID}
+env:
+  APP_ID: com.selfhelp.dev
+  APP_SCHEME: selfhelp
+  QA_EMAIL: qa.user@qa.selfhelp.test
+  QA_PASSWORD: change-me
+  QA_FORM_KEYWORD: qa-feedback
+  QA_FORM_FIELD_PLACEHOLDER: "Your message"
+  QA_FORM_VALUE: "qa automated golden entry"
+  QA_SUBMIT_LABEL: "Save"
+  QA_SUCCESS_TEXT: "Success"
+tags:
+  - golden
+  - release
+---
+# 1. Cold start on a clean session.
+- launchApp:
+    clearState: true
+
+# 2. Log in through the CMS Login style (email + password + submit).
+- assertVisible: ".*([Ll]og ?in|[Ss]ign ?in).*"
+- tapOn:
+    id: "input-email"
+    optional: true
+- tapOn: ".*([Ee]mail|[Uu]sername).*"
+- inputText: ${QA_EMAIL}
+- hideKeyboard
+- tapOn: ".*[Pp]assword.*"
+- inputText: ${QA_PASSWORD}
+- hideKeyboard
+- tapOn: ".*([Ll]og ?in|[Ss]ign ?in).*"
+
+# 3. Wait for the authenticated shell (home page renders post-login).
+- assertVisible: ".*([Hh]ome|[Mm]enu|[Pp]rofile).*"
+
+# 4. Deep-link straight to the QA form page (keyword route).
+- openLink: ${APP_SCHEME}://${QA_FORM_KEYWORD}
+
+# 5. Fill the form field and submit.
+- assertVisible:
+    text: ${QA_FORM_FIELD_PLACEHOLDER}
+- tapOn:
+    text: ${QA_FORM_FIELD_PLACEHOLDER}
+- inputText: ${QA_FORM_VALUE}
+- hideKeyboard
+- tapOn:
+    text: ${QA_SUBMIT_LABEL}
+
+# 6. Public effect: the FormUserInput success message appears (Rule 17).
+- assertVisible:
+    text: ".*${QA_SUCCESS_TEXT}.*"
+# 7. No submission error surfaced.
+- assertNotVisible: ".*([Ff]ailed to submit|[Ss]omething went wrong).*"
