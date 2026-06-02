@@ -107,3 +107,52 @@ test('useInterpolatedField returns the raw string when there is nothing to inter
     );
     assert.equal(out, 'Plain text');
 });
+
+// ===== edge cases: fall-through, wrong types, richer interpolation =====
+
+test('readField falls through to the bag when the top-level prop is not field-shaped', () => {
+    // A top-level prop that is an object WITHOUT `content` must not shadow the bag.
+    const section = { name: { notContent: 1 }, fields: { name: { content: 'bag' } } };
+    assert.equal(readField(section, 'name'), 'bag');
+});
+
+test('readField returns non-string content unchanged (object / array / boolean)', () => {
+    assert.deepEqual(readField(sectionWithBag('o', { a: 1 }), 'o'), { a: 1 });
+    assert.deepEqual(readField(sectionWithBag('arr', [1, 2]), 'arr'), [1, 2]);
+    assert.equal(readField(sectionWithBag('flag', false), 'flag'), false);
+});
+
+test('readStringField stringifies non-string content', () => {
+    assert.equal(readStringField(sectionWithBag('b', true), 'b'), 'true');
+    assert.equal(readStringField(sectionWithBag('o', { a: 1 }), 'o'), '[object Object]');
+});
+
+test('readBooleanField treats non-empty objects as truthy and "false" as falsy', () => {
+    assert.equal(readBooleanField(sectionWithBag('o', {}), 'o'), true);
+    assert.equal(readBooleanField(sectionWithBag('arr', []), 'arr'), true);
+    assert.equal(readBooleanField(sectionWithBag('s', 'false'), 's'), false);
+});
+
+test('readNumberField coerces booleans and rejects non-numeric objects', () => {
+    assert.equal(readNumberField(sectionWithBag('n', true), 'n'), 1);
+    assert.equal(readNumberField(sectionWithBag('n', '  5 '), 'n'), 5);
+    assert.equal(readNumberField(sectionWithBag('n', {}), 'n', 0), 0);
+});
+
+test('useInterpolatedField fills multiple placeholders with realistic CMS values', () => {
+    const out = renderHook(() =>
+        useInterpolatedField(
+            sectionWithBag('msg', 'Order {{id}} total {{amount}} ({{active}})'),
+            'msg',
+            { id: 42, amount: 9.5, active: true },
+        ),
+    );
+    assert.equal(out, 'Order 42 total 9.5 (true)');
+});
+
+test('useInterpolatedField leaves unknown placeholders intact', () => {
+    const out = renderHook(() =>
+        useInterpolatedField(sectionWithBag('msg', 'Hi {{missing}}'), 'msg', { name: 'Sam' }),
+    );
+    assert.equal(out, 'Hi {{missing}}');
+});
