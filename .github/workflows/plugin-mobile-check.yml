@@ -6,9 +6,12 @@ name: plugin-mobile-check
 # Plugin mobile check.
 #
 # Validates the React Native plugin surface:
-#   - Style registry parity: every core style published by
-#     `@selfhelp/shared` has a mobile impl (existing
-#     `__tests__/registry-parity.test.mjs` runs via `node --test`).
+#   - Renderer helper unit tests + style registry parity, both via
+#     `node --test` (`npm test`): `__tests__/unit/*` covers the CMS field
+#     readers, `useInterpolatedField`, `buildSectionClasses`, and the
+#     css_mobile classifier (Slice 9); `__tests__/registry-parity.test.mjs`
+#     checks every core style published by `@selfhelp/shared` has a mobile
+#     impl.
 #   - TypeScript compiles (catches missing plugin impl signatures).
 #   - `scripts/plugins-sync.mjs --dry-run` is reproducible: running it
 #     against the configured backend must not produce any uncommitted
@@ -70,7 +73,7 @@ jobs:
         working-directory: sh-selfhelp_mobile
         run: npm run typecheck
 
-      - name: Style registry parity tests
+      - name: Renderer helper + registry parity tests (node --test)
         working-directory: sh-selfhelp_mobile
         run: npm test
 

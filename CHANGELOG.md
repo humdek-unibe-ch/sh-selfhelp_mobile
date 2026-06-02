@@ -6,6 +6,24 @@ SPDX-License-Identifier: MPL-2.0
 
 ## Unreleased
 
+### Testing (ecosystem testing strategy, Slice 9)
+- Added `node --test` unit suites for the renderer helpers under
+  `__tests__/unit/`: the CMS field readers (`readField`,
+  `readStringField`, `readBooleanField`, `readNumberField`),
+  `useInterpolatedField`, `buildSectionClasses`, and the css_mobile
+  classifier (`cssMobileToUniwind`).
+- Added the `__tests__/support/renderMobile.ts` `renderHook` harness
+  (a `react-dom/server` probe — no DOM, no `react-test-renderer`) and
+  `__tests__/support/{register,loader}.mjs`, which let `.test.mjs` import
+  the app's `.ts` helpers directly (Node 22 type-stripping + tsconfig
+  alias / extensionless resolution + the RN `__DEV__` global).
+- Added the release-tier Maestro golden flow
+  `e2e/golden/form-action-job.yaml` (mobile twin of the backend
+  form→action→job chain) and the `test:renderer` + `test:e2e` npm
+  scripts. `plugin-mobile-check.yml` now runs the renderer-helper tests.
+- Added `@types/react-dom` (devDependency) to type the `react-dom/server`
+  render harness.
+
 ### Plugin runtime
 - Added `hooks/usePluginRealtime.ts`, a thin mobile wrapper around the
   shared `usePluginRealtime` hook from `@selfhelp/shared/plugin-sdk`.

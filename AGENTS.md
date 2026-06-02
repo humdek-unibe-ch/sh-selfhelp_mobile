@@ -234,6 +234,52 @@ Do not hardcode enum string unions in plugin-related mobile components. Consume 
 - For UI and renderer changes, smoke test with `npm run web`; verify native-only behavior on Android or iOS when it involves push, camera, audio, permissions, or HeroUI Native primitives.
 - For accessibility-sensitive UI changes, verify labels, roles, focus order, dynamic type, contrast, and error messaging with screen-reader-friendly flows on device or emulator when practical.
 
+### Canonical Testing Rules (all SelfHelp repos)
+
+These are the canonical SelfHelp testing policy, shared verbatim across the backend, frontend, shared package, mobile app, and every plugin repo. They describe the target conventions; this app runs Node's built-in test runner (`node --test`) over registry-parity checks plus renderer-helper unit tests (`__tests__/unit/`, using the `__tests__/support/renderMobile.ts` harness), with one release-tier Maestro golden flow under `e2e/golden/`. A rule applies as soon as the tooling it references exists in this repo.
+
+1. Every new feature ships with at least one automated test at the appropriate layer (unit / integration / contract / E2E).
+2. Every bug fix ships with a regression test that fails before the fix and passes after.
+3. Every new API endpoint ships with a JSON-schema contract test **and** a permission-matrix test (admin/editor/user/guest + at least one negative cross-scope case).
+4. Every new CMS style, action type, scheduled-job type, plugin event subscriber, or plugin realtime topic ships with an integration test for registration → use → cleanup.
+5. Every new business workflow extends a golden-workflow test in `tests/Golden/` (backend) and, where a UI is involved, `e2e/golden/` (frontend / mobile).
+6. Before writing or changing a test, perform a short **test impact analysis**: which workflow can break, which services/controllers/screens/plugin contracts are touched, which existing tests should fail, which new regression test is needed. Tests existing only to inflate coverage are rejected.
+7. Tests do not depend on developer credentials. Use the seeded `qa.admin/editor/user/guest@selfhelp.test` personas.
+8. QA fixtures use the production permission model. Seed test users through the same `Lookup userStatus/userTypes`, `Group`, `Role`, and `rel_groups_users` entities that production `src/Command/CreateAdminUserCommand.php` uses. Special permissions go through normal admin/domain services, never raw SQL.
+9. All test data writes use the `qa.` / `qa-` / `qa_` prefix. Tests never create/update/delete non-QA business records. Read-only access to system baselines (languages, permissions, styles, lookups, plugin metadata, role/group/page-type) is allowed.
+10. Tests self-clean (DAMA transaction rollback or an explicit `afterEach`). Integration/golden tests pass the `QaCleanupVerifier` (or the per-repo equivalent).
+11. Do not mock domain behaviour in integration/golden tests. Unit tests may use deterministic test doubles but must not hide real business logic. Mock external dependencies (network, time, filesystem) at the boundary only.
+12. Date/time tests use `Symfony\Bridge\PhpUnit\ClockMock` (PHP), `vi.useFakeTimers()` (Vitest), or `page.clock.install()` (Playwright).
+13. Mercure events are verified via `MercureTestRecorder` (backend) or `mockMercureHub` (shared); never by polling.
+14. Anti-flakiness: no `sleep()`, no external internet, no random IDs in fixtures or assertions, no order-dependent tests, no developer-machine absolute paths.
+15. The full suite passes in random order. `composer test:random` (or the per-repo equivalent) runs nightly.
+16. Test names describe business behaviour, not the method under test (e.g. `testFinishedFormSubmissionSchedulesAndExecutesActionEmailJob`, not `testSubmit`).
+17. Prefer asserting public/domain-visible effects (API response, admin API view of scheduled jobs, Mercure event, rendered page) before internal implementation details. DB/queue assertions are secondary or a fallback.
+18. Snapshot updates (Vitest, Playwright screenshots, response fixtures) must be intentional: the change is expected, the PR explains why, and a reviewer can compare before/after. Never run `--update-snapshots` just to make CI green.
+19. Performance: any test slower than 10s is `@group golden` under `tests/Golden/` (or the per-repo golden area). PR-tier suites complete in under 10 minutes per repo.
+20. Coverage gates: ≥ 70% line on `src/Service/**` + `src/Controller/**` (backend); ≥ 60% on new files (other repos). PRs dropping coverage by > 1% on changed files are blocked.
+21. Use the standard test commands defined in this repo's Build / Dev Commands section. Never invent new test command names.
+22. Tests assert **meaningful behaviour**, not just status codes. At minimum: status + envelope shape + key returned fields + one public side effect.
+23. **Do not change production logic to make tests pass.** If a test reveals a production issue, fix the production code and explain in the PR. If the test expectation is wrong, fix the test.
+24. **Smallest runnable proof**: after every 1–3 file changes, run `test:changed` (or the single new test file). Do not extend a slice while its current state is red for an unknown reason.
+25. **Contract tests for FE/mobile/plugin-consumed responses**: every API response field consumed by frontend, mobile, or plugin code must exist in a JSON Schema under `config/schemas/api/v1/` plus a TypeScript type in `@selfhelp/shared`. Schema drift fails CI. Consumers must not depend on undocumented response fields.
+26. **Negative-permission tests are mandatory** for every permission-sensitive endpoint: allowed user → success; lower-privileged user → 403; unauthenticated user → 401; cross-scope/group user → 403 or 404 per the established access rule.
+27. **Security regression tests** are required for any change to authentication, authorization, CSRF, JWT issuance/refresh/revocation, logout/session invalidation, plugin trust level or capabilities, or ACL cache invalidation. Security tests assert failure behaviour, not only success.
+28. **API backward compatibility**: do not remove or rename a response field without (a) a schema version bump, (b) a shared TS type update, (c) frontend/mobile/plugin adaptation in the same PR, and (d) a changelog entry.
+29. **Performance budgets** for critical APIs are asserted in smoke/golden tests: login < 500 ms, admin pages list < 1000 ms, form submit < 1000 ms in the test env. Regressions above 2× the budget block PRs; 1.5×–2× warns.
+30. **No real outbound** in tests: tests never send real email/SMS/push/webhooks/external HTTP. Use `RecordingNotifier`, MSW, or a mocked HTTP client, and assert the content of the captured message.
+31. **Environment isolation**: test reset commands refuse to run unless `APP_ENV=test`, the database name contains `_test`, the host is in the allow-list, and `--force` is provided. Reset prints the target database name before destroying it.
+32. **Fixture version**: `QaBaselineFixture` exposes `QA_FIXTURE_VERSION`; smoke tests print and assert it. Stale fixtures fail fast with a clear message.
+33. **CI failure artifacts**: CI uploads PHPUnit logs, coverage report, Playwright traces/videos/screenshots, docker container logs, and a sanitized test DB dump for failed golden tests.
+34. **Accessibility checks** for Playwright golden specs use axe-core on the login page, admin page editor, public form page, and plugin admin page.
+
+### Mobile-specific testing additions
+
+- Renderer helpers (`useField`, `readField`, `readStringField` / `readBooleanField` / `readNumberField`, `useInterpolatedField`, `buildSectionClasses`) require a `node --test` unit test under `__tests__/unit/`. Hooks are exercised through `renderHook` from `__tests__/support/renderMobile.ts` (a `react-dom/server` probe — no DOM, no `react-test-renderer`). `.test.mjs` files import the app's `.ts` helpers directly: Node 22 strips types, and `__tests__/support/register.mjs` (preloaded via `--import`) registers the tsconfig-alias / extensionless resolve hook and the RN `__DEV__` global.
+- A new CMS style impl extends `__tests__/registry-parity.test.mjs` and adds a renderer snapshot under `__tests__/renderer/` (snapshot harness `__tests__/support/renderMobile.ts`).
+- The mobile golden workflow (`form → action → job`) lives at `e2e/golden/form-action-job.yaml` (Maestro). It is release-tier (self-hosted macOS + a QA stack) and is NOT part of `plugin-mobile-check.yml`.
+- Standard mobile test commands: `npm test`, `npm run typecheck`, `npm run lint`, `npm run test:renderer`, and `npm run test:e2e` (Maestro, release-tier). Do not invent new names.
+
 ## Build / Dev Commands
 
 - `npm install`: install dependencies.
