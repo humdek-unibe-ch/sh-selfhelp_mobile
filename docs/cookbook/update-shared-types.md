@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Update shared types
 
+Audience: Developers extending the system.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime code and the established patterns it follows.
+
 The `sh-selfhelp_shared` package is consumed by both the web frontend and the mobile app via `file:` deps. Bumping types means updating both sides in lockstep.
 
 ## When to touch shared

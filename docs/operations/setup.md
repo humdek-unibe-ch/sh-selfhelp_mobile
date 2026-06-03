@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Setup
 
+Audience: Operators and deployers.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime configuration, environment variables, scripts, and deployment services.
+
 End-to-end installation guide for the SelfHelp Mobile app. If you only want to run the app on web for fast iteration, jump straight to **Web preview**.
 
 ## Prerequisites
@@ -69,7 +75,7 @@ APP_EAS_PROJECT_ID=
 APP_EAS_UPDATE_URL=
 ```
 
-For dev builds you can leave `APP_BACKEND_URL` empty — the dev server picker handles backend selection at runtime. For production builds the URL is baked at build time (see [builds.md](builds.md)).
+For dev builds you can leave `APP_BACKEND_URL` empty — the dev server picker handles backend selection at runtime. For production builds the URL is baked at build time (see [builds.md](./builds.md)).
 
 ## Web preview
 

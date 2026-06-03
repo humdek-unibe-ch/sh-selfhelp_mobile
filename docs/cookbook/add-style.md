@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Add a new CMS style
 
+Audience: Developers extending the system.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime code and the established patterns it follows.
+
 End-to-end recipe for introducing a new style (web + mobile).
 
 ## 1. Define the schema in shared
@@ -63,7 +69,7 @@ export function FancyButton({ section, values }: IStyleProps): React.ReactElemen
 }
 ```
 
-For non-trivial bodies, follow the [4-file pattern](../styling/component-pattern.md).
+For non-trivial bodies, follow the [4-file pattern](../developer/styling/component-pattern.md).
 
 ## 5. Register the impl
 

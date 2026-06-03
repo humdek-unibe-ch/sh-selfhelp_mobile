@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Add a new SelfHelp instance
 
+Audience: Developers extending the system.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime code and the established patterns it follows.
+
 Each customer gets their own production-grade build profile (`production-{slug}`), bundle id, package name, deep-link scheme, and store listing. This is how a single codebase ships as N apps.
 
 ## 1. Pick the instance slug

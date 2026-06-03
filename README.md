@@ -63,7 +63,7 @@ If the mobile app points to a LAN IP, Symfony must trust that host too. Example:
 SYMFONY_TRUSTED_HOSTS='^(localhost|127\.0\.0\.1|192\.168\.1\.58)'
 ```
 
-Replace `192.168.1.58` with your machine's current LAN IP. See [docs/server-selection.md](docs/server-selection.md) for the full Expo Go and backend setup.
+Replace `192.168.1.58` with your machine's current LAN IP. See [docs/operations/server-selection.md](docs/operations/server-selection.md) for the full Expo Go and backend setup.
 
 ## Repo layout
 
@@ -79,7 +79,7 @@ Replace `192.168.1.58` with your machine's current LAN IP. See [docs/server-sele
 | `config/` | Runtime config (instance slug, baked URL, dev servers). |
 | `constants/` | Stable constants (SecureStore keys, query keys). |
 | `assets/` | Splash, icons, fonts. |
-| `docs/` | Setup, builds, deep-linking, push-notifications, cookbook. |
+| `docs/` | Audience-based docs: developer, operations, cookbook, and user guides. |
 | `scripts/` | Build / test helpers. |
 | `app.config.ts` | Per-instance Expo config (reads env vars). |
 | `eas.json` | EAS Build / Submit profiles (`development`, `preview`, `production-{slug}`). |
@@ -88,12 +88,12 @@ Replace `192.168.1.58` with your machine's current LAN IP. See [docs/server-sele
 
 ## Documentation
 
-See `docs/` for the full guide. Highlights:
-- `docs/architecture.md` - how the renderer + shared package + backend fit together.
-- `docs/auth-bootstrap.md` - server restore, auth persistence, refresh, direct reloads, and live updates.
-- `docs/builds.md` - EAS profiles, signing, store submission.
-- `docs/development.md` - daily workflow, debug tools, and web preview device-frame controls.
-- `docs/server-selection.md` - dev picker vs baked URL, Expo Go testing, and LAN backend setup.
+See [docs/README.md](docs/README.md) for the full guide. Highlights:
+- `docs/developer/architecture.md` - how the renderer + shared package + backend fit together.
+- `docs/developer/auth-bootstrap.md` - server restore, auth persistence, refresh, direct reloads, and live updates.
+- `docs/operations/builds.md` - EAS profiles, signing, store submission.
+- `docs/developer/development.md` - daily workflow, debug tools, and web preview device-frame controls.
+- `docs/operations/server-selection.md` - dev picker vs baked URL, Expo Go testing, and LAN backend setup.
 - `docs/cookbook/add-style.md` - add a new CMS style end-to-end.
 
 ## Contributing

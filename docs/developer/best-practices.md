@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Best practices
 
+Audience: Developers and technical operators.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime code, configuration, and tests in this repository.
+
 Project-specific dos and don'ts. Cross-cutting RN best practices (keys in lists, avoid inline arrow handlers in hot paths, etc.) still apply.
 
 ## Do

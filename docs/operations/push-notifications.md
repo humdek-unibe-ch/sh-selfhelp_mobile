@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Push notifications
 
+Audience: Operators and deployers.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime configuration, environment variables, scripts, and deployment services.
+
 End-to-end setup for Expo Notifications + APNs (iOS) + FCM (Android).
 
 ## App side

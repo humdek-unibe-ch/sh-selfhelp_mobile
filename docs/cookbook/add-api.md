@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Add a new API request
 
+Audience: Developers extending the system.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime code and the established patterns it follows.
+
 The mobile app talks to the Symfony backend exclusively through `/cms-api/v1/*`. Adding a new request usually involves three small edits.
 
 ## 1. Endpoint constant in shared
