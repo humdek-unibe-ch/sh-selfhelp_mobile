@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Add a non-style component
 
+Audience: Developers extending the system.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime code and the established patterns it follows.
+
 Use this when you need a UI piece that isn't tied to a CMS style — e.g. a debug overlay, a custom navigation header, a bespoke screen.
 
 ## Where it lives
@@ -20,7 +26,7 @@ Don't put non-style components under `components/styles/` — that path is reser
 
 ## Pattern
 
-For non-trivial components follow the [4-file split](../styling/component-pattern.md). For small leaves, single file is fine.
+For non-trivial components follow the [4-file split](../developer/styling/component-pattern.md). For small leaves, single file is fine.
 
 ## Wire it up
 

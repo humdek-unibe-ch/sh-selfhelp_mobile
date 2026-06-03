@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Deep linking
 
+Audience: Operators and deployers.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime configuration, environment variables, scripts, and deployment services.
+
 The app handles three classes of link, all routed through `native/deepLinks.ts`:
 
 | Form | Example | Use |

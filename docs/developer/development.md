@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Development
 
+Audience: Developers and technical operators.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime code, configuration, and tests in this repository.
+
 Day-to-day workflow for working on the mobile app.
 
 ## npm scripts
@@ -18,7 +24,7 @@ Day-to-day workflow for working on the mobile app.
 | `npm run typecheck`         | Run `tsc --noEmit` against the whole app. |
 | `npm run lint` / `lint:fix` | ESLint with the Expo config. |
 | `npm run web:build`         | Static export of the web preview. |
-| `npm run build:*`           | EAS Build wrappers (see [builds.md](builds.md)). |
+| `npm run build:*`           | EAS Build wrappers (see [builds.md](../operations/builds.md)). |
 | `npm run update:*`          | EAS Update wrappers (OTA). |
 
 ## Fast refresh + Reanimated
@@ -30,7 +36,7 @@ Fast refresh is on by default. If a Reanimated worklet starts behaving oddly, hi
 - `console.log` shows up in Metro's terminal.
 - React DevTools: `npx react-devtools` after `npm run start`.
 - Network: `npx flipper` (Android) or Safari Web Inspector (iOS, macOS).
-- Sentry-style errors: not wired in v1; see [best-practices.md](best-practices.md) for what to add when traffic warrants it.
+- Sentry-style errors: not wired in v1; see [best-practices.md](./best-practices.md) for what to add when traffic warrants it.
 - `DebugWrapper` (auto, `__DEV__` only) — set `debug=1` on a CMS section and the renderer wraps it with a dashed border and a footer that prints the section's condition outcome and applied `css_mobile` classes. Useful for hunting why a section doesn't show up or why a Tailwind class isn't being honoured.
 
 ## Web preview parity (HeroUI Native)

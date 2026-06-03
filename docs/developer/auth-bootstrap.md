@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Auth, Bootstrap, and Live Updates
 
+Audience: Developers and technical operators.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime code, configuration, and tests in this repository.
+
 ## Boot Order
 
 Cold starts and browser reloads MUST NOT start CMS requests until the

@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # CMS Tailwind classes (`css_mobile`)
 
+Audience: Developers and technical operators.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime code, configuration, and tests in this repository.
+
 The mobile renderer only reads the `css_mobile` field, never `css`. Editors are encouraged to author web styles in `css` and mobile-specific overrides in `css_mobile`.
 
 The pipeline (`styles/cssMobileToUniwind.ts` and `styles/sectionClasses.ts`) is:

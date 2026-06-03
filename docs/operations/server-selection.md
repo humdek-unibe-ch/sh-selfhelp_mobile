@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Server selection
 
+Audience: Operators and deployers.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime configuration, environment variables, scripts, and deployment services.
+
 Mobile builds are either **multi-tenant** (dev / preview) or **single-tenant** (production).
 
 ## Dev / preview builds
@@ -165,4 +171,4 @@ From any screen, tap the `Server` button in the header or navigate to `/server-p
 
 Local app preferences stay intact, but page/form/user data is refetched from the newly selected server.
 
-See [auth-bootstrap.md](auth-bootstrap.md) for the full restore, token refresh, direct reload, and live-update flow.
+See [auth-bootstrap.md](../developer/auth-bootstrap.md) for the full restore, token refresh, direct reload, and live-update flow.

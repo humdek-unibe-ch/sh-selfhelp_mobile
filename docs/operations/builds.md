@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Builds
 
+Audience: Operators and deployers.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime configuration, environment variables, scripts, and deployment services.
+
 Cloud builds use **EAS Build**. Profiles live in `eas.json`.
 
 ## Profiles
@@ -65,10 +71,10 @@ Set `APP_EAS_UPDATE_URL` in the build profile's env vars to enable OTA on built 
 
 - [ ] Apple Developer Program enrolled.
 - [ ] App Store Connect record created with the production `bundleIdentifier`.
-- [ ] APNs key uploaded (push) — see [push-notifications.md](push-notifications.md).
+- [ ] APNs key uploaded (push) — see [push-notifications.md](./push-notifications.md).
 - [ ] Privacy manifest entries: NSCameraUsageDescription, NSMicrophoneUsageDescription, NSPhotoLibraryUsageDescription, NSPhotoLibraryAddUsageDescription (already in `app.config.ts`).
 - [ ] App Privacy details filled in App Store Connect.
-- [ ] Universal link AASA file served from `APP_UNIVERSAL_LINK_DOMAIN` (see [deep-linking.md](deep-linking.md)).
+- [ ] Universal link AASA file served from `APP_UNIVERSAL_LINK_DOMAIN` (see [deep-linking.md](./deep-linking.md)).
 - [ ] Screenshots for all required device sizes.
 
 ### Android — first release

@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Architecture
 
+Audience: Developers and technical operators.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime code, configuration, and tests in this repository.
+
 How the mobile app, backend, and shared package fit together.
 
 ## High-level diagram
@@ -105,12 +111,12 @@ For every section in the tree:
 ## State + cache
 
 - TanStack Query with `createAsyncStoragePersister` persists page caches across cold starts. Query keys include server URL and auth scope so anonymous/stale data cannot satisfy logged-in menu/page requests after a reload.
-- Auth state is in-memory (`accessToken`) + SecureStore (`refresh_token`) so a phone reboot doesn't kick the user out, but a memory dump can't reveal the access token. See [auth-bootstrap.md](auth-bootstrap.md) for the exact restore order, refresh queue, direct reload behavior, and live-update fallback.
+- Auth state is in-memory (`accessToken`) + SecureStore (`refresh_token`) so a phone reboot doesn't kick the user out, but a memory dump can't reveal the access token. See [auth-bootstrap.md](./auth-bootstrap.md) for the exact restore order, refresh queue, direct reload behavior, and live-update fallback.
 - `SessionSyncProvider` holds the authenticated `user-data` query, watches `acl_version`, and subscribes directly to Mercure via `hooks/useAclEventStream.ts`. On Expo Web this is still a direct hub connection, not a same-origin BFF proxy; the browser host therefore must be allow-listed in both Symfony API CORS and the Mercure hub `cors_origins`.
 
 ## Related docs
 
-- [setup.md](setup.md) — install + first run.
-- [server-selection.md](server-selection.md) — multi-tenant strategy.
-- [styling/cms-classes.md](styling/cms-classes.md) — CMS Tailwind allow-list + remap.
-- [cookbook/add-style.md](cookbook/add-style.md) — extending the renderer.
+- [setup.md](../operations/setup.md) — install + first run.
+- [server-selection.md](../operations/server-selection.md) — multi-tenant strategy.
+- [styling/cms-classes.md](./styling/cms-classes.md) — CMS Tailwind allow-list + remap.
+- [cookbook/add-style.md](../cookbook/add-style.md) — extending the renderer.

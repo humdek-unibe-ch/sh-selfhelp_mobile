@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Mobile Plugin Bundling
 
+Audience: Developers and technical operators.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime code, configuration, and tests in this repository.
+
 Plugins are a first-class extension point of the SelfHelp CMS. The web
 host loads plugin packages dynamically at runtime, but the mobile app
 **cannot** do that — JavaScriptCore / Hermes both ban dynamic

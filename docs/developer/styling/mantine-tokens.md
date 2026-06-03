@@ -4,6 +4,12 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Mantine tokens on mobile
 
+Audience: Developers and technical operators.
+Status: active.
+Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
+Last verified: 2026-06-03.
+Source of truth: Runtime code, configuration, and tests in this repository.
+
 The CMS speaks "Mantine" — fields like `mantine_size`, `mantine_radius`, `mantine_color`, `mantine_variant`, and `mantine_spacing_margin_padding`. The mobile renderer maps these to Tailwind / Uniwind / HeroUI primitives so the visual language is identical on web and mobile.
 
 ## Token tables
@@ -41,7 +47,7 @@ mt-md px-lg pb-xs
 `styles/sectionClasses.ts` composes everything:
 
 1. Auto-classes (`style-section-{id}`, `selfHelp-locale-{locale}`).
-2. `cssMobileToUniwind(section.css_mobile)` — see [cms-classes.md](cms-classes.md).
+2. `cssMobileToUniwind(section.css_mobile)` — see [cms-classes.md](./cms-classes.md).
 3. Mantine-prop derived classes.
 4. Mantine spacing JSON.
 
