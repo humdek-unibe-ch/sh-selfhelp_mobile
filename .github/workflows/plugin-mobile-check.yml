@@ -6,9 +6,12 @@ name: plugin-mobile-check
 # Plugin mobile check.
 #
 # Validates the React Native plugin surface:
-#   - Style registry parity: every core style published by
-#     `@selfhelp/shared` has a mobile impl (existing
-#     `__tests__/registry-parity.test.mjs` runs via `node --test`).
+#   - Renderer helper unit tests + style registry parity, both via
+#     `node --test` (`npm test`): `__tests__/unit/*` covers the CMS field
+#     readers, `useInterpolatedField`, `buildSectionClasses`, and the
+#     css_mobile classifier (Slice 9); `__tests__/registry-parity.test.mjs`
+#     checks every core style published by `@selfhelp/shared` has a mobile
+#     impl.
 #   - TypeScript compiles (catches missing plugin impl signatures).
 #   - `scripts/plugins-sync.mjs --dry-run` is reproducible: running it
 #     against the configured backend must not produce any uncommitted
@@ -32,8 +35,16 @@ permissions:
   contents: read
 
 jobs:
-  mobile-check:
-    name: Style parity, type-check, plugins:sync, web export
+  # GitHub derives the branch-protection required-check name from the job's
+  # `name:` (falling back to the job id). Both are pinned to `mobile-parity`
+  # so the required check documented in
+  # sh-selfhelp_backend/docs/developer/15-testing-guidelines.md →
+  # "Branch protection" literally exists in GitHub Actions. Keep `name:` and
+  # the job id identical and stable; do not replace `name:` with prose, or the
+  # required check silently renames. (This job runs: style-registry parity,
+  # type-check, plugins:sync dry-run, and the Expo web export.)
+  mobile-parity:
+    name: mobile-parity
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -70,7 +81,7 @@ jobs:
         working-directory: sh-selfhelp_mobile
         run: npm run typecheck
 
-      - name: Style registry parity tests
+      - name: Renderer helper + registry parity tests (node --test)
         working-directory: sh-selfhelp_mobile
         run: npm test
 
