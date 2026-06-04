@@ -14,13 +14,16 @@ import {
     type IFormSubmitData,
     type IFormSubmitRequest,
     type IFormSubmitResponse,
+    type IFormUpdateRequest,
     type IFormUpdateResponse,
 } from '@selfhelp/shared';
 
 import { getApiClient } from '@/services/apiClient';
 
+type TFormUpdateData = NonNullable<IFormUpdateResponse['data']>;
+
 export type TFormResult =
-    | { kind: 'ok'; data: IFormSubmitData | undefined; message?: string; redirectUrl?: string }
+    | { kind: 'ok'; data: IFormSubmitData | TFormUpdateData | undefined; message?: string; redirectUrl?: string }
     | { kind: 'validation'; fieldErrors: Record<string, string>; message?: string }
     | { kind: 'error'; message: string };
 
@@ -42,7 +45,7 @@ export async function submitForm(payload: IFormSubmitRequest): Promise<TFormResu
     }
 }
 
-export async function updateForm(payload: IFormSubmitRequest): Promise<TFormResult> {
+export async function updateForm(payload: IFormUpdateRequest): Promise<TFormResult> {
     try {
         const resp = await getApiClient().post<IFormUpdateResponse>(ENDPOINTS.FORMS.UPDATE, payload);
         return normalize(resp.data);
