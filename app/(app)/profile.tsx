@@ -15,6 +15,7 @@ import { LoadingScreen } from '@/components/feedback/LoadingScreen';
 import { PageRenderer } from '@/components/renderer/PageRenderer';
 import { usePageContent } from '@/hooks/usePageContent';
 import { useAuthStore } from '@/stores/authStore';
+import { CommunicationPreferences } from '@/components/styles/auth/CommunicationPreferences';
 
 export default function ProfileScreen(): React.ReactElement {
     const { t } = useTranslation();
@@ -42,6 +43,7 @@ export default function ProfileScreen(): React.ReactElement {
                             </Text>
                         ) : null}
                     </View>
+                    <CommunicationPreferences />
                 </ScrollView>
             </SafeAreaView>
         );
