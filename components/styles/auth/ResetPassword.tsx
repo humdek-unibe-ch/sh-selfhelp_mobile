@@ -10,7 +10,7 @@ import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { useInterpolatedField } from '@/components/renderer/useField';
 import { useServerStore } from '@/stores/serverStore';
-import { CLIENT_TYPE_MOBILE, ENDPOINTS, HEADER_CLIENT_TYPE } from '@selfhelp/shared';
+import { CLIENT_TYPE_MOBILE, ENDPOINTS, HEADER_CLIENT_TYPE, type IForgotPasswordRequest } from '@selfhelp/shared';
 import { FieldShell } from '@/components/styles/forms/_FieldShell';
 
 /**
@@ -29,9 +29,10 @@ export function ResetPassword({ section, values }: IStyleProps): React.ReactElem
         setBusy(true);
         const baseURL = useServerStore.getState().serverUrl;
         try {
+            const payload: IForgotPasswordRequest = { email };
             await axios.post(
-                `${baseURL}${ENDPOINTS.AUTH.LOGIN.replace('/login', '/reset-password')}`,
-                { email },
+                `${baseURL}${ENDPOINTS.AUTH.FORGOT_PASSWORD}`,
+                payload,
                 { headers: { [HEADER_CLIENT_TYPE]: CLIENT_TYPE_MOBILE } }
             );
             Alert.alert('Reset link sent', 'Check your email.');
