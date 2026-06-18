@@ -4,7 +4,19 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
-## Unreleased
+## 0.1.1
+
+### Tooling / Lint
+- **Lint is now a blocking CI gate.** `plugin-mobile-check.yml` runs
+  `npm run lint -- --max-warnings=0` (after the license-header check, before the
+  type-check). The strict, type-aware Expo flat config already existed but was
+  not enforced by any workflow.
+- Made `npm run lint -- --max-warnings=0` pass deterministically by turning off
+  the noisy `import/no-named-as-default-member` rule in `eslint.config.js` (with
+  an inline reason). It only false-positived on the documented idiomatic APIs of
+  default-export libraries that also publish same-named named exports
+  (`axios.create()`, `i18n.changeLanguage()`/`i18n.use()`); no application code
+  or runtime behavior changed, and every correctness/type-safety rule stays on.
 
 ### Testing (ecosystem testing strategy, Slice 9)
 - Added `node --test` unit suites for the renderer helpers under

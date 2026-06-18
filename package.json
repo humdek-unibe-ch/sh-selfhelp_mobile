@@ -1,6 +1,6 @@
 {
   "name": "selfhelp-mobile",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "license": "MPL-2.0",
   "main": "expo-router/entry",
@@ -92,8 +92,10 @@
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.32.0",
     "eslint-config-expo": "~55.0.0",
+    "eslint-plugin-unused-imports": "^4.4.1",
     "license-check-and-add": "^4.0.5",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.59.2"
   },
   "engines": {
     "node": ">=20"
