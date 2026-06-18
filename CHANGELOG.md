@@ -6,6 +6,16 @@ SPDX-License-Identifier: MPL-2.0
 
 ## 0.1.1
 
+### CMS Styles
+- **Kebab-case style names.** Bumped `@selfhelp/shared` to `^1.8.0`, which renamed
+  the CMS `style_name` discriminator from camelCase to kebab-case, and updated the
+  `styleImpls` registry keys to match: `entryList`→`entry-list`,
+  `entryRecord`→`entry-record`, `entryRecordDelete`→`entry-record-delete`,
+  `resetPassword`→`reset-password`, `twoFactorAuth`→`two-factor-auth`. The backend
+  now serves these kebab-case names; an older mobile build would render these
+  styles as Unknown, so this must ship in lockstep with backend `>=0.1.14`.
+  (`components/styles/index.ts`)
+
 ### Tooling / Lint
 - **Lint is now a blocking CI gate.** `plugin-mobile-check.yml` runs
   `npm run lint -- --max-warnings=0` (after the license-header check, before the
