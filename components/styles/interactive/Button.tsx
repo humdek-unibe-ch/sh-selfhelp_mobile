@@ -45,7 +45,7 @@ export function Button({ section, values }: IStyleProps): React.ReactElement {
         }
         if (url) {
             if (openInNewTab) void Linking.openURL(url);
-            else router.push(url as never);
+            else router.push(url);
         }
     };
 

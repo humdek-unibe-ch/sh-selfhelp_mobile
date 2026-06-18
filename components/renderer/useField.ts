@@ -23,7 +23,7 @@ type TFieldHolder = { fields?: Record<string, unknown> } & object;
 
 export function readField<T = unknown>(section: TFieldHolder, name: string): T | undefined {
     const top = (section as Record<string, unknown>)[name];
-    if (top && typeof top === 'object' && 'content' in (top as object)) {
+    if (top && typeof top === 'object' && 'content' in (top)) {
         return (top as IContentField<T>).content;
     }
     const fromBag = section.fields?.[name];

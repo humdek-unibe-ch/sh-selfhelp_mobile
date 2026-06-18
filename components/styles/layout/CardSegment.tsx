@@ -13,7 +13,7 @@ export function CardSegment({ section, values }: IStyleProps): React.ReactElemen
             className={buildSectionClasses(section)}
             style={{ marginHorizontal: -16, paddingHorizontal: 16, paddingVertical: 8, borderTopWidth: 1, borderColor: '#f1f3f5' }}
         >
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );
 }

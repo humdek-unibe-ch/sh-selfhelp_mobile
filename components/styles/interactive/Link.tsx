@@ -20,7 +20,7 @@ export function Link({ section, values }: IStyleProps): React.ReactElement {
             onPress={() => {
                 if (!url) return;
                 if (openInNewTab || /^https?:\/\//.test(url)) void Linking.openURL(url);
-                else router.push(url as never);
+                else router.push(url);
             }}
             accessibilityRole="link"
         >

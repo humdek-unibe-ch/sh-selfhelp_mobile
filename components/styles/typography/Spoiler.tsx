@@ -17,7 +17,7 @@ export function Spoiler({ section, values }: IStyleProps): React.ReactElement {
     return (
         <View className={buildSectionClasses(section)}>
             <View style={open ? undefined : { maxHeight: 80, overflow: 'hidden' }}>
-                <Children sections={(section as { children?: never }).children as never} values={values} />
+                <Children sections={(section as { children?: never }).children} values={values} />
             </View>
             <Pressable onPress={() => setOpen((v) => !v)} style={{ marginTop: 8 }}>
                 <Text style={{ color: '#228be6', fontWeight: '600' }}>{open ? hideLabel : showLabel}</Text>

@@ -24,7 +24,7 @@ export function Stack({ section, values }: IStyleProps): React.ReactElement {
 
     return (
         <View className={buildSectionClasses(section, { extra })}>
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );
 }

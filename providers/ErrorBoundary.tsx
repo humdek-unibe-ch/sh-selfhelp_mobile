@@ -32,7 +32,6 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
 
     override componentDidCatch(error: Error): void {
         if (typeof console !== 'undefined') {
-            // eslint-disable-next-line no-console
             console.error('[ErrorBoundary]', error);
         }
     }

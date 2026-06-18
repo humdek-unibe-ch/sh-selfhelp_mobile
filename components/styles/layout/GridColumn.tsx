@@ -13,7 +13,7 @@ export function GridColumn({ section, values }: IStyleProps): React.ReactElement
     let widthPct: DimensionValue | undefined;
     if (span && span !== 'auto' && span !== 'content') {
         const n = Number(span);
-        if (Number.isFinite(n) && n > 0) widthPct = `${(n / 12) * 100}%` as DimensionValue;
+        if (Number.isFinite(n) && n > 0) widthPct = `${(n / 12) * 100}%`;
     }
 
     return (
@@ -21,7 +21,7 @@ export function GridColumn({ section, values }: IStyleProps): React.ReactElement
             className={buildSectionClasses(section)}
             style={{ width: widthPct ?? 'auto', flexGrow: span === 'auto' ? 1 : 0, flexBasis: widthPct }}
         >
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );
 }

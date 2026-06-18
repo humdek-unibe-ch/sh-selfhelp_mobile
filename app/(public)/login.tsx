@@ -12,7 +12,7 @@ SPDX-License-Identifier: MPL-2.0
 
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { LoadingScreen } from '@/components/feedback/LoadingScreen';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';

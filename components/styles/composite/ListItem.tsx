@@ -15,7 +15,7 @@ export function ListItem({ section, values }: IStyleProps): React.ReactElement {
             <Text style={{ marginRight: 8, color: '#868e96' }}>•</Text>
             <View style={{ flex: 1 }}>
                 {content ? <Text>{content}</Text> : null}
-                <Children sections={(section as { children?: never }).children as never} values={values} />
+                <Children sections={(section as { children?: never }).children} values={values} />
             </View>
         </View>
     );

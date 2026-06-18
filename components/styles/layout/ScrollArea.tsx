@@ -16,7 +16,7 @@ export function ScrollAreaStyle({ section, values }: IStyleProps): React.ReactEl
             className={buildSectionClasses(section)}
             style={{ height: Number.isFinite(numericHeight) ? numericHeight : undefined }}
         >
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
         </ScrollView>
     );
 }

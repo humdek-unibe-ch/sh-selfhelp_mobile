@@ -19,7 +19,6 @@ import { useMemo } from 'react';
 
 import { evaluateCondition, buildConditionContext } from '@selfhelp/shared';
 import type { TPlatform } from '@selfhelp/shared';
-import type { TStyleRegistryKey } from '@selfhelp/shared/registry';
 import { getStylePluginId, isKnownStyleName } from '@selfhelp/shared/registry';
 
 import { DebugWrapper } from './DebugWrapper';
@@ -44,7 +43,7 @@ export function BasicStyle({ section, values }: IStyleProps): React.ReactElement
     const rawName = String(section.style_name ?? '');
 
     if (isKnownStyleName(rawName)) {
-        const Impl = styleImpls[rawName as TStyleRegistryKey];
+        const Impl = styleImpls[rawName];
         const Component = Impl ?? UnknownStyle;
         return (
             <DebugWrapper section={section} conditionOutcome={conditionOutcome}>

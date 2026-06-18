@@ -24,7 +24,7 @@ export function BackgroundImage({ section, values }: IStyleProps): React.ReactEl
             imageStyle={{ borderRadius: RADIUS_PX[radius as TCanonicalRadius] ?? 4 }}
             style={{ minHeight: 120 }}
         >
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
         </ImageBackground>
     );
 }

@@ -13,7 +13,7 @@ export function Figure({ section, values }: IStyleProps): React.ReactElement {
     const caption = useInterpolatedField(section, 'caption', values);
     return (
         <View className={buildSectionClasses(section)} style={{ marginVertical: 8 }}>
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
             {(captionTitle || caption) ? (
                 <View style={{ marginTop: 6 }}>
                     {captionTitle ? <Text style={{ fontWeight: '600', color: '#495057' }}>{captionTitle}</Text> : null}

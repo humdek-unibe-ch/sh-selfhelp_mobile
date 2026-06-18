@@ -24,7 +24,7 @@ export function PageList(): React.ReactElement {
     const items = data ? flattenMenuPages(data) : [];
 
     if (isLoading) return <Text>{t('loading')}</Text>;
-    if (error) return <Text style={{ color: '#fa5252' }}>{(error as Error).message}</Text>;
+    if (error) return <Text style={{ color: '#fa5252' }}>{(error).message}</Text>;
     if (!items.length) return <Text>{t('menu.empty', 'No pages available')}</Text>;
 
     return (

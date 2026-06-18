@@ -10,7 +10,7 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 export function ListStyle({ section, values }: IStyleProps): React.ReactElement {
     return (
         <View className={buildSectionClasses(section)} style={{ paddingLeft: 16, marginVertical: 8 }}>
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );
 }
