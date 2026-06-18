@@ -131,7 +131,7 @@ module.exports = tseslint.config(
     {
         // Root config files run in Node (CommonJS), not in the RN runtime, so
         // expose the Node globals they rely on (`__dirname`, …).
-        files: ['eslint.config.js', 'babel.config.js', 'metro.config.js', 'tailwind.config.js'],
+        files: ['eslint.config.js', 'babel.config.js', 'metro.config.js', 'tailwind.config.js', 'app.config.ts'],
         languageOptions: {
             globals: {
                 __dirname: 'readonly',
@@ -140,6 +140,10 @@ module.exports = tseslint.config(
                 require: 'readonly',
                 process: 'readonly',
             },
+        },
+        rules: {
+            // Config files need to access process.env which TypeScript types as any
+            '@typescript-eslint/no-unsafe-assignment': 'off',
         },
     },
     {
