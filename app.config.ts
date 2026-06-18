@@ -34,7 +34,7 @@ const isDevInstance = slug === 'dev';
 const config: ExpoConfig = {
     name: process.env.APP_NAME_OVERRIDE ?? (isDevInstance ? 'SelfHelp Dev' : 'SelfHelp'),
     slug: `selfhelp-${slug}`,
-    version: '0.1.0',
+    version: '0.1.1',
     orientation: 'portrait',
     icon: './assets/icon.png',
     scheme: process.env.APP_SCHEME ?? 'selfhelp',

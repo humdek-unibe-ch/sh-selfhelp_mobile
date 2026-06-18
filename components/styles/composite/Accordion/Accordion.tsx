@@ -25,7 +25,7 @@ export function Accordion({ section, values }: IStyleProps): React.ReactElement 
     return (
         <View className={buildSectionClasses(section)}>
             <AccordionContext.Provider value={ctx}>
-                <Children sections={(section as { children?: never }).children as never} values={values} />
+                <Children sections={(section as { children?: never }).children} values={values} />
             </AccordionContext.Provider>
         </View>
     );

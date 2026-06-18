@@ -18,7 +18,7 @@ SPDX-License-Identifier: MPL-2.0
  */
 
 import axios, {
-    AxiosError,
+    type AxiosError,
     type AxiosInstance,
     type AxiosRequestConfig,
     type InternalAxiosRequestConfig,

@@ -26,7 +26,7 @@ export function AccordionItem({ section, values }: IStyleProps): React.ReactElem
             </Pressable>
             {isOpen ? (
                 <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
-                    <Children sections={(section as { children?: never }).children as never} values={values} />
+                    <Children sections={(section as { children?: never }).children} values={values} />
                 </View>
             ) : null}
         </View>

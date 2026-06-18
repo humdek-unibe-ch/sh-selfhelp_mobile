@@ -25,7 +25,7 @@ export function Tabs({ section, values }: IStyleProps): React.ReactElement {
         <View className={buildSectionClasses(section)}>
             <TabsContext.Provider value={ctx}>
                 <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderColor: '#e9ecef' }}>
-                    <Children sections={(section as { children?: never }).children as never} values={values} />
+                    <Children sections={(section as { children?: never }).children} values={values} />
                 </View>
             </TabsContext.Provider>
         </View>

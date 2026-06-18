@@ -4,7 +4,29 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
-## Unreleased
+## 0.1.1
+
+### CMS Styles
+- **Kebab-case style names.** Bumped `@selfhelp/shared` to `^1.8.0`, which renamed
+  the CMS `style_name` discriminator from camelCase to kebab-case, and updated the
+  `styleImpls` registry keys to match: `entryList`→`entry-list`,
+  `entryRecord`→`entry-record`, `entryRecordDelete`→`entry-record-delete`,
+  `resetPassword`→`reset-password`, `twoFactorAuth`→`two-factor-auth`. The backend
+  now serves these kebab-case names; an older mobile build would render these
+  styles as Unknown, so this must ship in lockstep with backend `>=0.1.14`.
+  (`components/styles/index.ts`)
+
+### Tooling / Lint
+- **Lint is now a blocking CI gate.** `plugin-mobile-check.yml` runs
+  `npm run lint -- --max-warnings=0` (after the license-header check, before the
+  type-check). The strict, type-aware Expo flat config already existed but was
+  not enforced by any workflow.
+- Made `npm run lint -- --max-warnings=0` pass deterministically by turning off
+  the noisy `import/no-named-as-default-member` rule in `eslint.config.js` (with
+  an inline reason). It only false-positived on the documented idiomatic APIs of
+  default-export libraries that also publish same-named named exports
+  (`axios.create()`, `i18n.changeLanguage()`/`i18n.use()`); no application code
+  or runtime behavior changed, and every correctness/type-safety rule stays on.
 
 ### Testing (ecosystem testing strategy, Slice 9)
 - Added `node --test` unit suites for the renderer helpers under

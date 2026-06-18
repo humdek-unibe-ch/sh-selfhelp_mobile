@@ -33,7 +33,7 @@ export default function ServerPicker(): React.ReactElement {
 
     useEffect(() => {
         const selectionUrl = runtimeConfig.serverSelectionUrl;
-        if (!selectionUrl) return;
+        if (!selectionUrl) return undefined;
 
         let cancelled = false;
         setLoadingServers(true);

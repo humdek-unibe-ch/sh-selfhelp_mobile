@@ -47,7 +47,7 @@ export function Alert({ section, values }: IStyleProps): React.ReactElement {
                     {content}
                 </Text>
             ) : null}
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );
 }

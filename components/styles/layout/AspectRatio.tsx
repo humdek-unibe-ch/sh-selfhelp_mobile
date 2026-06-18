@@ -14,7 +14,7 @@ export function AspectRatio({ section, values }: IStyleProps): React.ReactElemen
     const ratio = Number.isFinite(w) && Number.isFinite(h) && h !== 0 ? w / h : 16 / 9;
     return (
         <View className={buildSectionClasses(section)} style={{ aspectRatio: ratio, width: '100%' }}>
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );
 }

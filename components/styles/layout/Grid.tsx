@@ -27,7 +27,7 @@ export function Grid({ section, values }: IStyleProps): React.ReactElement {
                 ],
             })}
         >
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );
 }

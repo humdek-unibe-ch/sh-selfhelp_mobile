@@ -30,9 +30,9 @@ export function NativeBootstrap(): null {
     const accessToken = useAuthStore((s) => s.accessToken);
 
     useEffect(() => {
-        if (!accessToken) return;
+        if (!accessToken) return undefined;
         let cancelled = false;
-        (async () => {
+        void (async () => {
             const result = await registerForPushNotifications();
             if (cancelled || !result.token) return;
             await reportPushToken(result.token);

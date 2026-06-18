@@ -25,7 +25,7 @@ export function Indicator({ section, values }: IStyleProps): React.ReactElement 
 
     return (
         <View className={buildSectionClasses(section)} style={{ position: 'relative', alignSelf: 'flex-start' }}>
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
             <View
                 style={{
                     position: 'absolute',

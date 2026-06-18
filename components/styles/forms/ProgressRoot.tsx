@@ -13,7 +13,7 @@ export function ProgressRoot({ section, values }: IStyleProps): React.ReactEleme
             className={buildSectionClasses(section)}
             style={{ flexDirection: 'row', height: 10, backgroundColor: '#e9ecef', borderRadius: 4, overflow: 'hidden', marginVertical: 6 }}
         >
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );
 }

@@ -63,7 +63,7 @@ export async function registerForPushNotifications(): Promise<IPushRegistrationR
     }
 
     const projectId =
-        Constants.expoConfig?.extra?.eas?.projectId ??
+        (Constants.expoConfig?.extra?.eas as { projectId?: string } | undefined)?.projectId ??
         (Constants.easConfig as { projectId?: string } | undefined)?.projectId;
 
     if (!projectId) {

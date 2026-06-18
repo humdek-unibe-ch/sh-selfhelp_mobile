@@ -141,11 +141,11 @@ function PhoneFrameInner(): React.ReactElement | null {
     const orientation = useDevModeStore((s) => s.previewOrientation);
 
     useEffect(() => {
-        if (typeof document === 'undefined') return;
+        if (typeof document === 'undefined') return undefined;
         const existing = document.getElementById(STYLE_TAG_ID);
         if (!enabled) {
             if (existing) existing.remove();
-            return;
+            return undefined;
         }
         const tag = existing ?? document.createElement('style');
         tag.id = STYLE_TAG_ID;

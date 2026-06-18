@@ -115,7 +115,7 @@ function useUserDataPollingFallback(): void {
     const bootstrapped = useAuthStore((s) => s.bootstrapped);
 
     useEffect(() => {
-        if (!serverUrl || !accessToken || !bootstrapped) return;
+        if (!serverUrl || !accessToken || !bootstrapped) return undefined;
 
         const interval = setInterval(() => {
             void queryClient.invalidateQueries({ queryKey: userDataQueryKey(serverUrl) });

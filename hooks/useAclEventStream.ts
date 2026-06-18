@@ -90,7 +90,7 @@ export function useAclEventStream(): void {
     }>({ es: null, reconnectTimer: null, cancelled: false, delay: INITIAL_RECONNECT_DELAY_MS });
 
     useEffect(() => {
-        if (!isAuthed) return;
+        if (!isAuthed) return undefined;
 
         const state = stateRef.current;
         state.cancelled = false;

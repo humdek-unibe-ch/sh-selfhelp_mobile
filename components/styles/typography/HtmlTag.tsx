@@ -16,7 +16,7 @@ import { Children } from '@/components/renderer/Children';
 export function HtmlTag({ section, values }: IStyleProps): React.ReactElement {
     return (
         <View className={buildSectionClasses(section)}>
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );
 }

@@ -21,7 +21,7 @@ export function Fieldset({ section, values }: IStyleProps): React.ReactElement {
             style={{ borderWidth: 1, borderColor: '#dee2e6', borderRadius: RADIUS_PX[radius as TCanonicalRadius] ?? 4, padding: 12, marginVertical: 8 }}
         >
             {legend ? <Text style={{ fontWeight: '600', marginBottom: 8 }}>{legend}</Text> : null}
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );
 }

@@ -45,7 +45,7 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
     return (
         <View className={buildSectionClasses(section)}>
             <FormContext.Provider value={ctx}>
-                <Children sections={(section as { children?: never }).children as never} values={values} />
+                <Children sections={(section as { children?: never }).children} values={values} />
             </FormContext.Provider>
 
             <View style={styles.actions}>

@@ -363,7 +363,7 @@ function safeStringify(input: unknown, indent = 2): string {
         const seen = new WeakSet<object>();
         return JSON.stringify(
             input,
-            (_, value) => {
+            (_, value: unknown) => {
                 if (typeof value === 'object' && value !== null) {
                     if (seen.has(value)) return '[circular]';
                     seen.add(value);

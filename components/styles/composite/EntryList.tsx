@@ -17,7 +17,7 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 export function EntryList({ section, values }: IStyleProps): React.ReactElement {
     return (
         <View className={buildSectionClasses(section)}>
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );
 }

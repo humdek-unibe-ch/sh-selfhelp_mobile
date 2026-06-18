@@ -148,6 +148,28 @@ These rules apply to every documentation change in active SelfHelp2 repositories
 - Update docs and tests when changing architecture, commands, renderer behavior, API contracts, or build flow.
 - Run the relevant checks before handing off: usually `npm run typecheck`, `npm run lint`, and `npm test`.
 
+## Linting & Type Safety (Mandatory)
+
+Linting and typechecking are mandatory whenever code changes. They are not optional polish.
+
+- After changing any TypeScript / JavaScript / React Native / Expo code, you MUST run `npm run lint`. CI runs lint as a **blocking, zero-warning** gate (`npm run lint -- --max-warnings=0`) in `plugin-mobile-check.yml`, so the lint run must be clean of both errors AND warnings before you finish. Generated/native output (`node_modules`, `.expo`, `dist`, `web-build`, `android`, `ios`) is ignored by the flat config so the run is deterministic.
+- If `npm run lint` reports problems, fix them before finishing. Do not hand off with new lint errors or warnings.
+- For larger changes (multiple files, renderer/provider/service edits, type changes), also run `npm run typecheck`.
+- For changes affecting navigation, Expo Router routes, auth/session logic, API calls, cache/persistence, native permissions, notifications, camera/media, or shared (`@selfhelp/shared`) types, run the relevant targeted checks/tests if available (`npm run typecheck`, `npm test`, `npm run test:renderer`).
+- All lint fixes MUST be behavior-preserving. Never change runtime behavior, navigation, async flow, return values, or UI just to satisfy a lint rule.
+- If a lint issue cannot be fixed without risking a behavior change, do not guess: prefer a narrow, single-line `eslint-disable-next-line <rule>` with a comment explaining why, and report it. Never add broad file-level or global rule disables to hide problems.
+- Hard rules enforced by ESLint (do not regress these):
+  - No unused imports.
+  - No unused variables unless intentionally prefixed with `_`.
+  - No explicit `any` (use `unknown`, generics, or a real type; a narrow documented exception is the only escape hatch). The `no-unsafe-*` family also blocks `any` propagation through the type system.
+  - No floating promises (`no-floating-promises`) and no misused promises (`no-misused-promises`, with the documented React-friendly `checksVoidReturn.attributes: false` so `async` `onPress`/`onSubmit` handlers stay legal) — mark intentionally fire-and-forget promises with the `void` operator.
+  - Consistent, side-effect-free type imports (`consistent-type-imports`) and no duplicate imports (`import/no-duplicates`).
+  - React Hooks rules from `eslint-config-expo` (`react-hooks/rules-of-hooks`) — never call hooks conditionally or in loops.
+- `import/no-named-as-default-member` is intentionally turned **off** in `eslint.config.js` (documented inline): it false-positives on the documented idiomatic APIs of default-export libraries that also publish same-named named exports (`axios.create()`, `i18n.changeLanguage()`/`i18n.use()`). This is a behaviour-preserving config decision, not a blanket disable to hide bugs — every correctness/type-safety rule stays enforced.
+- Do not weaken `eslint.config.js` or `tsconfig.json` rules just to make checks pass. Do not introduce Next.js/browser-only rules — this is an Expo / React Native repo and the config layers on `eslint-config-expo`, not `eslint-config-next`.
+- Preserve SPDX/license headers; run `npm run headers:check` if you add or move files.
+- Your final response must state the exact commands you ran (`npm run lint`, `npm run typecheck`, `npm test`, …) and their results.
+
 ## Multi-Repository Changes
 
 - Read the `AGENTS.md` of every affected repository before making changes.
@@ -242,7 +264,7 @@ Do not hardcode enum string unions in plugin-related mobile components. Consume 
 - `npm test` runs Node's built-in test runner over `__tests__/**/*.test.mjs`.
 - The current test suite checks parity between the shared style registry and mobile `styleImpls`.
 - `npm run typecheck` runs `tsc --noEmit`.
-- `npm run lint` runs ESLint flat config. Existing warnings are present; do not add new warnings.
+- `npm run lint` runs the ESLint flat config and currently passes clean with `--max-warnings=0` (zero errors, zero warnings); CI enforces this in `plugin-mobile-check.yml`. Keep it green — do not add new errors or warnings.
 - Add or update tests when changing registry behavior, scripts, shared-contract handling, or parsing/normalization logic.
 - For UI and renderer changes, smoke test with `npm run web`; verify native-only behavior on Android or iOS when it involves push, camera, audio, permissions, or HeroUI Native primitives.
 - For accessibility-sensitive UI changes, verify labels, roles, focus order, dynamic type, contrast, and error messaging with screen-reader-friendly flows on device or emulator when practical.

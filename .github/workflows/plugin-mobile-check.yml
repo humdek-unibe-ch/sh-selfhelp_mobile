@@ -97,6 +97,13 @@ jobs:
         working-directory: sh-selfhelp_mobile
         run: npm run headers:check
 
+      # Blocking lint gate (zero warnings). The strict, type-aware Expo flat
+      # config in eslint.config.js is only meaningful if CI enforces it;
+      # --max-warnings=0 keeps the run deterministic.
+      - name: Lint
+        working-directory: sh-selfhelp_mobile
+        run: npm run lint -- --max-warnings=0
+
       - name: Type-check
         working-directory: sh-selfhelp_mobile
         run: npm run typecheck

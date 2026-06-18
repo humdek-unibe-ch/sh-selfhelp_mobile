@@ -43,7 +43,7 @@ export function Card({ section, values }: IStyleProps): React.ReactElement {
                 elevation: s.elevation,
             }}
         >
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );
 }

@@ -84,6 +84,6 @@ export const DIRECTION_TO_CLASS: Record<string, string> = {
     'column-reverse': 'flex-col-reverse',
 };
 
-export function joinClasses(...parts: Array<string | undefined | null | false>): string {
+export function joinClasses(...parts: (string | undefined | null | false)[]): string {
     return parts.filter(Boolean).join(' ');
 }

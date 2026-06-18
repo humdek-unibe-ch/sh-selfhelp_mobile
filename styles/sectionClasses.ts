@@ -19,7 +19,7 @@ import { readField } from '@/components/renderer/useField';
 import type { TSectionLike } from '@/components/renderer/types';
 
 export interface ISectionClassOptions {
-    extra?: ReadonlyArray<string | undefined | null | false>;
+    extra?: readonly (string | undefined | null | false)[];
 }
 
 export function buildSectionClasses(section: TSectionLike, options: ISectionClassOptions = {}): string {

@@ -32,7 +32,7 @@ export function Tab({ section, values }: IStyleProps): React.ReactElement | null
             </Pressable>
             {active ? (
                 <View style={{ padding: 12 }}>
-                    <Children sections={(section as { children?: never }).children as never} values={values} />
+                    <Children sections={(section as { children?: never }).children} values={values} />
                 </View>
             ) : null}
         </View>

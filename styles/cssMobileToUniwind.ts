@@ -19,10 +19,8 @@ export function cssMobileToUniwind(raw: string | null | undefined): string {
     const classes = classifyClassString(raw, (decision) => {
         if (!__DEV__) return;
         if (decision.kind === 'drop') {
-            // eslint-disable-next-line no-console
             console.warn(`[css_mobile] drop "${decision.className}" — ${decision.reason ?? 'not allowed'}`);
         } else if (decision.kind === 'remap') {
-            // eslint-disable-next-line no-console
             console.info(`[css_mobile] remap "${decision.from}" -> "${decision.to}" (${decision.reason ?? ''})`);
         }
     });

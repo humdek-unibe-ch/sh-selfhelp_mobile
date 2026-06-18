@@ -34,7 +34,7 @@ export function Profile({ section, values }: IStyleProps): React.ReactElement {
 
     return (
         <View className={buildSectionClasses(section)} style={{ padding: 16 }}>
-            <Children sections={(section as { children?: never }).children as never} values={values} />
+            <Children sections={(section as { children?: never }).children} values={values} />
             {user ? (
                 <View style={{ marginVertical: 16 }}>
                     <Text style={{ fontSize: 18, fontWeight: '600' }}>{user.name ?? user.email}</Text>
