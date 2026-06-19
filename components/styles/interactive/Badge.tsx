@@ -5,7 +5,7 @@ SPDX-License-Identifier: MPL-2.0
 import { Text, View } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { useInterpolatedField } from '@/components/renderer/useField';
+import { readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
 import { FONT_SIZE_PX } from '@selfhelp/shared';
 import { mobileStyleProps, mobileIntentPalette } from '@/components/ui/mobileStyleProps';
 
@@ -14,6 +14,9 @@ const SIZE_PADDING: Record<'sm' | 'md' | 'lg', { px: number; py: number; fs: num
     md: { px: 10, py: 3, fs: (FONT_SIZE_PX.sm ?? 14) },
     lg: { px: 12, py: 4, fs: (FONT_SIZE_PX.md ?? 16) },
 };
+
+/** Fixed diameter (px) for the circular badge variant, keyed by shared size. */
+const CIRCLE_DIAMETER: Record<'sm' | 'md' | 'lg', number> = { sm: 18, md: 22, lg: 26 };
 
 /**
  * Badge — HeroUI Native OSS has no Badge primitive, so this is the OSS fallback:
@@ -31,7 +34,11 @@ export function Badge({ section, values }: IStyleProps): React.ReactElement {
     const { palette, variant } = mobileIntentPalette(section, 'light');
     const size = resolved.size ?? 'sm';
     const padding = SIZE_PADDING[size];
-    const radius = resolved.radiusPx ?? 9999;
+    const circle = readBooleanField(section, 'circle', false);
+    // `circle` renders a fixed-diameter dot (counts/initials); otherwise the
+    // pill honours the shared radius (default fully rounded).
+    const diameter = CIRCLE_DIAMETER[size];
+    const radius = circle ? diameter / 2 : (resolved.radiusPx ?? 9999);
 
     return (
         <View
@@ -42,13 +49,15 @@ export function Badge({ section, values }: IStyleProps): React.ReactElement {
                 backgroundColor: palette.background,
                 borderColor: palette.border,
                 borderWidth: palette.borderWidth,
-                paddingHorizontal: padding.px,
-                paddingVertical: padding.py,
+                paddingHorizontal: circle ? 0 : padding.px,
+                paddingVertical: circle ? 0 : padding.py,
                 borderRadius: radius,
                 alignSelf: 'flex-start',
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 4,
+                justifyContent: 'center',
+                gap: circle ? 0 : 4,
+                ...(circle ? { width: diameter, height: diameter } : {}),
             }}
         >
             {variant === 'dot' ? (
