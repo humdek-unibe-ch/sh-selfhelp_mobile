@@ -7,8 +7,10 @@ import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, useInterpolatedField } from '@/components/renderer/useField';
 import { colorToHex } from '@selfhelp/shared';
+import { useAppColors } from '@/hooks/useAppColors';
 
 export function Divider({ section, values }: IStyleProps): React.ReactElement {
+    const colors = useAppColors();
     const orientation = readField<string>(section, 'shared_orientation') ?? 'horizontal';
     const color = readField<string>(section, 'shared_color') ?? 'gray';
     const variant = readField<string>(section, 'divider_variant') ?? readField<string>(section, 'web_divider_variant') ?? 'solid';
@@ -33,7 +35,7 @@ export function Divider({ section, values }: IStyleProps): React.ReactElement {
         return (
             <View className={buildSectionClasses(section)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ flex: flexBefore, height: 1, borderTopWidth: 1, borderColor: lineColor, borderStyle: lineStyle }} />
-                <Text style={{ color: '#666', fontSize: 12 }}>{label}</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 12 }}>{label}</Text>
                 <View style={{ flex: flexAfter, height: 1, borderTopWidth: 1, borderColor: lineColor, borderStyle: lineStyle }} />
             </View>
         );

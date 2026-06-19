@@ -6,6 +6,7 @@ import { Text } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, useInterpolatedField } from '@/components/renderer/useField';
+import { useAppColors } from '@/hooks/useAppColors';
 
 const ORDER_TO_GEOMETRY: Record<string, { fontSize: number; lineHeight: number; weight: '700' | '600'; letterSpacing: number; mt: number; mb: number }> = {
     '1': { fontSize: 34, lineHeight: 42, weight: '700', letterSpacing: -0.5, mt: 12, mb: 8 },
@@ -21,6 +22,7 @@ export function Title({ section, values }: IStyleProps): React.ReactElement {
     const contentField = useInterpolatedField(section, 'content', values);
     const textField = useInterpolatedField(section, 'text', values);
     const content = contentField || textField;
+    const colors = useAppColors();
 
     const g = ORDER_TO_GEOMETRY[order] ?? ORDER_TO_GEOMETRY['2'];
 
@@ -32,7 +34,7 @@ export function Title({ section, values }: IStyleProps): React.ReactElement {
                 lineHeight: g.lineHeight,
                 fontWeight: g.weight,
                 letterSpacing: g.letterSpacing,
-                color: '#1a1b1e',
+                color: colors.text,
                 marginTop: g.mt,
                 marginBottom: g.mb,
             }}

@@ -8,6 +8,7 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, useInterpolatedField } from '@/components/renderer/useField';
 import { useFieldBinding } from './_useFieldBinding';
 import { FieldShell } from './_FieldShell';
+import { useAppColors } from '@/hooks/useAppColors';
 
 interface ISegment {
     value: string;
@@ -38,10 +39,11 @@ export function SegmentedControl({ section, values }: IStyleProps): React.ReactE
     const segments = parseSegments(readField(section, 'segmented_control_data'));
     const initial = readField<string>(section, 'value') ?? segments[0]?.value ?? '';
     const { value, error, setValue } = useFieldBinding(name, initial);
+    const colors = useAppColors();
 
     return (
         <FieldShell label={label} error={error} className={buildSectionClasses(section)}>
-            <View style={{ flexDirection: 'row', backgroundColor: '#f1f3f5', padding: 2, borderRadius: 4 }}>
+            <View style={{ flexDirection: 'row', backgroundColor: colors.surfaceMuted, padding: 2, borderRadius: 4 }}>
                 {segments.map((seg) => {
                     const active = seg.value === value;
                     return (
@@ -52,11 +54,11 @@ export function SegmentedControl({ section, values }: IStyleProps): React.ReactE
                                 flex: 1,
                                 paddingVertical: 8,
                                 alignItems: 'center',
-                                backgroundColor: active ? '#fff' : 'transparent',
+                                backgroundColor: active ? colors.surface : 'transparent',
                                 borderRadius: 4,
                             }}
                         >
-                            <Text style={{ fontWeight: active ? '600' : '400', color: '#212529' }}>{seg.label}</Text>
+                            <Text style={{ fontWeight: active ? '600' : '400', color: colors.text }}>{seg.label}</Text>
                         </Pressable>
                     );
                 })}

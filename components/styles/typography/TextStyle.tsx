@@ -8,6 +8,7 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, useInterpolatedField } from '@/components/renderer/useField';
 import { FONT_SIZE_PX, LINE_HEIGHT, colorToHex } from '@selfhelp/shared';
 import type { TMantineSize } from '@selfhelp/shared';
+import { useAppColors } from '@/hooks/useAppColors';
 
 export function TextStyle({ section, values }: IStyleProps): React.ReactElement {
     const size = (readField<string>(section, 'shared_size') as TMantineSize | undefined) ?? 'md';
@@ -20,9 +21,16 @@ export function TextStyle({ section, values }: IStyleProps): React.ReactElement 
     const textField = useInterpolatedField(section, 'text', values);
     const contentField = useInterpolatedField(section, 'content', values);
     const text = textField || contentField;
+    const colors = useAppColors();
 
     const fontSize = FONT_SIZE_PX[size] ?? 16;
     const lineHeight = Math.round(fontSize * (LINE_HEIGHT[size] ?? 1.55));
+    // Authored palette colours need a lighter shade on dark backgrounds (Mantine
+    // does this automatically on web); with no authored colour fall back to the
+    // theme's primary text token instead of a hardcoded near-black.
+    const resolvedColor = color
+        ? (colorToHex(color, colors.isDark ? 5 : 7) ?? colors.text)
+        : colors.text;
 
     return (
         <Text
@@ -30,7 +38,7 @@ export function TextStyle({ section, values }: IStyleProps): React.ReactElement 
             style={{
                 fontSize,
                 lineHeight,
-                color: colorToHex(color, 7) ?? '#373a40',
+                color: resolvedColor,
                 fontWeight: (weight as 'bold' | 'normal' | undefined) ?? 'normal',
                 fontStyle: (fontStyle as 'italic' | 'normal' | undefined) ?? 'normal',
                 textDecorationLine:

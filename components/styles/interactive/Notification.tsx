@@ -7,6 +7,7 @@ import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { useInterpolatedField } from '@/components/renderer/useField';
 import { mobileStyleProps, mobileIntentPalette } from '@/components/ui/mobileStyleProps';
+import { useAppColors } from '@/hooks/useAppColors';
 
 export function Notification({ section, values }: IStyleProps): React.ReactElement {
     const title = useInterpolatedField(section, 'title', values);
@@ -14,12 +15,13 @@ export function Notification({ section, values }: IStyleProps): React.ReactEleme
     const resolved = mobileStyleProps(section);
     const { palette } = mobileIntentPalette(section, 'filled');
     const accent = palette.accent;
+    const colors = useAppColors();
 
     return (
         <View
             className={buildSectionClasses(section)}
             style={{
-                backgroundColor: '#fff',
+                backgroundColor: colors.surface,
                 padding: 12,
                 borderRadius: resolved.radiusPx ?? 4,
                 borderLeftWidth: 4,
@@ -32,8 +34,8 @@ export function Notification({ section, values }: IStyleProps): React.ReactEleme
                 marginVertical: 6,
             }}
         >
-            {title ? <Text style={{ fontWeight: '600', marginBottom: 4 }}>{title}</Text> : null}
-            {content ? <Text style={{ color: '#495057' }}>{content}</Text> : null}
+            {title ? <Text style={{ fontWeight: '600', marginBottom: 4, color: colors.text }}>{title}</Text> : null}
+            {content ? <Text style={{ color: colors.textMuted }}>{content}</Text> : null}
         </View>
     );
 }

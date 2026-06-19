@@ -4,6 +4,7 @@ SPDX-License-Identifier: MPL-2.0
 */
 import { Text, View } from 'react-native';
 import type { ReactNode } from 'react';
+import { useAppColors } from '@/hooks/useAppColors';
 
 interface IFieldShellProps {
     label?: string;
@@ -19,16 +20,17 @@ interface IFieldShellProps {
  * line. Every form-style component wraps its concrete control with this.
  */
 export function FieldShell({ label, description, error, required, children, className }: IFieldShellProps): React.ReactElement {
+    const colors = useAppColors();
     return (
         <View className={className} style={{ marginVertical: 6 }}>
             {label ? (
-                <Text style={{ fontWeight: '600', marginBottom: 4 }}>
+                <Text style={{ fontWeight: '600', marginBottom: 4, color: colors.text }}>
                     {label}
-                    {required ? <Text style={{ color: '#fa5252' }}> *</Text> : null}
+                    {required ? <Text style={{ color: colors.danger }}> *</Text> : null}
                 </Text>
             ) : null}
             {description ? (
-                <Text style={{ color: '#868e96', fontSize: 12, marginBottom: 6 }}>{description}</Text>
+                <Text style={{ color: colors.textFaint, fontSize: 12, marginBottom: 6 }}>{description}</Text>
             ) : null}
             {children}
             {error ? <Text style={{ color: '#fa5252', fontSize: 12, marginTop: 4 }}>{error}</Text> : null}

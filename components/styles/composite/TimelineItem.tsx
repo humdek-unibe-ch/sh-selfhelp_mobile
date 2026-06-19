@@ -18,9 +18,11 @@ import type { IStyleProps } from '@/components/renderer/types';
 import { Children } from '@/components/renderer/Children';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { useInterpolatedField } from '@/components/renderer/useField';
+import { useAppColors } from '@/hooks/useAppColors';
 
 export function TimelineItem({ section, values }: IStyleProps): React.ReactElement {
     const title = useInterpolatedField(section, 'title', values);
+    const colors = useAppColors();
 
     return (
         <View
@@ -34,7 +36,7 @@ export function TimelineItem({ section, values }: IStyleProps): React.ReactEleme
             />
             <View style={{ flex: 1, gap: 4 }}>
                 {title ? (
-                    <Text accessibilityRole="header" style={{ fontWeight: '700', fontSize: 15, color: '#212529' }}>
+                    <Text accessibilityRole="header" style={{ fontWeight: '700', fontSize: 15, color: colors.text }}>
                         {title}
                     </Text>
                 ) : null}

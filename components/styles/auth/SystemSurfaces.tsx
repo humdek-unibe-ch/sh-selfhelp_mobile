@@ -22,6 +22,7 @@ import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { useInterpolatedField } from '@/components/renderer/useField';
 import { mobileStyleProps } from '@/components/ui/mobileStyleProps';
+import { useAppColors } from '@/hooks/useAppColors';
 
 interface ISystemSurfaceProps extends IStyleProps {
     defaultTitle: string;
@@ -31,6 +32,7 @@ function SystemSurface({ section, values, defaultTitle }: ISystemSurfaceProps): 
     const title = useInterpolatedField(section, 'title', values, defaultTitle);
     const message = useInterpolatedField(section, 'message', values);
     const radius = mobileStyleProps(section).radiusPx ?? 12;
+    const colors = useAppColors();
 
     return (
         <View
@@ -38,18 +40,18 @@ function SystemSurface({ section, values, defaultTitle }: ISystemSurfaceProps): 
             style={{
                 borderRadius: radius,
                 borderWidth: 1,
-                borderColor: '#dee2e6',
-                backgroundColor: '#f8f9fa',
+                borderColor: colors.border,
+                backgroundColor: colors.surfaceMuted,
                 padding: 20,
                 marginVertical: 8,
                 gap: 8,
             }}
         >
-            <Text accessibilityRole="header" style={{ fontWeight: '700', fontSize: 18, color: '#212529' }}>
+            <Text accessibilityRole="header" style={{ fontWeight: '700', fontSize: 18, color: colors.text }}>
                 {title}
             </Text>
             {message ? (
-                <Text style={{ fontSize: 15, lineHeight: 22, color: '#495057' }}>{message}</Text>
+                <Text style={{ fontSize: 15, lineHeight: 22, color: colors.textMuted }}>{message}</Text>
             ) : null}
         </View>
     );

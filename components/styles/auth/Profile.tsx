@@ -12,6 +12,7 @@ import { Children } from '@/components/renderer/Children';
 import { useAuthStore } from '@/stores/authStore';
 import { logout } from '@/services/authService';
 import { CommunicationPreferences } from '@/components/styles/auth/CommunicationPreferences';
+import { useAppColors } from '@/hooks/useAppColors';
 
 /**
  * The profile style displays the current user info, communication
@@ -26,6 +27,7 @@ export function Profile({ section, values }: IStyleProps): React.ReactElement {
     const notificationsLabel = useInterpolatedField(section, 'profile_receive_notifications_label', values) || undefined;
     const emailsLabel = useInterpolatedField(section, 'profile_receive_emails_label', values) || undefined;
     const user = useAuthStore((s) => s.user);
+    const colors = useAppColors();
 
     const onLogout = async (): Promise<void> => {
         await logout();
@@ -37,8 +39,8 @@ export function Profile({ section, values }: IStyleProps): React.ReactElement {
             <Children sections={(section as { children?: never }).children} values={values} />
             {user ? (
                 <View style={{ marginVertical: 16 }}>
-                    <Text style={{ fontSize: 18, fontWeight: '600' }}>{user.name ?? user.email}</Text>
-                    <Text style={{ color: '#868e96' }}>{user.email}</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>{user.name ?? user.email}</Text>
+                    <Text style={{ color: colors.textMuted }}>{user.email}</Text>
                 </View>
             ) : null}
             <CommunicationPreferences
