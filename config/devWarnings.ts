@@ -30,6 +30,13 @@ const BENIGN_PATTERNS: readonly RegExp[] = [
     /Received `?(?:true|false)`? for a non-boolean attribute/i,
     /props\.pointerEvents is deprecated\. Use style\.pointerEvents/i,
     /Invalid DOM property/i,
+    // HeroUI Native derives button hover/ripple overlay tints with `colorKit`
+    // from theme colors that resolve to CSS variables on `react-native-web`;
+    // colorKit cannot parse those and falls back to black for the (barely
+    // visible) overlay. Harmless on web, but it spams `console.error` once per
+    // outline/ghost button render and surfaces as a dev error toast that keeps
+    // reappearing. Native builds resolve the colors and never hit this.
+    /\[colorKit\.\w+\] An error occurred while attempting to convert/i,
 ];
 
 function isBenign(args: readonly unknown[]): boolean {
