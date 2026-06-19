@@ -3,74 +3,121 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 import { useState } from 'react';
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { Text, View } from 'react-native';
 import axios from 'axios';
 
 import type { IStyleProps } from '@/components/renderer/types';
+import { CLIENT_TYPE_MOBILE, ENDPOINTS, HEADER_CLIENT_TYPE, resolveMantineVariant } from '@selfhelp/shared';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { useInterpolatedField } from '@/components/renderer/useField';
+import { readField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
 import { useServerStore } from '@/stores/serverStore';
-import { CLIENT_TYPE_MOBILE, ENDPOINTS, HEADER_CLIENT_TYPE } from '@selfhelp/shared';
-import { FieldShell } from '@/components/styles/forms/_FieldShell';
+import { MobileButton, MobileInput, MobileText } from '@/components/ui/adapters';
+import { mobileStyleProps } from '@/components/ui/mobileStyleProps';
+import { useAppColors } from '@/hooks/useAppColors';
 
 /**
- * `register` is essentially a self-service form that POSTs to
- * `/auth/register`. The exact field names follow the legacy convention.
+ * Register — the self-service registration form, built HeroUI-Native-first to
+ * mirror the web `register` style and the polished mobile `login`. Title, inputs
+ * and submit render through the adapter seam (`MobileText`/`MobileInput`/
+ * `MobileButton`); colours resolve through theme tokens + the shared variant
+ * resolver (never hard-coded), so it is correct in dark and light. It exposes
+ * the same CMS fields as the web renderer: email + an optional validation code
+ * (shown unless `open_registration` is on), driven by the `shared_color` accent.
  */
 export function Register({ section, values }: IStyleProps): React.ReactElement {
-    const labelEmail = useInterpolatedField(section, 'label_user', values) || 'Email';
-    const labelName = useInterpolatedField(section, 'label_name', values) || 'Name';
+    const colors = useAppColors();
+    const title = useInterpolatedField(section, 'title', values) || 'Registration';
+    const labelUser = useInterpolatedField(section, 'label_user', values) || 'Email';
     const labelSubmit = useInterpolatedField(section, 'label_submit', values) || 'Register';
-    const labelTitle = useInterpolatedField(section, 'label_title', values);
+    const labelCode = useInterpolatedField(section, 'label_code', values) || 'Validation Code';
+    const codePlaceholder = useInterpolatedField(section, 'code_placeholder', values) || 'Enter your code';
+    const alertSuccess =
+        useInterpolatedField(section, 'alert_success', values) ||
+        'Registration successful! Please check your email for the activation link.';
+    const alertFail = useInterpolatedField(section, 'alert_fail', values) || 'Invalid email or validation code.';
+
+    // Open registration (`open_registration === '1'`) hides the validation code
+    // field, matching the web renderer + backend policy.
+    const codeRequired = !readBooleanField(section, 'open_registration', false);
+
+    // Configurable accent — the SAME `shared_color` the web button reads.
+    const sharedColor = readField<string>(section, 'shared_color');
+    const accent = sharedColor ? resolveMantineVariant('filled', sharedColor).accent : colors.primary;
+    const buttonVariant = mobileStyleProps(section).buttonVariant ?? 'primary';
 
     const [email, setEmail] = useState('');
-    const [name, setName] = useState('');
+    const [code, setCode] = useState('');
     const [busy, setBusy] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [done, setDone] = useState(false);
+
+    // The backend requires `page_id` to locate the register section + read the
+    // open_registration / group policy (same payload the web renderer sends).
+    // `PageRenderer` seeds it into the interpolation values.
+    const pageId = typeof values.page_id === 'number' ? values.page_id : Number(values.page_id);
 
     const onSubmit = async (): Promise<void> => {
+        if (!Number.isFinite(pageId) || pageId <= 0) {
+            setError(alertFail);
+            return;
+        }
         setBusy(true);
+        setError(null);
         const baseURL = useServerStore.getState().serverUrl;
         try {
             await axios.post(
                 `${baseURL}${ENDPOINTS.AUTH.LOGIN.replace('/login', '/register')}`,
-                { email, name },
+                { page_id: pageId, email, ...(codeRequired && code ? { code } : {}) },
                 { headers: { [HEADER_CLIENT_TYPE]: CLIENT_TYPE_MOBILE } }
             );
-            Alert.alert('Registration submitted', 'Check your email for a validation link.');
+            setDone(true);
         } catch (e) {
-            Alert.alert('Registration failed', (e as Error).message);
+            setError((e as Error).message || alertFail);
         }
         setBusy(false);
     };
 
+    if (done) {
+        return (
+            <View className={buildSectionClasses(section)} style={{ padding: 16, gap: 8 }}>
+                <MobileText emphasis="title">{title}</MobileText>
+                <Text style={{ color: colors.text, fontSize: 14 }}>{alertSuccess}</Text>
+            </View>
+        );
+    }
+
     return (
-        <View className={buildSectionClasses(section)} style={{ padding: 16 }}>
-            {labelTitle ? <Text style={{ fontSize: 24, fontWeight: '700', marginBottom: 12 }}>{labelTitle}</Text> : null}
-            <FieldShell label={labelEmail}>
-                <TextInput
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    style={{ borderWidth: 1, borderColor: '#dee2e6', borderRadius: 4, padding: 10 }}
+        <View className={buildSectionClasses(section)} style={{ padding: 16, gap: 12 }}>
+            {title ? <MobileText emphasis="title">{title}</MobileText> : null}
+            <MobileInput
+                label={labelUser}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                isInvalid={!!error}
+                accessibilityLabel={labelUser}
+            />
+            {codeRequired ? (
+                <MobileInput
+                    label={labelCode}
+                    value={code}
+                    onChangeText={setCode}
+                    placeholder={codePlaceholder}
+                    isInvalid={!!error}
+                    accessibilityLabel={labelCode}
                 />
-            </FieldShell>
-            <FieldShell label={labelName}>
-                <TextInput
-                    value={name}
-                    onChangeText={setName}
-                    style={{ borderWidth: 1, borderColor: '#dee2e6', borderRadius: 4, padding: 10 }}
-                />
-            </FieldShell>
-            <Pressable
+            ) : null}
+            {error ? <Text style={{ color: colors.danger, fontSize: 13 }}>{error}</Text> : null}
+            <MobileButton
+                label={busy ? '…' : labelSubmit}
                 onPress={() => {
                     void onSubmit();
                 }}
-                disabled={busy}
-                style={{ backgroundColor: busy ? '#adb5bd' : '#228be6', padding: 12, borderRadius: 4, marginTop: 10, alignItems: 'center' }}
-            >
-                <Text style={{ color: '#fff', fontWeight: '600' }}>{busy ? '…' : labelSubmit}</Text>
-            </Pressable>
+                variant={buttonVariant}
+                accentColor={sharedColor ? accent : undefined}
+                isLoading={busy}
+                fullWidth
+            />
         </View>
     );
 }

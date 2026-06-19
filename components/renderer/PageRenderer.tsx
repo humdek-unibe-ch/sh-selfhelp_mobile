@@ -24,10 +24,15 @@ export function PageRenderer({ page }: IPageRendererProps): React.ReactElement {
 
     const values = useMemo<Record<string, unknown>>(() => {
         return {
+            // `page_id` is consumed by renderers that must tell the backend which
+            // CMS page they belong to (e.g. `register` posts it so the server can
+            // locate the register section + open_registration policy). It is not a
+            // user-facing `{{interpolation}}` token.
+            page_id: page.id,
             page_keyword: page.keyword,
             language: locale ?? 'en',
         };
-    }, [page.keyword, locale]);
+    }, [page.id, page.keyword, locale]);
 
     return (
         <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>

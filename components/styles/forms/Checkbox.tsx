@@ -18,6 +18,7 @@ export function Checkbox({ section, values }: IStyleProps): React.ReactElement {
     const offValue = '0';
     const initial = readField<string>(section, 'value') ?? offValue;
     const disabled = readBooleanField(section, 'disabled', false);
+    const labelPosition = readField<string>(section, 'shared_label_position') === 'left' ? 'left' : 'right';
     const { value, error, setValue } = useFieldBinding(name, initial);
     const checked = value === onValue;
 
@@ -30,6 +31,7 @@ export function Checkbox({ section, values }: IStyleProps): React.ReactElement {
                 onSelectedChange={(next) => setValue(next ? onValue : offValue)}
                 isDisabled={disabled}
                 label={label}
+                labelPosition={labelPosition}
                 accessibilityLabel={label}
             />
         </FieldShell>

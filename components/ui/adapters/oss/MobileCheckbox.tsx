@@ -21,14 +21,18 @@ export function MobileCheckbox({
     onSelectedChange,
     isDisabled,
     label,
+    labelPosition = 'right',
     className,
     accessibilityLabel,
     testID,
 }: IMobileCheckboxProps): React.ReactElement {
+    // `left` places the label before the box (mirrors the web Mantine
+    // `labelPosition="left"`); `right` keeps the default trailing label.
+    const rowDirection = labelPosition === 'left' ? 'flex-row-reverse' : 'flex-row';
     return (
         <View
             className={
-                ['flex-row items-center gap-2', className].filter(Boolean).join(' ').trim() ||
+                [`${rowDirection} items-center gap-2`, className].filter(Boolean).join(' ').trim() ||
                 undefined
             }
         >

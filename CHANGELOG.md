@@ -4,6 +4,75 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.4
+
+### `card` / `card-segment` / `checkbox` / `chip` / `code` / `title` / `register` style-polish wave
+
+Aligns the mobile renderers with the backend `Version20260619191224` field wave
+and `@selfhelp/shared` `1.14.10`. Field-name promotions, new cross-platform
+config, dark-mode fixes, and a HeroUI-Native-first `register` rebuild.
+
+- **`card` (`components/styles/layout/Card.tsx`).** Renders the new optional
+  auto-styled content fields: a cover `img_src` image (resolved via
+  `resolveAssetUrl`) and a themed `title` heading above the child sections — both
+  only when set, never creating a child section. The HeroUI Native `Card` surface
+  already themes for dark/light.
+- **`card-segment` (`CardSegment.tsx`).** Dark-mode fix: the segment divider was
+  a hard-coded `#f1f3f5` (white-ish, invisible/wrong on dark). It now opts in via
+  the new `shared_border` field and paints the divider with `useAppColors().border`
+  so it is correct in both themes. `web_segment_inherit_padding` is web-only and
+  intentionally not read.
+- **`checkbox` (`Checkbox.tsx` + `MobileCheckbox` adapter).** Honours the promoted
+  `shared_label_position` on mobile (was web-only) through the new additive
+  `IMobileCheckboxProps.labelPosition` (`@selfhelp/shared` 1.14.10); `left` places
+  the label before the box (`flex-row-reverse`).
+- **`chip` (`Chip.tsx`).** The resting (unselected) look now honours
+  `shared_chip_variant` (renamed from `web_chip_variant`) via the new shared
+  `mapChipVariantToHeroUiVariant` (filled→primary / light→soft / outline→tertiary);
+  selection still emphasises with `primary`.
+- **`code` (`Code.tsx`).** `web_code_block` → `code_block`; added `shared_radius`
+  (rounds the block surface via `RADIUS_PX`).
+- **`title` (`Title.tsx`).** `web_title_order` → `title_order`; added `shared_color`
+  (resolved to a themed accent hex via `resolveMantineVariant`) and
+  `shared_line_clamp` (renamed from `web_title_line_clamp`, maps to RN
+  `numberOfLines`).
+- **`register` (`auth/Register.tsx`) — HeroUI-Native-first rebuild + dark-mode fix.**
+  Replaced the raw `TextInput`/`Pressable`/`Text` (hard-coded `#dee2e6`/`#228be6`/
+  `#fff`, invisible/wrong on dark) with the `MobileText`/`MobileInput`/`MobileButton`
+  adapters, themed via `useAppColors`. Aligned the fields to the CMS contract
+  (email + optional validation code, hidden when `open_registration` is on — the
+  bogus "Name" field is gone) and drove the submit accent from the configurable
+  `shared_color`, matching the web `register` + mobile `login`.
+- **`register` submission fix — `page_id` is now sent.** The rebuilt form posted
+  only `{ email, code? }`, so `POST /auth/register` failed schema validation with
+  `Field 'page_id': The property page_id is required` (the backend needs it to
+  locate the register section + open-registration policy, exactly like the web
+  renderer). `PageRenderer` now seeds the current `page_id` into the interpolation
+  `values`, and `Register` reads it and includes it in the payload (guarding the
+  missing-id case). (`components/renderer/PageRenderer.tsx`,
+  `components/styles/auth/Register.tsx`)
+
+## 0.1.3
+
+### `accordion` / `accordion-item` HeroUI Native rebuild
+- **The accordion is rebuilt on the HeroUI Native `Accordion` compound**
+  (`Accordion` / `.Item` / `.Trigger` / `.Indicator` / `.Content`) — themed,
+  animated, with separators — replacing the hand-rolled `View`/`Pressable`/`Text`
+  implementation and its custom open-state context
+  (`components/styles/composite/Accordion/Accordion.tsx`,
+  `components/styles/composite/AccordionItem.tsx`).
+- **Dark-mode fix.** The old renderer used a hard-coded `#e9ecef` border and an
+  uncoloured `<Text>` (black, invisible on dark). Text colours now resolve
+  through `useAppColors()` and the surfaces/animations through the theme-aware
+  HeroUI components, so the accordion is legible in light + dark.
+- **More cross-platform config.** The mobile accordion now honours
+  `shared_accordion_variant` (via `@selfhelp/shared`
+  `mapAccordionVariantToHeroUiVariant` → HeroUI `default`/`surface`) and
+  `shared_radius` (surface container radius), in addition to `shared_multiple`.
+- **Optional item subtitle.** `accordion-item` renders the new `description`
+  content field as a muted subtitle under the label. Requires `@selfhelp/shared`
+  `1.14.8`.
+
 ## 0.1.2
 
 ### `alert` / `badge` / `avatar` / `login` style-polish wave
