@@ -4,6 +4,90 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.2
+
+### `alert` / `badge` / `avatar` / `login` style-polish wave
+- **Alert is now dismissible on mobile.** The `web_with_close_button` field was
+  renamed to the cross-platform `closable` (common scope) in the backend, so the
+  mobile `Alert` renderer now honours it: when set it shows a themed `×` dismiss
+  button that hides the alert (`components/styles/interactive/Alert.tsx`),
+  matching the web close button.
+- **Badge `circle` variant.** New cross-platform `circle` boolean renders a
+  fixed-diameter dot (counts / single initials) instead of the default pill
+  (`components/styles/interactive/Badge.tsx`). Variant/colour keep flowing
+  through the shared mapper (`shared_variant` / `shared_color`).
+- **Avatar auto-initials from `name`.** The `Avatar` renderer now derives its
+  fallback initials from the new `name` field (first letter of the first two
+  words), mirroring the web Mantine `name` behaviour, before falling back to the
+  explicit initials fields. Extracted the pure helper into
+  `components/styles/interactive/avatarInitials.ts` with a focused
+  `__tests__/unit/avatarInitials.test.mjs` suite (the `node --test` harness
+  cannot import `.tsx`).
+- **Login rebuilt HeroUI-Native-first + `subtitle` + dark-mode fix.** The mobile
+  `Login` renderer (`components/styles/auth/Login.tsx`) was rewritten to compose
+  from the HeroUI Native adapter seam — `MobileText` (title/subtitle),
+  `MobileInput` (`TextField`+`Label`+`Input` for email/password) and
+  `MobileButton` (`Button`) — instead of raw `TextInput`/`Pressable`, following
+  the style command's component-selection priority (HeroUI Native → Expo/RN →
+  custom). It renders the new optional `subtitle` content field, marks the inputs
+  `isInvalid` on a failed login, and every colour now resolves through theme
+  tokens (`useAppColors` + Uniwind), fixing dark-mode legibility (the previous
+  hard-coded `#228be6`/`#dee2e6`/`#fff` hexes are gone). Also fixed the title
+  field read: the renderer now reads `login_title` (the real field name in the
+  `ILoginStyle` contract and the web renderer) instead of the non-existent
+  `label_title`, so the optional title actually renders.
+- The mobile `Button` renderer already read `url` / `page_keyword` and resolved
+  its variant via the shared mapper (`shared_variant`), so it needed no change in
+  this wave. These renderers read the new/renamed fields by name through the
+  existing shared mapper; the fields themselves ship in the backend `0.1.15`
+  style-schema contract (migration `Version20260619131830`).
+- **Aligned `@selfhelp/shared` to the published `1.14.7`** (was `^1.14.5` with a
+  stale, never-published `1.15.0` lingering in `node_modules`) so the mobile app
+  and the web frontend now consume the exact same published contract version.
+  `1.14.7` adds the `IMobileButtonProps.accentColor` passthrough used below.
+
+### Adapter & login polish (HeroUI Native on `react-native-web`)
+- **Visible input borders.** `MobileInput` and `MobileTextarea`
+  (`components/ui/adapters/oss/`) now set an explicit themed `borderColor` /
+  `backgroundColor` / text + placeholder colour via the `style` prop. HeroUI
+  Native separates inputs with a shadow that `react-native-web` does not draw, so
+  the login fields looked border-less; the explicit theme-aware border (from
+  `useAppColors`) fixes that on web and mobile, in light and dark.
+- **Authored button colour on mobile (`shared_color`).** `MobileButton` gained an
+  `accentColor` passthrough (the shared `1.14.7` contract) that overrides the
+  HeroUI variant fill while keeping the readable foreground. The `Login` renderer
+  resolves `shared_color` to a concrete accent via the shared
+  `resolveMantineVariant(...).accent` and feeds it to **both** the submit button
+  (`accentColor`) and the "Forgot password?" / "Create account" links, so the
+  authored colour now applies on mobile (it previously only worked on web) and the
+  button and its links stay consistent. The links open the headless
+  `reset-password` / `register` pages in a modal (`LoginAuxModal`).
+
+### Content sanitization (single global chokepoint)
+- **All interpolated display text is sanitized.** `useInterpolatedField`
+  (`components/renderer/useField.ts`) now runs every value through
+  `stripHtmlToText` (`components/renderer/sanitizeContent.ts`) after
+  interpolation, so leaf renderers can never show raw `<p>`/HTML. The sanitizer is
+  **JSON-aware** — values that parse as JSON are left intact so structured content
+  fields survive. Covered by `__tests__/unit/sanitizeContent.test.mjs` (+ updated
+  `useField.test.mjs`).
+
+### Dark-mode legibility across renderers
+- **Renderers resolve authored colours through theme tokens.** Typography
+  (`TextStyle`, `Title`, `Blockquote`, `Code`), layout (`Divider`), media
+  (`Figure`), interactive (`Notification`), composite (`ListItem`,
+  `TimelineItem`), forms (`SegmentedControl`, `_FieldShell`) and the auth
+  surfaces (`Profile`, `SystemSurfaces`) now derive colours from `useAppColors`
+  (lighter palette shade on dark backgrounds, theme text token as the default)
+  instead of hard-coded near-black hexes, fixing dark-mode legibility.
+
+### Dev experience
+- **Suppress the benign `[colorKit.RGB]` warning.** HeroUI Native's colour
+  parser logs `[colorKit.RGB] An error occurred …` on `react-native-web`, which
+  Expo surfaced as a stuck, un-closable LogBox toast. Added a `BENIGN_PATTERNS`
+  entry in `config/devWarnings.ts` so it is filtered before reaching the console /
+  LogBox.
+
 ## 0.1.1
 
 ### Theme selector, account sheet, and themed debug tree
