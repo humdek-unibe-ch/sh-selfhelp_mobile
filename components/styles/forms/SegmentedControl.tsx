@@ -27,10 +27,15 @@ function parseSegments(raw: unknown): ISegment[] {
     return [];
 }
 
+/**
+ * SegmentedControl — OSS fallback: a tab row (RN Pressables). HeroUI Native
+ * **Pro** override (RF-30): `Segment`, swapped in by the Pro mobile build via
+ * the `@selfhelp/mobile-pro-ui` adapter seam. Same CMS fields either way.
+ */
 export function SegmentedControl({ section, values }: IStyleProps): React.ReactElement {
     const name = readField<string>(section, 'name') ?? '';
     const label = useInterpolatedField(section, 'label', values);
-    const segments = parseSegments(readField(section, 'mantine_segmented_control_data'));
+    const segments = parseSegments(readField(section, 'segmented_control_data'));
     const initial = readField<string>(section, 'value') ?? segments[0]?.value ?? '';
     const { value, error, setValue } = useFieldBinding(name, initial);
 

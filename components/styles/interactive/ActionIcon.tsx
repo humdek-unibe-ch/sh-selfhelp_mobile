@@ -7,9 +7,8 @@ import { useRouter } from 'expo-router';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
-import { resolveMantineVariant } from '@/styles/mantineVariant';
-import { RADIUS_PX } from '@selfhelp/shared';
-import type { TCanonicalRadius, TMantineSize } from '@selfhelp/shared';
+import type { TMantineSize } from '@selfhelp/shared';
+import { mobileStyleProps, mobileIntentPalette } from '@/components/ui/mobileStyleProps';
 
 const SIZE_PX: Record<TMantineSize, { box: number; icon: number }> = {
     xs: { box: 24, icon: 12 },
@@ -21,18 +20,16 @@ const SIZE_PX: Record<TMantineSize, { box: number; icon: number }> = {
 
 export function ActionIcon({ section, values }: IStyleProps): React.ReactElement {
     const router = useRouter();
-    const variant = readField<string>(section, 'mantine_variant') ?? 'subtle';
-    const color = readField<string>(section, 'mantine_color') ?? 'gray';
-    const size = (readField<string>(section, 'mantine_size') as TMantineSize | undefined) ?? 'md';
-    const radius = readField<string>(section, 'mantine_radius') ?? 'md';
-    const icon = readField<string>(section, 'mantine_left_icon') ?? '?';
-    const disabled = readBooleanField(section, 'disabled', false);
+    const resolved = mobileStyleProps(section);
+    const { palette: v } = mobileIntentPalette(section, 'subtle');
+    const size = (readField<string>(section, 'shared_size') as TMantineSize | undefined) ?? 'md';
+    const icon = readField<string>(section, 'left_icon') ?? readField<string>(section, 'web_left_icon') ?? '?';
+    const disabled = resolved.isDisabled ?? readBooleanField(section, 'disabled', false);
     const isLink = readBooleanField(section, 'is_link', false);
     const pageKeyword = useInterpolatedField(section, 'page_keyword', values);
     const openInNewTab = readBooleanField(section, 'open_in_new_tab', false);
 
     const dims = SIZE_PX[size] ?? SIZE_PX.md;
-    const v = resolveMantineVariant(variant, color);
 
     return (
         <Pressable
@@ -50,7 +47,7 @@ export function ActionIcon({ section, values }: IStyleProps): React.ReactElement
             style={({ pressed }) => ({
                 width: dims.box,
                 height: dims.box,
-                borderRadius: RADIUS_PX[radius as TCanonicalRadius] ?? 8,
+                borderRadius: resolved.radiusPx ?? 8,
                 backgroundColor: pressed && !disabled ? v.pressedBackground : v.background,
                 borderWidth: v.borderWidth,
                 borderColor: v.border,

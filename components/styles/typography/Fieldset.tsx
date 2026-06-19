@@ -14,7 +14,7 @@ export function Fieldset({ section, values }: IStyleProps): React.ReactElement {
     const legendField = useInterpolatedField(section, 'legend', values);
     const labelField = useInterpolatedField(section, 'label', values);
     const legend = legendField || labelField;
-    const radius = readField<string>(section, 'mantine_radius') ?? 'sm';
+    const radius = readField<string>(section, 'shared_radius') ?? 'sm';
     return (
         <View
             className={buildSectionClasses(section)}

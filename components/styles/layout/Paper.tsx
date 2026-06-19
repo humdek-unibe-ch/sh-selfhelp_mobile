@@ -7,8 +7,7 @@ import type { IStyleProps } from '@/components/renderer/types';
 import { Children } from '@/components/renderer/Children';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField } from '@/components/renderer/useField';
-import { RADIUS_PX } from '@selfhelp/shared';
-import type { TCanonicalRadius } from '@selfhelp/shared';
+import { mobileStyleProps } from '@/components/ui/mobileStyleProps';
 
 const SHADOWS: Record<string, { offset: { width: number; height: number }; opacity: number; radius: number; elevation: number }> = {
     none: { offset: { width: 0, height: 0 }, opacity: 0, radius: 0, elevation: 0 },
@@ -20,12 +19,12 @@ const SHADOWS: Record<string, { offset: { width: number; height: number }; opaci
 };
 
 export function Paper({ section, values }: IStyleProps): React.ReactElement {
-    const shadow = readField<string>(section, 'mantine_paper_shadow') ?? 'none';
-    const radius = readField<string>(section, 'mantine_radius') ?? 'md';
-    const border = readBooleanField(section, 'mantine_border', false);
+    const resolved = mobileStyleProps(section);
+    const shadow = readField<string>(section, 'paper_shadow') ?? readField<string>(section, 'web_paper_shadow') ?? 'none';
+    const border = readBooleanField(section, 'border', false) || readBooleanField(section, 'web_border', false);
 
     const s = SHADOWS[shadow] ?? SHADOWS.none;
-    const borderRadius = RADIUS_PX[radius as TCanonicalRadius] ?? 8;
+    const borderRadius = resolved.radiusPx ?? 8;
 
     return (
         <View

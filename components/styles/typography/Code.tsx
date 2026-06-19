@@ -8,7 +8,7 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
 
 export function Code({ section, values }: IStyleProps): React.ReactElement {
-    const block = readBooleanField(section, 'mantine_code_block', false);
+    const block = readBooleanField(section, 'web_code_block', false);
     const text = useInterpolatedField(section, 'content', values);
     if (block) {
         return (

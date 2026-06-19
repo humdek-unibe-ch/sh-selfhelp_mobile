@@ -15,11 +15,11 @@ import {
 } from '@/styles/mantineToTailwind';
 
 export function FlexBox({ section, values }: IStyleProps): React.ReactElement {
-    const justify = readField<string>(section, 'mantine_justify');
-    const align = readField<string>(section, 'mantine_align');
-    const direction = readField<string>(section, 'mantine_direction') ?? 'row';
-    const wrap = readField<string>(section, 'mantine_wrap');
-    const gap = readField<string>(section, 'mantine_gap');
+    const justify = readField<string>(section, 'shared_justify');
+    const align = readField<string>(section, 'shared_align');
+    const direction = readField<string>(section, 'shared_direction') ?? 'row';
+    const wrap = readField<string>(section, 'shared_wrap');
+    const gap = readField<string>(section, 'shared_gap');
 
     const extra = [
         'flex',

@@ -15,7 +15,7 @@ import { FieldShell } from '@/components/styles/forms/_FieldShell';
 export function TwoFactorAuth({ section, values }: IStyleProps): React.ReactElement {
     const labelCode = useInterpolatedField(section, 'label_code', values) || 'Code';
     const labelSubmit = useInterpolatedField(section, 'label_submit', values) || 'Verify';
-    const labelTitle = useInterpolatedField(section, 'label_title', values);
+    const labelTitle = useInterpolatedField(section, 'title', values);
 
     const params = useLocalSearchParams<{ user_id?: string }>();
     const [code, setCode] = useState('');

@@ -11,7 +11,7 @@ import { colorToHex } from '@selfhelp/shared';
 export function Blockquote({ section, values }: IStyleProps): React.ReactElement {
     const content = useInterpolatedField(section, 'content', values);
     const cite = useInterpolatedField(section, 'cite', values);
-    const color = readField<string>(section, 'mantine_color') ?? 'blue';
+    const color = readField<string>(section, 'shared_color') ?? 'blue';
     return (
         <View
             className={buildSectionClasses(section)}

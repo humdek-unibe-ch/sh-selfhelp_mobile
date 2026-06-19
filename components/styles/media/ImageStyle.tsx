@@ -35,11 +35,11 @@ export function ImageStyle({ section, values }: IStyleProps): React.ReactElement
     const baseUrl = useServerStore((s) => s.serverUrl) ?? '';
     const src = useInterpolatedField(section, 'img_src', values);
     const alt = useInterpolatedField(section, 'alt', values);
-    const blurhash = readField<string>(section, 'blurhash') ?? readField<string>(section, 'mantine_image_blurhash');
-    const radius = readField<string>(section, 'mantine_radius') ?? 'sm';
-    const fit = (readField<string>(section, 'mantine_image_fit') ?? 'cover');
-    const width = readNumberField(section, 'width') ?? readNumberField(section, 'mantine_width');
-    const height = readNumberField(section, 'height') ?? readNumberField(section, 'mantine_height') ?? 200;
+    const blurhash = readField<string>(section, 'blurhash') ?? readField<string>(section, 'web_image_blurhash');
+    const radius = readField<string>(section, 'shared_radius') ?? 'sm';
+    const fit = (readField<string>(section, 'web_image_fit') ?? 'cover');
+    const width = readNumberField(section, 'width') ?? readNumberField(section, 'web_width');
+    const height = readNumberField(section, 'height') ?? readNumberField(section, 'web_height') ?? 200;
 
     if (!src) return null;
 

@@ -12,11 +12,11 @@ import type { TCanonicalSpacing } from '@selfhelp/shared';
 
 /**
  * SimpleGrid renders rows of N equal-width columns. Mobile is single
- * column up to ~600dp; we keep it simple: respect `mantine_cols` always.
+ * column up to ~600dp; we keep it simple: respect `web_cols` always.
  */
 export function SimpleGrid({ section, values }: IStyleProps): React.ReactElement {
-    const cols = readNumberField(section, 'mantine_cols', 2) ?? 2;
-    const spacingKey = readField<string>(section, 'mantine_spacing') ?? 'md';
+    const cols = readNumberField(section, 'web_cols', 2) ?? 2;
+    const spacingKey = readField<string>(section, 'spacing') ?? readField<string>(section, 'web_spacing') ?? 'md';
     const gap = SPACING_PX[spacingKey as TCanonicalSpacing] ?? 16;
 
     const children = ((section as { children?: never }).children as never as React.ReactNode[]) ?? [];

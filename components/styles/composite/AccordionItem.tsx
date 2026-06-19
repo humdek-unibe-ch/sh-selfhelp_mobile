@@ -11,7 +11,7 @@ import { useAccordionContext } from './Accordion/index';
 
 export function AccordionItem({ section, values }: IStyleProps): React.ReactElement {
     const ctx = useAccordionContext();
-    const itemValue = readField<string>(section, 'mantine_accordion_item_value') ?? String(section.id);
+    const itemValue = readField<string>(section, 'web_accordion_item_value') ?? String(section.id);
     const label = useInterpolatedField(section, 'label', values);
     const isOpen = ctx?.open.has(itemValue) ?? false;
 

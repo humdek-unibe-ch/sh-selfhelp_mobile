@@ -9,6 +9,12 @@ import { readField, readBooleanField, useInterpolatedField } from '@/components/
 import { useFieldBinding } from './_useFieldBinding';
 import { FieldShell } from './_FieldShell';
 
+/**
+ * NumberInput — OSS fallback: a numeric RN text field. HeroUI Native **Pro**
+ * override (RF-29): `NumberField` / `NumberStepper` / `NumberPad`, swapped in by
+ * the Pro mobile build via the `@selfhelp/mobile-pro-ui` adapter seam. Same CMS
+ * fields either way.
+ */
 export function NumberInput({ section, values }: IStyleProps): React.ReactElement {
     const name = readField<string>(section, 'name') ?? '';
     const label = useInterpolatedField(section, 'label', values);

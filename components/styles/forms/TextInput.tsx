@@ -2,8 +2,8 @@
 SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
-import { TextInput as RNTextInput } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
+import { MobileInput } from '@/components/ui/adapters';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
 import { useFieldBinding } from './_useFieldBinding';
@@ -20,20 +20,19 @@ export function TextInput({ section, values }: IStyleProps): React.ReactElement 
 
     const { value, error, setValue } = useFieldBinding(name, initial);
 
+    // Renders through the swappable HeroUI Native TextField adapter on every
+    // platform, including web. Label/description/error stay on FieldShell so the
+    // adapter renders the control only (no duplicate label).
     return (
         <FieldShell label={label} description={description} required={required} error={error} className={buildSectionClasses(section)}>
-            <RNTextInput
+            <MobileInput
                 value={value}
                 onChangeText={setValue}
                 placeholder={placeholder}
-                editable={!disabled}
-                style={{
-                    borderWidth: 1,
-                    borderColor: error ? '#fa5252' : '#dee2e6',
-                    borderRadius: 4,
-                    padding: 10,
-                    backgroundColor: disabled ? '#f8f9fa' : '#fff',
-                }}
+                isDisabled={disabled}
+                isInvalid={!!error}
+                isRequired={required}
+                accessibilityLabel={label}
             />
         </FieldShell>
     );

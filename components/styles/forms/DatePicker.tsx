@@ -10,14 +10,17 @@ import { useFieldBinding } from './_useFieldBinding';
 import { FieldShell } from './_FieldShell';
 
 /**
- * DatePicker v1: text input (ISO date). When DateTimePicker dep is
- * added, swap this for the platform-native modal.
+ * DatePicker — OSS fallback: text input (ISO date). HeroUI Native **Pro**
+ * override (RF-26): `DatePicker` / `Calendar` / `DateField` / `DateRangePicker`
+ * / `DateTimePicker` / `TimePicker` / `WheelDateTimePicker` / `WheelTimePicker`,
+ * swapped in by the Pro mobile build via the `@selfhelp/mobile-pro-ui` adapter
+ * seam. Same CMS fields either way.
  */
 export function DatePicker({ section, values }: IStyleProps): React.ReactElement {
     const name = readField<string>(section, 'name') ?? '';
     const label = useInterpolatedField(section, 'label', values);
     const description = useInterpolatedField(section, 'description', values);
-    const placeholder = useInterpolatedField(section, 'mantine_datepicker_placeholder', values) || 'YYYY-MM-DD';
+    const placeholder = useInterpolatedField(section, 'datepicker_placeholder', values) || 'YYYY-MM-DD';
     const required = readBooleanField(section, 'is_required', false);
     const disabled = readBooleanField(section, 'disabled', false);
     const initial = readField<string>(section, 'value') ?? '';

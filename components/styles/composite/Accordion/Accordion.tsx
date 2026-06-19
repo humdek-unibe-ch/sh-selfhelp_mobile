@@ -19,7 +19,7 @@ import { readBooleanField } from '@/components/renderer/useField';
 import { AccordionContext, useAccordionState } from './Accordion.hooks';
 
 export function Accordion({ section, values }: IStyleProps): React.ReactElement {
-    const multiple = readBooleanField(section, 'mantine_accordion_multiple', false);
+    const multiple = readBooleanField(section, 'shared_multiple', false);
     const ctx = useAccordionState(multiple);
 
     return (

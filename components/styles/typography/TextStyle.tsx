@@ -10,13 +10,13 @@ import { FONT_SIZE_PX, LINE_HEIGHT, colorToHex } from '@selfhelp/shared';
 import type { TMantineSize } from '@selfhelp/shared';
 
 export function TextStyle({ section, values }: IStyleProps): React.ReactElement {
-    const size = (readField<string>(section, 'mantine_size') as TMantineSize | undefined) ?? 'md';
-    const color = readField<string>(section, 'mantine_color');
-    const weight = readField<string>(section, 'mantine_text_font_weight');
-    const fontStyle = readField<string>(section, 'mantine_text_font_style');
-    const decoration = readField<string>(section, 'mantine_text_text_decoration');
-    const transform = readField<string>(section, 'mantine_text_text_transform');
-    const align = readField<string>(section, 'mantine_text_align');
+    const size = (readField<string>(section, 'shared_size') as TMantineSize | undefined) ?? 'md';
+    const color = readField<string>(section, 'shared_color');
+    const weight = readField<string>(section, 'web_text_font_weight');
+    const fontStyle = readField<string>(section, 'web_text_font_style');
+    const decoration = readField<string>(section, 'web_text_text_decoration');
+    const transform = readField<string>(section, 'web_text_text_transform');
+    const align = readField<string>(section, 'shared_text_align');
     const textField = useInterpolatedField(section, 'text', values);
     const contentField = useInterpolatedField(section, 'content', values);
     const text = textField || contentField;

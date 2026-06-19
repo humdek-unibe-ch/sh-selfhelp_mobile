@@ -9,11 +9,11 @@ import { readField, useInterpolatedField } from '@/components/renderer/useField'
 import { colorToHex } from '@selfhelp/shared';
 
 export function Divider({ section, values }: IStyleProps): React.ReactElement {
-    const orientation = readField<string>(section, 'mantine_orientation') ?? 'horizontal';
-    const color = readField<string>(section, 'mantine_color') ?? 'gray';
-    const variant = readField<string>(section, 'mantine_divider_variant') ?? 'solid';
-    const label = useInterpolatedField(section, 'mantine_divider_label', values);
-    const labelPosition = readField<string>(section, 'mantine_divider_label_position') ?? 'center';
+    const orientation = readField<string>(section, 'shared_orientation') ?? 'horizontal';
+    const color = readField<string>(section, 'shared_color') ?? 'gray';
+    const variant = readField<string>(section, 'divider_variant') ?? readField<string>(section, 'web_divider_variant') ?? 'solid';
+    const label = useInterpolatedField(section, 'divider_label', values);
+    const labelPosition = readField<string>(section, 'divider_label_position') ?? readField<string>(section, 'web_divider_label_position') ?? 'center';
 
     const lineColor = colorToHex(color, 4) ?? '#dee2e6';
     const lineStyle = variant === 'dashed' ? 'dashed' : variant === 'dotted' ? 'dotted' : 'solid';

@@ -28,13 +28,18 @@ function parseItems(raw: unknown): IItem[] {
     return [];
 }
 
+/**
+ * Radio — OSS fallback: a stack of tappable RN radio rows. HeroUI Native **Pro**
+ * override (Pro catalog, mobile-mapping §8): `RadioButtonGroup`, swapped in by
+ * the Pro mobile build via the `@selfhelp/mobile-pro-ui` adapter seam.
+ */
 export function Radio({ section, values }: IStyleProps): React.ReactElement {
     const name = readField<string>(section, 'name') ?? '';
     const label = useInterpolatedField(section, 'label', values);
     const description = useInterpolatedField(section, 'description', values);
     const required = readBooleanField(section, 'is_required', false);
     const initial = readField<string>(section, 'value') ?? '';
-    const items = parseItems(readField(section, 'items') ?? readField(section, 'mantine_radio_options'));
+    const items = parseItems(readField(section, 'items') ?? readField(section, 'radio_options'));
     const { value, error, setValue } = useFieldBinding(name, initial);
 
     return (

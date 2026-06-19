@@ -5,16 +5,15 @@ SPDX-License-Identifier: MPL-2.0
 import { Text, View } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readField, useInterpolatedField } from '@/components/renderer/useField';
-import { colorToHex, RADIUS_PX } from '@selfhelp/shared';
-import type { TCanonicalRadius } from '@selfhelp/shared';
+import { useInterpolatedField } from '@/components/renderer/useField';
+import { mobileStyleProps, mobileIntentPalette } from '@/components/ui/mobileStyleProps';
 
 export function Notification({ section, values }: IStyleProps): React.ReactElement {
     const title = useInterpolatedField(section, 'title', values);
     const content = useInterpolatedField(section, 'content', values);
-    const color = readField<string>(section, 'mantine_color') ?? 'blue';
-    const radius = readField<string>(section, 'mantine_radius') ?? 'sm';
-    const accent = colorToHex(color, 6) ?? '#228be6';
+    const resolved = mobileStyleProps(section);
+    const { palette } = mobileIntentPalette(section, 'filled');
+    const accent = palette.accent;
 
     return (
         <View
@@ -22,7 +21,7 @@ export function Notification({ section, values }: IStyleProps): React.ReactEleme
             style={{
                 backgroundColor: '#fff',
                 padding: 12,
-                borderRadius: RADIUS_PX[radius as TCanonicalRadius] ?? 4,
+                borderRadius: resolved.radiusPx ?? 4,
                 borderLeftWidth: 4,
                 borderLeftColor: accent,
                 shadowColor: '#000',

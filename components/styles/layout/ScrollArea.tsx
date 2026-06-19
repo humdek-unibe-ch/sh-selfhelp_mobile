@@ -9,7 +9,7 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField } from '@/components/renderer/useField';
 
 export function ScrollAreaStyle({ section, values }: IStyleProps): React.ReactElement {
-    const height = readField<string>(section, 'mantine_height');
+    const height = readField<string>(section, 'web_height');
     const numericHeight = height ? Number(height) : undefined;
     return (
         <ScrollView

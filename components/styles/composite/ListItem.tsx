@@ -9,7 +9,7 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 import { useInterpolatedField } from '@/components/renderer/useField';
 
 export function ListItem({ section, values }: IStyleProps): React.ReactElement {
-    const content = useInterpolatedField(section, 'mantine_list_item_content', values);
+    const content = useInterpolatedField(section, 'list_item_content', values);
     return (
         <View className={buildSectionClasses(section)} style={{ flexDirection: 'row', marginVertical: 2 }}>
             <Text style={{ marginRight: 8, color: '#868e96' }}>•</Text>

@@ -5,39 +5,46 @@ SPDX-License-Identifier: MPL-2.0
 import { Text, View } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readField, useInterpolatedField } from '@/components/renderer/useField';
-import { resolveMantineVariant } from '@/styles/mantineVariant';
-import { FONT_SIZE_PX, RADIUS_PX } from '@selfhelp/shared';
-import type { TCanonicalRadius, TMantineSize } from '@selfhelp/shared';
+import { useInterpolatedField } from '@/components/renderer/useField';
+import { FONT_SIZE_PX } from '@selfhelp/shared';
+import { mobileStyleProps, mobileIntentPalette } from '@/components/ui/mobileStyleProps';
 
-const SIZE_PADDING: Record<TMantineSize, { px: number; py: number }> = {
-    xs: { px: 8, py: 2 },
-    sm: { px: 10, py: 3 },
-    md: { px: 12, py: 4 },
-    lg: { px: 14, py: 5 },
-    xl: { px: 16, py: 6 },
+const SIZE_PADDING: Record<'sm' | 'md' | 'lg', { px: number; py: number; fs: number }> = {
+    sm: { px: 8, py: 2, fs: (FONT_SIZE_PX.xs ?? 12) },
+    md: { px: 10, py: 3, fs: (FONT_SIZE_PX.sm ?? 14) },
+    lg: { px: 12, py: 4, fs: (FONT_SIZE_PX.md ?? 16) },
 };
 
+/**
+ * Badge — HeroUI Native OSS has no Badge primitive, so this is the OSS fallback:
+ * a compact status pill rendered with React Native, but driven entirely by the
+ * shared semantic field model (`intent` -> color, `size`, `radius`) through the
+ * shared mapper. `mobile_*` overrides would slot in here for native-only tweaks.
+ *
+ * HeroUI Native **Pro** override (RF-25): `Badge`. The Pro mobile build
+ * (`@selfhelp/mobile-pro-ui`) swaps in the real component via the adapter seam;
+ * the OSS build keeps this fallback. Same CMS fields either way.
+ */
 export function Badge({ section, values }: IStyleProps): React.ReactElement {
     const label = useInterpolatedField(section, 'label', values);
-    const variant = readField<string>(section, 'mantine_variant') ?? 'light';
-    const color = readField<string>(section, 'mantine_color') ?? 'blue';
-    const size = (readField<string>(section, 'mantine_size') as TMantineSize | undefined) ?? 'sm';
-    const radius = readField<string>(section, 'mantine_radius') ?? 'xl';
-
-    const v = resolveMantineVariant(variant, color);
-    const padding = SIZE_PADDING[size] ?? SIZE_PADDING.sm;
+    const resolved = mobileStyleProps(section);
+    const { palette, variant } = mobileIntentPalette(section, 'light');
+    const size = resolved.size ?? 'sm';
+    const padding = SIZE_PADDING[size];
+    const radius = resolved.radiusPx ?? 9999;
 
     return (
         <View
+            accessibilityRole="text"
+            accessibilityLabel={label}
             className={buildSectionClasses(section)}
             style={{
-                backgroundColor: v.background,
-                borderColor: v.border,
-                borderWidth: v.borderWidth,
+                backgroundColor: palette.background,
+                borderColor: palette.border,
+                borderWidth: palette.borderWidth,
                 paddingHorizontal: padding.px,
                 paddingVertical: padding.py,
-                borderRadius: RADIUS_PX[radius as TCanonicalRadius] ?? 999,
+                borderRadius: radius,
                 alignSelf: 'flex-start',
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -45,19 +52,12 @@ export function Badge({ section, values }: IStyleProps): React.ReactElement {
             }}
         >
             {variant === 'dot' ? (
-                <View
-                    style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: 3,
-                        backgroundColor: v.accent,
-                    }}
-                />
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: palette.accent }} />
             ) : null}
             <Text
                 style={{
-                    color: v.foreground,
-                    fontSize: (FONT_SIZE_PX[size] ?? 14) - 2,
+                    color: palette.foreground,
+                    fontSize: padding.fs - 2,
                     fontWeight: '700',
                     letterSpacing: 0.4,
                     textTransform: 'uppercase',

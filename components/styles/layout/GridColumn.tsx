@@ -9,7 +9,7 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField } from '@/components/renderer/useField';
 
 export function GridColumn({ section, values }: IStyleProps): React.ReactElement {
-    const span = readField<string>(section, 'mantine_grid_span');
+    const span = readField<string>(section, 'web_grid_span');
     let widthPct: DimensionValue | undefined;
     if (span && span !== 'auto' && span !== 'content') {
         const n = Number(span);

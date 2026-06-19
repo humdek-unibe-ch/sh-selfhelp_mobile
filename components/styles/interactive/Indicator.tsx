@@ -7,7 +7,7 @@ import type { IStyleProps } from '@/components/renderer/types';
 import { Children } from '@/components/renderer/Children';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField } from '@/components/renderer/useField';
-import { colorToHex } from '@selfhelp/shared';
+import { mobileIntentPalette } from '@/components/ui/mobileStyleProps';
 
 const POSITION_TO_STYLE: Record<string, { top?: number; bottom?: number; left?: number; right?: number }> = {
     'top-start': { top: -2, left: -2 },
@@ -19,9 +19,9 @@ const POSITION_TO_STYLE: Record<string, { top?: number; bottom?: number; left?: 
 };
 
 export function Indicator({ section, values }: IStyleProps): React.ReactElement {
-    const color = readField<string>(section, 'mantine_color') ?? 'red';
-    const position = readField<string>(section, 'mantine_indicator_position') ?? 'top-end';
-    const fill = colorToHex(color, 6) ?? '#fa5252';
+    const position = readField<string>(section, 'indicator_position') ?? readField<string>(section, 'web_indicator_position') ?? 'top-end';
+    const { palette, colorName } = mobileIntentPalette(section, 'filled');
+    const fill = colorName === 'gray' ? '#fa5252' : palette.accent;
 
     return (
         <View className={buildSectionClasses(section)} style={{ position: 'relative', alignSelf: 'flex-start' }}>

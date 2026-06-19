@@ -6,7 +6,8 @@ SPDX-License-Identifier: MPL-2.0
  * Common class-string composer used by every container/leaf style.
  * Combines:
  *   - `css_mobile` (after allow-list filtering)
- *   - parsed `mantine_spacing_margin_padding` or legacy `mantine_spacing_margin`
+ *   - parsed `shared_spacing` (portable box-model; RF-15), falling back to the
+ *     legacy margin-only `web_spacing_margin` for not-yet-migrated sections
  *   - any extra classes the style itself wants
  *
  * Section #id is also baked in as `style-section-{id}` (mirrors the web
@@ -27,8 +28,8 @@ export function buildSectionClasses(section: TSectionLike, options: ISectionClas
     const cssClasses = cssMobileToUniwind(cssMobile);
 
     const spacing =
-        readField<string>(section, 'mantine_spacing_margin_padding') ??
-        readField<string>(section, 'mantine_spacing_margin');
+        readField<string>(section, 'shared_spacing') ??
+        readField<string>(section, 'web_spacing_margin');
     const spacingClasses = spacingClassNamesFromField(spacing).join(' ');
 
     const idTag = `style-section-${section.id}`;

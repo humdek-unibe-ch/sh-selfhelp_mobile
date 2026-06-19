@@ -10,9 +10,9 @@ import { readField } from '@/components/renderer/useField';
 import { ALIGN_TO_CLASS, JUSTIFY_TO_CLASS, gapToClass } from '@/styles/mantineToTailwind';
 
 export function Grid({ section, values }: IStyleProps): React.ReactElement {
-    const justify = readField<string>(section, 'mantine_justify');
-    const align = readField<string>(section, 'mantine_align');
-    const gap = readField<string>(section, 'mantine_gap') ?? 'md';
+    const justify = readField<string>(section, 'shared_justify');
+    const align = readField<string>(section, 'shared_align');
+    const gap = readField<string>(section, 'shared_gap') ?? 'md';
 
     return (
         <View

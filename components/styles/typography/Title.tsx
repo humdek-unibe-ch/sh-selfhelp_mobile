@@ -17,7 +17,7 @@ const ORDER_TO_GEOMETRY: Record<string, { fontSize: number; lineHeight: number; 
 };
 
 export function Title({ section, values }: IStyleProps): React.ReactElement {
-    const order = readField<string>(section, 'mantine_title_order') ?? '2';
+    const order = readField<string>(section, 'web_title_order') ?? '2';
     const contentField = useInterpolatedField(section, 'content', values);
     const textField = useInterpolatedField(section, 'text', values);
     const content = contentField || textField;

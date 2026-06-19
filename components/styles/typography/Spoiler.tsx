@@ -11,8 +11,8 @@ import { useInterpolatedField } from '@/components/renderer/useField';
 
 export function Spoiler({ section, values }: IStyleProps): React.ReactElement {
     const [open, setOpen] = useState(false);
-    const showLabel = useInterpolatedField(section, 'mantine_spoiler_show_label', values) || 'Show';
-    const hideLabel = useInterpolatedField(section, 'mantine_spoiler_hide_label', values) || 'Hide';
+    const showLabel = useInterpolatedField(section, 'spoiler_show_label', values) || 'Show';
+    const hideLabel = useInterpolatedField(section, 'spoiler_hide_label', values) || 'Hide';
 
     return (
         <View className={buildSectionClasses(section)}>

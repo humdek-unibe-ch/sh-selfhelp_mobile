@@ -9,9 +9,9 @@ import { readField, useInterpolatedField } from '@/components/renderer/useField'
 import { colorToHex } from '@selfhelp/shared';
 
 export function Highlight({ section, values }: IStyleProps): React.ReactElement {
-    const color = readField<string>(section, 'mantine_color') ?? 'yellow';
+    const color = readField<string>(section, 'shared_color') ?? 'yellow';
     const text = useInterpolatedField(section, 'text', values);
-    const highlight = useInterpolatedField(section, 'mantine_highlight_highlight', values);
+    const highlight = useInterpolatedField(section, 'highlight_highlight', values);
     if (!highlight) {
         return <Text className={buildSectionClasses(section)}>{text}</Text>;
     }

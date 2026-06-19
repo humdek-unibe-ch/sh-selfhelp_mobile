@@ -7,6 +7,11 @@ import type { IStyleProps } from '@/components/renderer/types';
 import { Children } from '@/components/renderer/Children';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 
+/**
+ * ProgressRoot — OSS fallback: a segmented RN bar container. HeroUI Native
+ * **Pro** override (RF-28): `ProgressBar` / `ProgressCircle`, swapped in by the
+ * Pro mobile build via the `@selfhelp/mobile-pro-ui` adapter seam.
+ */
 export function ProgressRoot({ section, values }: IStyleProps): React.ReactElement {
     return (
         <View
