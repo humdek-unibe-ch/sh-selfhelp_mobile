@@ -12,6 +12,14 @@ import type { IMobileButtonProps } from '../types';
  * HeroUI's Button renders string children as a label automatically and
  * derives intent/size from the normalized props produced by the shared
  * semantic mapper.
+ *
+ * `accentColor` (resolved hex) overrides the variant's themed fill so a CMS
+ * style can colour the button for cross-platform parity — e.g. `login`'s
+ * `shared_color`, which Mantine applies to the web button via `color`. HeroUI
+ * paints the fill through a `bg-*` class (`bg-accent` for `primary`); the inline
+ * `style` background wins over that class while the variant keeps its readable
+ * foreground (white label on a filled button), so passing `accentColor` with the
+ * default `primary` variant yields a coloured button with legible text.
  */
 export function MobileButton({
     label,
@@ -22,6 +30,7 @@ export function MobileButton({
     isLoading,
     isIconOnly = false,
     fullWidth,
+    accentColor,
     className,
     accessibilityLabel,
     testID,
@@ -39,6 +48,7 @@ export function MobileButton({
             isIconOnly={isIconOnly}
             isDisabled={isDisabled || isLoading || false}
             onPress={onPress}
+            style={accentColor ? { backgroundColor: accentColor } : undefined}
             className={composedClassName || undefined}
             accessibilityLabel={accessibilityLabel ?? label}
             accessibilityState={{ disabled: isDisabled || isLoading || false, busy: isLoading || false }}
