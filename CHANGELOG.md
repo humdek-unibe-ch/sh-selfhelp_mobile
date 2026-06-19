@@ -6,6 +6,78 @@ SPDX-License-Identifier: MPL-2.0
 
 ## 0.1.1
 
+### Theme selector, account sheet, and themed debug tree
+- **Three-way colour scheme (`light` / `dark` / `auto`).** New `stores/themeStore.ts`
+  (persisted via `secureStore`) drives `Uniwind.setTheme` from `ThemeProvider`,
+  defaulting to `auto` (follow the OS). New `hooks/useAppColors.ts` exposes a
+  semantic palette (tracking HeroUI Native's light/dark tokens) so inline-styled
+  app chrome — header, drawer, bottom tabs, sheets, debug panels — repaints with
+  the theme alongside HeroUI content. The status bar follows the resolved scheme.
+- **Account sheet replaces a crowded header.** `AppHeader` is now a slim
+  hamburger + app name + single account button (avatar / gear). It opens
+  `components/shell/AccountMenu.tsx`, a bottom sheet holding the appearance
+  selector, a compact language picker, "View profile" (opens the CMS `profile`
+  page in `ProfileModal` without navigating away), a dev-only server switch, and
+  log in / log out. `LanguageSwitcher` was reworked into the compact list.
+- **Collapsible debug JSON tree.** The `__DEV__` section debug modal renders the
+  raw section as an expandable, colour-coded tree (`components/dev/JsonTree.tsx`)
+  mirroring the web frontend's inspector, and the whole modal is theme-aware.
+- **Quieter web preview.** `config/devWarnings.ts` suppresses the benign
+  `react-native-web` prop warnings (e.g. `importantForAccessibility`) that the
+  Expo LogBox overlay was stacking on top of the UI on web. Dev-only; native and
+  production builds are unaffected.
+
+### Mobile CMS rendering plan — adapter contract & functional controls
+- **Single-source mobile UI adapter contract.** Bumped `@selfhelp/shared` to
+  `^1.11.0`, which now owns the adapter contract (`IMobileUiAdapters` +
+  `IMobile*Props`). `components/ui/adapters/types.ts` re-exports it (keeping only
+  the build-tier helper `getMobileUiTier` local), and the private
+  `@selfhelp/mobile-pro-ui` package consumes the same source — no more
+  hand-synced copies (mobile rendering plan 8.3 / 9).
+- **Per-capability Pro composition.** `components/ui/adapters/index.ts` composes
+  the active set as `ossAdapters + proOverrides` (`composeMobileAdapters`), so a
+  Pro build overrides only the capabilities it improves and every other
+  capability keeps its open-source fallback. Added `tsconfig.pro.json` +
+  `npm run typecheck:pro` so the app is type-checked against the Pro adapter set
+  too (cross-repo drift guard).
+- **`mobileStyleProps` reads `shared_*` only.** The legacy `web_*` fallback was
+  removed (plan 6.3): mobile resolves the narrowed `shared_*` scales
+  (`sm|md|lg`, `none..full`) through the shared semantic mapper and never reads a
+  web field.
+- **Functional form controls (no more placeholders, plan 11.6).** `slider` and
+  `range-slider` now use the HeroUI Native `Slider` compound (draggable single
+  and two-thumb range, value parsed/serialised via `_sliderValue.ts`);
+  `file-input` uses `expo-image-picker` and enforces the CMS accept/size
+  constraints before upload (`_fileValidation.ts`); `rich-text-editor` is now an
+  editable source field with a live HTML preview (documented subset) that
+  preserves submitted data. The read-only rich-text viewer was removed.
+
+### HeroUI (mobile) / Mantine (web) style architecture
+- **One style name, two renderers.** A CMS style now renders a Mantine component
+  on web and a HeroUI Native component on mobile, with no platform-named styles in
+  either renderer. The web frontend's duplicate `mantine/heroui/` folder (13
+  renderers + a local `intentColor.ts`) was removed; those styles are plain
+  Mantine renderers again, and color/intent mapping comes only from the shared
+  mapper.
+- **Three-bucket field model.** Cross-platform semantic fields (`size`, `spacing`,
+  `radius`, `intent`, state booleans, `full_width`) are shared/unprefixed and
+  resolved per-platform by `@selfhelp/shared/src/theme/semantic.ts`
+  (`resolveSharedStyleForWeb` / `resolveSharedStyleForMobile`); `web_*` configures
+  Mantine-only extras and `mobile_*` configures HeroUI-only extras.
+- **Mobile reads through the mapper.** Interactive styles (`button`, `badge`,
+  `chip`, `avatar`, `alert`, `action-icon`, `theme-icon`, `indicator`,
+  `notification`) and layout/typography styles (`card`, `paper`, `divider`,
+  `container`, `simple-grid`, `image`, `background-image`, `fieldset`, `text`,
+  `progress`) now read shared fields via `components/ui/mobileStyleProps.ts`
+  (shared → legacy `web_*` fallback) instead of reading `web_*` directly. Added
+  `mobileIntentPalette()` for a consistent clean-RN fallback palette derived from
+  `intent`.
+- **Pro tier = OSS fallback only for Pro components.** Free styles render via
+  `heroui-native`; Pro-tier components HeroUI Native doesn't ship (e.g. `badge`,
+  `theme-icon`, `indicator`, `notification`) render clean React Native fallbacks,
+  with the polished versions reserved for `@selfhelp/mobile-pro-ui` behind the
+  adapter contract.
+
 ### CMS Styles
 - **Kebab-case style names.** Bumped `@selfhelp/shared` to `^1.8.0`, which renamed
   the CMS `style_name` discriminator from camelCase to kebab-case, and updated the
