@@ -16,6 +16,8 @@
         "baseUrl": ".",
         "paths": {
             "@/*": ["./*"],
+            "@selfhelp/mobile-pro-ui": ["./components/ui/adapters/oss/index.ts"],
+            "@selfhelp/mobile-pro-ui/*": ["./components/ui/adapters/oss/*"],
             "@components/*": ["./components/*"],
             "@hooks/*": ["./hooks/*"],
             "@providers/*": ["./providers/*"],
