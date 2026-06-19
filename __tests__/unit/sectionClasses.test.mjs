@@ -29,10 +29,10 @@ test('buildSectionClasses appends classified css_mobile classes', () => {
     assert.equal(out, 'style-section-1 flex mt-md w-full');
 });
 
-test('buildSectionClasses parses the unified spacing field into classes', () => {
+test('buildSectionClasses parses the unified shared_spacing field into classes', () => {
     const section = {
         id: 2,
-        fields: { mantine_spacing_margin_padding: { content: '{"mt":"md","pb":"sm"}' } },
+        fields: { shared_spacing: { content: '{"mt":"md","pb":"sm"}' } },
     };
     // md → 4, sm → 3 via SPACING_TO_TAILWIND.
     const classes = buildSectionClasses(section).split(' ');
@@ -42,7 +42,7 @@ test('buildSectionClasses parses the unified spacing field into classes', () => 
 });
 
 test('buildSectionClasses falls back to the legacy margin-only spacing field', () => {
-    const section = { id: 3, fields: { mantine_spacing_margin: { content: '{"mt":"lg"}' } } };
+    const section = { id: 3, fields: { web_spacing_margin: { content: '{"mt":"lg"}' } } };
     assert.ok(buildSectionClasses(section).split(' ').includes('mt-5')); // lg → 5
 });
 
