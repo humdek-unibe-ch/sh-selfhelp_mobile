@@ -156,3 +156,14 @@ test('useInterpolatedField leaves unknown placeholders intact', () => {
     );
     assert.equal(out, 'Hi {{missing}}');
 });
+
+test('useInterpolatedField strips HTML markup leaked into content (global sanitiser)', () => {
+    const out = renderHook(() =>
+        useInterpolatedField(
+            sectionWithBag('label', '<p class="single-line-paragraph">{{n}} STEF</p>'),
+            'label',
+            { n: 9 },
+        ),
+    );
+    assert.equal(out, '9 STEF');
+});
