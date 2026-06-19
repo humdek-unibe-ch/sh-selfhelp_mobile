@@ -13,6 +13,7 @@ Source of truth: Mobile source code, the shared package contracts, and the estab
 Step-by-step recipes. See [../README.md](../README.md) for the full docs map.
 
 - [add-style.md](add-style.md) - Add a CMS style end-to-end for web and mobile.
+- [heroui-catalog-smoke.md](heroui-catalog-smoke.md) - Smoke-test the extended HeroUI Native catalog (with an import payload: [heroui-catalog-import.json](heroui-catalog-import.json)).
 - [add-component.md](add-component.md) - Add a non-style component.
 - [add-api.md](add-api.md) - Add a `/cms-api/v1/*` endpoint.
 - [update-shared-types.md](update-shared-types.md) - Bump shared types in lockstep with web.
