@@ -12,6 +12,7 @@ import { LoadingScreen } from '@/components/feedback/LoadingScreen';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
 import { usePageContent } from '@/hooks/usePageContent';
 import { usePages } from '@/hooks/usePages';
+import { useAppColors } from '@/hooks/useAppColors';
 import { useAuthStore } from '@/stores/authStore';
 import { findPageByKeyword } from '@/components/shell/navigationUtils';
 import { PageRenderer } from './PageRenderer';
@@ -23,6 +24,7 @@ interface ICmsPageScreenProps {
 
 export function CmsPageScreen({ keyword }: ICmsPageScreenProps): React.ReactElement {
     const { t } = useTranslation();
+    const colors = useAppColors();
     const { data: pages } = usePages();
     const navPage = pages ? findPageByKeyword(pages, keyword) : null;
     const hasChildren = Boolean(navPage?.children?.length);
@@ -52,7 +54,7 @@ export function CmsPageScreen({ keyword }: ICmsPageScreenProps): React.ReactElem
 
     if (hasChildren && navPage) {
         return (
-            <SafeAreaView style={{ flex: 1 }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
                 <SegmentedChildPages parent={navPage} />
             </SafeAreaView>
         );
@@ -74,7 +76,7 @@ export function CmsPageScreen({ keyword }: ICmsPageScreenProps): React.ReactElem
     }
 
     return (
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             <PageRenderer page={data} />
         </SafeAreaView>
     );

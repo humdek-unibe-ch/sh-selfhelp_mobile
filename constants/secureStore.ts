@@ -14,6 +14,7 @@ export const SECURE_STORE_KEYS = {
     LANGUAGE_LOCALE: 'sh.language_locale',
     DEVICE_TOKEN: 'sh.device_token',
     DEV_MODE: 'sh.dev_mode',
+    THEME_MODE: 'sh.theme_mode',
 } as const;
 
 export type TSecureStoreKey = (typeof SECURE_STORE_KEYS)[keyof typeof SECURE_STORE_KEYS];

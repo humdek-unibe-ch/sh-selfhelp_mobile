@@ -43,6 +43,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useQuery } from '@tanstack/react-query';
 
 import { AppProviders } from '@/providers/AppProviders';
+import { installDevWarningFilter } from '@/config/devWarnings';
+import { useAppColors } from '@/hooks/useAppColors';
 import { FloatingDebugPanel } from '@/components/dev/FloatingDebugPanel';
 import { PhoneFrame } from '@/components/dev/PhoneFrame';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
@@ -55,6 +57,10 @@ import { useServerStore } from '@/stores/serverStore';
 SplashScreen.preventAutoHideAsync().catch(() => {
     /* swallow — running on web or already hidden. */
 });
+
+// Hide harmless react-native-web prop warnings that otherwise stack in the
+// LogBox overlay and cover the UI on web (dev only).
+installDevWarningFilter();
 
 function GateController(): null {
     const router = useRouter();
@@ -128,6 +134,11 @@ function GateController(): null {
     return null;
 }
 
+function ThemedStatusBar(): React.ReactElement {
+    const colors = useAppColors();
+    return <StatusBar style={colors.isDark ? 'light' : 'dark'} />;
+}
+
 function RootStackInner(): React.ReactElement {
     const bootstrapped = useAuthStore((s) => s.bootstrapped);
     const serverHydrated = useServerStore((s) => s.hydrated);
@@ -154,7 +165,7 @@ function RootStackInner(): React.ReactElement {
     if (!ready) return <LoadingScreen message="Starting up…" />;
     return (
         <>
-            <StatusBar style="auto" />
+            <ThemedStatusBar />
             <ServerStatusGate canSwitchServers={canSwitchServers} serverUrl={serverUrl}>
                 <>
                     <PluginVersionMismatchBanner />

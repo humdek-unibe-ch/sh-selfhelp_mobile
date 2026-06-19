@@ -27,13 +27,15 @@ import { View } from 'react-native';
 import { AppHeader } from '@/components/shell/AppHeader';
 import { BottomNavigationTabs } from '@/components/shell/BottomNavigationTabs';
 import { CmsDrawerContent } from '@/components/shell/CmsDrawerContent';
+import { useAppColors } from '@/hooks/useAppColors';
 
 export default function AppLayout(): React.ReactElement {
     const { t } = useTranslation();
+    const colors = useAppColors();
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top']}>
-            <View style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }} edges={['top']}>
+            <View style={{ flex: 1, backgroundColor: colors.background }}>
                 <Drawer
                     drawerContent={(props) => <CmsDrawerContent {...props} />}
                     screenOptions={({ navigation }) => ({
@@ -44,7 +46,7 @@ export default function AppLayout(): React.ReactElement {
                             />
                         ),
                         drawerType: 'front',
-                        drawerStyle: { backgroundColor: '#fff' },
+                        drawerStyle: { backgroundColor: colors.surface },
                     })}
                 >
                     <Drawer.Screen

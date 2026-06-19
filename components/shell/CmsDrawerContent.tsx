@@ -17,6 +17,7 @@ import { DrawerContentScrollView } from '@react-navigation/drawer';
 import type { IPageItem } from '@selfhelp/shared';
 
 import { usePages } from '@/hooks/usePages';
+import { useAppColors } from '@/hooks/useAppColors';
 import {
     getMenuTree,
     getPageHref,
@@ -27,6 +28,7 @@ import {
 
 export function CmsDrawerContent(props: DrawerContentComponentProps): React.ReactElement {
     const pathname = usePathname();
+    const colors = useAppColors();
     const { data, isLoading, error } = usePages();
     const tree = data ? getMenuTree(data) : [];
 
@@ -36,15 +38,19 @@ export function CmsDrawerContent(props: DrawerContentComponentProps): React.Reac
     };
 
     return (
-        <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 12 }}>
+        <DrawerContentScrollView
+            {...props}
+            contentContainerStyle={{ paddingTop: 12 }}
+            style={{ backgroundColor: colors.surface }}
+        >
             <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#1a1b1e' }}>Menu</Text>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Menu</Text>
             </View>
             {isLoading ? (
-                <Text style={{ paddingHorizontal: 16, color: '#868e96' }}>Loading…</Text>
+                <Text style={{ paddingHorizontal: 16, color: colors.textFaint }}>Loading…</Text>
             ) : null}
             {error ? (
-                <Text style={{ paddingHorizontal: 16, color: '#fa5252' }}>{error.message}</Text>
+                <Text style={{ paddingHorizontal: 16, color: colors.danger }}>{error.message}</Text>
             ) : null}
             {tree.map((page) => (
                 <DrawerEntry
@@ -56,7 +62,7 @@ export function CmsDrawerContent(props: DrawerContentComponentProps): React.Reac
                 />
             ))}
             {!isLoading && !error && tree.length === 0 ? (
-                <Text style={{ paddingHorizontal: 16, color: '#868e96' }}>No menu pages.</Text>
+                <Text style={{ paddingHorizontal: 16, color: colors.textFaint }}>No menu pages.</Text>
             ) : null}
         </DrawerContentScrollView>
     );
@@ -71,6 +77,7 @@ interface IDrawerEntryProps {
 
 function DrawerEntry({ page, pathname, depth, onPress }: IDrawerEntryProps): React.ReactElement {
     const active = isPageActive(page, pathname);
+    const colors = useAppColors();
     return (
         <View>
             <Pressable
@@ -82,16 +89,16 @@ function DrawerEntry({ page, pathname, depth, onPress }: IDrawerEntryProps): Rea
                     paddingVertical: 12,
                     paddingLeft: 16 + depth * 16,
                     paddingRight: 16,
-                    backgroundColor: active ? '#e7f5ff' : pressed ? '#f1f3f5' : 'transparent',
+                    backgroundColor: active ? colors.activeSurface : pressed ? colors.pressed : 'transparent',
                     borderLeftWidth: 3,
-                    borderLeftColor: active ? '#1c7ed6' : 'transparent',
+                    borderLeftColor: active ? colors.primaryStrong : 'transparent',
                 })}
             >
                 <Text
                     style={{
                         width: 22,
                         textAlign: 'center',
-                        color: active ? '#1c7ed6' : '#868e96',
+                        color: active ? colors.primaryStrong : colors.textFaint,
                         fontWeight: '700',
                     }}
                 >
@@ -102,7 +109,7 @@ function DrawerEntry({ page, pathname, depth, onPress }: IDrawerEntryProps): Rea
                         flex: 1,
                         fontSize: 15,
                         fontWeight: active ? '700' : '500',
-                        color: active ? '#1864ab' : '#343a40',
+                        color: active ? colors.primaryStrong : colors.text,
                     }}
                 >
                     {getPageLabel(page)}
