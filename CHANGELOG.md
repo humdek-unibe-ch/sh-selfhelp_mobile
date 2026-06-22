@@ -4,6 +4,70 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.8
+
+### Select multi-select + bottom-sheet theming, nicer timeline
+
+Live verification surfaced three mobile issues; all fixed and re-verified in
+light + dark. Requires `@selfhelp/shared` ≥ 1.14.19.
+
+- **`components/ui/adapters/oss/MobileSelect.tsx`.** Now supports multi-select
+  (`multiple`, from the CMS `is_multiple` field) via HeroUI Native's
+  `selectionMode="multiple"`; the contract value is a comma-separated list. The
+  trigger renders the selected label(s) through a themed `Text` instead of
+  `Select.Value`, so the current selection is always visible (single **and**
+  multiple) — previously a multi-select showed nothing. The `bottom-sheet`
+  presentation now pins a theme-aware background + handle and themes the item
+  labels: HeroUI's `@gorhom/bottom-sheet` container does not pick up the Uniwind
+  dark class on `react-native-web`, so the list painted white-on-white (invisible
+  options) in dark mode.
+- **`components/styles/forms/Select.tsx`.** Reads `is_multiple` and forwards
+  `multiple` to the adapter (`Combobox.tsx` reuses this renderer).
+- **`components/styles/composite/Timeline.tsx` + `TimelineItem.tsx`.** Redesigned
+  the OSS timeline: each item draws a centered rail (themed dot + connecting
+  line) beside its content, so the markers stay aligned and the line connects to
+  the next item regardless of content height. Colours come from `useAppColors`
+  (was a hard-coded `#228be6` dot and a pale, disconnected `#dee2e6` rail that
+  looked broken in dark mode).
+
+## 0.1.7
+
+### Mobile-only (HeroUI Native) style capabilities
+
+Renders the new `mobile_*` CMS fields (backend migration `Version20260622145334`,
+`@selfhelp/shared` ≥ 1.14.18) — HeroUI Native props that have no web/Mantine
+equivalent, so authors tune the native look from the CMS. Verified open → select
+→ close and theme legibility on Expo-web in light **and** dark.
+
+- **`components/ui/adapters/oss/MobileSelect.tsx`.** Rewritten to use HeroUI
+  Native's real overlay (`Select.Portal` + `Select.Overlay` + `Select.Content`)
+  with a configurable `presentation` — `bottom-sheet` (default), `dialog`, or
+  `popover` — replacing the `0.1.6` React Native `Modal` workaround. The
+  `bottom-sheet` / `dialog` presentations are portal-based, so they open reliably
+  on `react-native-web` (HeroUI's `popover` still relies on `View.measure()`,
+  offered only as an explicit opt-in). `onValueChange` is simplified for the
+  single-selection contract.
+- **`components/styles/forms/Select.tsx`.** Reads the label from the linked
+  `label` field (was the now-unlinked `alt` field, so the label was blank) and
+  passes `mobile_select_presentation` through to `MobileSelect`.
+  `components/styles/forms/Combobox.tsx` reuses this renderer, so it inherits the
+  presentation field automatically.
+- **`components/styles/interactive/Button.tsx` + `MobileButton.tsx`.** Reads
+  `mobile_button_feedback` and forwards it as HeroUI Native `feedbackVariant`
+  (`scale-highlight` default, `scale-ripple`, `scale`, `none`). The adapter
+  switches on the literal value to satisfy HeroUI's discriminated-union prop type.
+- **`components/styles/forms/Slider.tsx` / `RangeSlider.tsx`.** Read
+  `mobile_slider_show_value` / `mobile_range_slider_show_value` (default on) and
+  conditionally render the `HeroSlider.Output` value bubble.
+- **`components/styles/forms/TextInput.tsx` / `Textarea.tsx` + `MobileInput.tsx` /
+  `MobileTextarea.tsx`.** Read `mobile_input_variant` / `mobile_textarea_variant`
+  and forward HeroUI Native `variant`, plus theme-aware `borderColor` /
+  `backgroundColor` (primary = bordered, secondary = filled `surfaceMuted`) so the
+  variant is visible on `react-native-web`, where HeroUI's shadow-based borders
+  don't paint.
+- **`components/styles/forms/Checkbox.tsx` + `MobileCheckbox.tsx`.** Read
+  `mobile_checkbox_variant` and forward it as HeroUI Native `variant`.
+
 ## 0.1.6
 
 ### Interactive renderers: working `select`, `datepicker`, `color-input`, `tabs`

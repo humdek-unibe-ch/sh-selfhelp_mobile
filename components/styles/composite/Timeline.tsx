@@ -8,13 +8,16 @@ import { Children } from '@/components/renderer/Children';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 
 /**
- * Timeline — OSS fallback: a left-rail RN View. HeroUI Native **Pro** override
- * (RF-31): `Stepper` (vertical), swapped in by the Pro mobile build via the
- * `@selfhelp/mobile-pro-ui` adapter seam. Same CMS fields either way.
+ * Timeline — OSS fallback: a plain container. Each child `timeline-item` draws
+ * its own themed marker + connecting rail (so the dots/line stay aligned and
+ * legible in both colour schemes without cross-component pixel math). HeroUI
+ * Native **Pro** override (RF-31): `Stepper` (vertical), swapped in by the Pro
+ * mobile build via the `@selfhelp/mobile-pro-ui` adapter seam. Same CMS fields
+ * either way.
  */
 export function Timeline({ section, values }: IStyleProps): React.ReactElement {
     return (
-        <View className={buildSectionClasses(section)} style={{ borderLeftWidth: 2, borderColor: '#dee2e6', paddingLeft: 16, marginLeft: 8 }}>
+        <View className={buildSectionClasses(section)}>
             <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );

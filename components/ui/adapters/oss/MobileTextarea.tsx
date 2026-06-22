@@ -15,7 +15,10 @@ import { useAppColors } from '@/hooks/useAppColors';
  *
  * Border visibility: like `MobileInput`, HeroUI's field separation relies on a
  * shadow that does not render on `react-native-web`, so we pin an explicit
- * theme-aware border + surface + text colour via the merged `style` prop.
+ * theme-aware colour via the merged `style` prop. `variant` (from
+ * `mobile_textarea_variant`) switches between the bordered (`primary`) and
+ * filled (`secondary`) field, and is forwarded to HeroUI's `TextArea` so native
+ * renders the matching variant.
  */
 export function MobileTextarea({
     value,
@@ -28,11 +31,13 @@ export function MobileTextarea({
     numberOfLines = 3,
     maxLength,
     autoCapitalize,
+    variant = 'primary',
     className,
     accessibilityLabel,
     testID,
 }: IMobileTextareaProps): React.ReactElement {
     const colors = useAppColors();
+    const isFilled = variant === 'secondary';
     return (
         <TextField
             isDisabled={isDisabled}
@@ -46,6 +51,7 @@ export function MobileTextarea({
                 onChangeText={onChangeText}
                 placeholder={placeholder}
                 placeholderTextColor={colors.textFaint}
+                variant={variant}
                 isDisabled={isDisabled}
                 isInvalid={isInvalid}
                 numberOfLines={numberOfLines}
@@ -54,8 +60,8 @@ export function MobileTextarea({
                 accessibilityLabel={accessibilityLabel ?? label}
                 testID={testID}
                 style={{
-                    borderColor: isInvalid ? colors.danger : colors.border,
-                    backgroundColor: colors.surface,
+                    borderColor: isInvalid ? colors.danger : isFilled ? 'transparent' : colors.border,
+                    backgroundColor: isFilled ? colors.surfaceMuted : colors.surface,
                     color: colors.text,
                     opacity: isDisabled ? 0.6 : 1,
                 }}

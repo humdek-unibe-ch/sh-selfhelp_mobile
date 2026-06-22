@@ -28,6 +28,8 @@ export function Slider({ section, values }: IStyleProps): React.ReactElement {
     const step = readNumberField(section, 'web_numeric_step', 1) ?? 1;
     const initial = readField<string>(section, 'value') ?? String(min);
     const fillColor = colorToHex(readField<string>(section, 'shared_color') ?? '', 6);
+    // mobile-only: show the value bubble above the slider (default on).
+    const showValue = readBooleanField(section, 'mobile_slider_show_value', true);
     const { value, error, setValue } = useFieldBinding(name, initial);
 
     const current = parseSliderValue(value, min, max);
@@ -47,7 +49,7 @@ export function Slider({ section, values }: IStyleProps): React.ReactElement {
                     <HeroSlider.Fill style={fillColor ? { backgroundColor: fillColor } : undefined} />
                     <HeroSlider.Thumb />
                 </HeroSlider.Track>
-                <HeroSlider.Output />
+                {showValue ? <HeroSlider.Output /> : null}
             </HeroSlider>
         </FieldShell>
     );

@@ -8,7 +8,7 @@ import type { IStyleProps } from '@/components/renderer/types';
 import { MobileButton } from '@/components/ui/adapters';
 import { mobileStyleProps } from '@/components/ui/mobileStyleProps';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
+import { readBooleanField, readField, useInterpolatedField } from '@/components/renderer/useField';
 
 export function Button({ section, values }: IStyleProps): React.ReactElement {
     const router = useRouter();
@@ -19,6 +19,9 @@ export function Button({ section, values }: IStyleProps): React.ReactElement {
     const url = useInterpolatedField(section, 'url', values);
     const pageKeyword = useInterpolatedField(section, 'page_keyword', values);
     const openInNewTab = readBooleanField(section, 'open_in_new_tab', false);
+    // mobile-only: native press feedback. Empty falls back to scale-highlight.
+    const feedbackVariant = (readField<string>(section, 'mobile_button_feedback') || undefined) as
+        | 'scale-highlight' | 'scale-ripple' | 'scale' | 'none' | undefined;
 
     const onPress = (): void => {
         if (!isLink || disabled) return;
@@ -45,6 +48,7 @@ export function Button({ section, values }: IStyleProps): React.ReactElement {
             variant={resolved.buttonVariant ?? 'primary'}
             size={resolved.size ?? 'md'}
             fullWidth={resolved.fullWidth}
+            feedbackVariant={feedbackVariant}
             className={buildSectionClasses(section)}
             accessibilityLabel={label}
         />

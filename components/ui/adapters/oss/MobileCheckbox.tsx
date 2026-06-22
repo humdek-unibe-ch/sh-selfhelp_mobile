@@ -22,6 +22,7 @@ export function MobileCheckbox({
     isDisabled,
     label,
     labelPosition = 'right',
+    variant = 'primary',
     className,
     accessibilityLabel,
     testID,
@@ -40,6 +41,7 @@ export function MobileCheckbox({
                 isSelected={isSelected}
                 onSelectedChange={onSelectedChange}
                 isDisabled={isDisabled}
+                variant={variant}
                 accessibilityLabel={accessibilityLabel ?? label}
                 testID={testID}
             >

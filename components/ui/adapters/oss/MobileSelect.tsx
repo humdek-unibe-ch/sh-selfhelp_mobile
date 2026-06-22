@@ -2,98 +2,144 @@
 SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
-import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from 'react-native';
 import { Select } from 'heroui-native';
-import { useAppColors } from '@/hooks/useAppColors';
 import type { IMobileSelectProps } from '../types';
+import { useAppColors } from '@/hooks/useAppColors';
 
 /**
- * OSS MobileSelect — uses the HeroUI Native `Select` compound for the trigger,
- * value, items and selected indicator (so it looks and behaves like the HeroUI
- * select), but presents the option list through a React Native `Modal` instead
- * of HeroUI's popover `Select.Portal`/`Select.Content`.
+ * OSS MobileSelect — HeroUI Native `Select` driven through its real presentation
+ * modes (no React Native `Modal` workaround).
  *
- * Why: HeroUI's popover presentation gates its content behind a
- * `triggerPosition` obtained from `View.measure()` plus an `isReady` layout
- * check. Those resolve on iOS/Android but NOT on `react-native-web`, so on web
- * the trigger toggles open yet the option list never mounts ("nothing loads").
- * A plain RN `Modal` needs no measurement and renders identically on web and
- * native. The `Select.Item`s stay inside the `Select` root subtree, so React
- * context still drives selection + the checkmark indicator. The contract speaks
- * plain string values; HeroUI's `Select` speaks `{ value, label }` options, so
- * we map at the boundary. Pro swaps in the HeroUI Pro select (bottom-sheet).
+ * `presentation` (CMS `mobile_select_presentation`) picks how the option list
+ * opens — `bottom-sheet` (default), `dialog`, or `popover`. `multiple` (CMS
+ * `is_multiple`) switches to HeroUI's `selectionMode="multiple"`; the contract
+ * value is then a comma-separated list of option values (single mode keeps the
+ * plain string).
+ *
+ * Theming: HeroUI's bottom-sheet renders through `@gorhom/bottom-sheet`, whose
+ * container does NOT pick up the Uniwind dark class on `react-native-web` (it
+ * paints white, so the list was invisible in dark mode). We therefore pin a
+ * theme-aware sheet background + handle and the item-label colour through
+ * `useAppColors`, guaranteeing a legible list on every platform and both
+ * schemes. The trigger shows the selected label(s) through a themed `Text`
+ * (not `Select.Value`) so multi-select shows every pick and the current value
+ * is always visible. Pro can swap in the HeroUI Pro select.
  */
+type SelectOptionPair = { value: string; label: string };
+
+function buildItems(options: IMobileSelectProps['options'], textColor: string): React.ReactElement[] {
+    return options.map((option) => (
+        <Select.Item key={option.value} value={option.value} label={option.label}>
+            <Select.ItemLabel style={{ color: textColor }} />
+            <Select.ItemIndicator />
+        </Select.Item>
+    ));
+}
+
 export function MobileSelect({
     value,
     onValueChange,
     options,
     placeholder = 'Select…',
     isDisabled,
+    multiple,
     className,
     accessibilityLabel,
     testID,
+    presentation = 'bottom-sheet',
 }: IMobileSelectProps): React.ReactElement {
-    const [isOpen, setIsOpen] = useState(false);
     const colors = useAppColors();
-    const selected = options.find((o) => o.value === value);
+
+    const selectedValues = multiple
+        ? (value ? value.split(',').map((v) => v.trim()).filter(Boolean) : [])
+        : (value ? [value] : []);
+    const selectedOptions: SelectOptionPair[] = options
+        .filter((o) => selectedValues.includes(o.value))
+        .map((o) => ({ value: o.value, label: o.label }));
+    const hasValue = selectedOptions.length > 0;
+    const displayText = hasValue ? selectedOptions.map((o) => o.label).join(', ') : placeholder;
+
+    const items = buildItems(options, colors.text);
+
+    let content: React.ReactElement;
+    if (presentation === 'popover') {
+        content = (
+            <Select.Content presentation="popover" width="trigger">
+                {items}
+            </Select.Content>
+        );
+    } else if (presentation === 'dialog') {
+        content = (
+            <Select.Content presentation="dialog">
+                <Select.ListLabel style={{ color: colors.textMuted }}>{placeholder}</Select.ListLabel>
+                {items}
+            </Select.Content>
+        );
+    } else {
+        content = (
+            <Select.Content
+                presentation="bottom-sheet"
+                backgroundStyle={{ backgroundColor: colors.surface }}
+                handleIndicatorStyle={{ backgroundColor: colors.border }}
+            >
+                {items}
+            </Select.Content>
+        );
+    }
+
+    const triggerChildren = (
+        <>
+            <Text numberOfLines={1} style={{ flex: 1, color: hasValue ? colors.text : colors.textFaint }}>
+                {displayText}
+            </Text>
+            <Select.TriggerIndicator />
+        </>
+    );
+    const portal = (
+        <Select.Portal>
+            <Select.Overlay />
+            {content}
+        </Select.Portal>
+    );
+
+    if (multiple) {
+        return (
+            <Select
+                selectionMode="multiple"
+                presentation={presentation}
+                value={selectedOptions}
+                onValueChange={(opts) =>
+                    onValueChange?.(
+                        (opts ?? [])
+                            .filter((o): o is SelectOptionPair => Boolean(o))
+                            .map((o) => o.value)
+                            .join(','),
+                    )
+                }
+                isDisabled={isDisabled}
+                className={className || undefined}
+            >
+                <Select.Trigger accessibilityLabel={accessibilityLabel ?? placeholder} testID={testID}>
+                    {triggerChildren}
+                </Select.Trigger>
+                {portal}
+            </Select>
+        );
+    }
 
     return (
         <Select
-            value={selected ? { value: selected.value, label: selected.label } : undefined}
+            presentation={presentation}
+            value={selectedOptions[0]}
             onValueChange={(option) => onValueChange?.(option?.value ?? '')}
-            isOpen={isOpen}
-            onOpenChange={setIsOpen}
             isDisabled={isDisabled}
             className={className || undefined}
         >
             <Select.Trigger accessibilityLabel={accessibilityLabel ?? placeholder} testID={testID}>
-                <Select.Value placeholder={placeholder} />
-                <Select.TriggerIndicator />
+                {triggerChildren}
             </Select.Trigger>
-
-            <Modal
-                visible={isOpen}
-                transparent
-                animationType="fade"
-                statusBarTranslucent
-                onRequestClose={() => setIsOpen(false)}
-            >
-                <View style={styles.root}>
-                    <Pressable
-                        style={[StyleSheet.absoluteFill, { backgroundColor: colors.backdrop }]}
-                        accessibilityLabel="Close"
-                        onPress={() => setIsOpen(false)}
-                    />
-                    <View style={[styles.sheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                        <ScrollView bounces={false} keyboardShouldPersistTaps="handled">
-                            {options.map((option) => (
-                                <Select.Item key={option.value} value={option.value} label={option.label}>
-                                    <Select.ItemLabel />
-                                    <Select.ItemIndicator />
-                                </Select.Item>
-                            ))}
-                        </ScrollView>
-                    </View>
-                </View>
-            </Modal>
+            {portal}
         </Select>
     );
 }
-
-const styles = StyleSheet.create({
-    root: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-    },
-    sheet: {
-        width: '100%',
-        maxWidth: 420,
-        maxHeight: '70%',
-        borderWidth: 1,
-        borderRadius: 12,
-        overflow: 'hidden',
-    },
-});

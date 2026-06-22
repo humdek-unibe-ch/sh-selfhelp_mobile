@@ -30,6 +30,7 @@ export function MobileButton({
     isLoading,
     isIconOnly = false,
     fullWidth,
+    feedbackVariant,
     accentColor,
     className,
     accessibilityLabel,
@@ -41,20 +42,33 @@ export function MobileButton({
         .join(' ')
         .trim();
 
-    return (
-        <Button
-            variant={variant}
-            size={size}
-            isIconOnly={isIconOnly}
-            isDisabled={isDisabled || isLoading || false}
-            onPress={onPress}
-            style={accentColor ? { backgroundColor: accentColor } : undefined}
-            className={composedClassName || undefined}
-            accessibilityLabel={accessibilityLabel ?? label}
-            accessibilityState={{ disabled: isDisabled || isLoading || false, busy: isLoading || false }}
-            testID={testID}
-        >
-            {children ?? label ?? ''}
-        </Button>
-    );
+    // Shared across every feedback variant. HeroUI's Button props are a
+    // discriminated union on `feedbackVariant` (it only narrows the unused
+    // `animation` prop), so the literal must be set on the element itself — we
+    // branch below instead of passing a variable.
+    const base = {
+        variant,
+        size,
+        isIconOnly,
+        isDisabled: isDisabled || isLoading || false,
+        onPress,
+        style: accentColor ? { backgroundColor: accentColor } : undefined,
+        className: composedClassName || undefined,
+        accessibilityLabel: accessibilityLabel ?? label,
+        accessibilityState: { disabled: isDisabled || isLoading || false, busy: isLoading || false },
+        testID,
+    };
+    const child = children ?? label ?? '';
+
+    switch (feedbackVariant) {
+        case 'scale-ripple':
+            return <Button {...base} feedbackVariant="scale-ripple">{child}</Button>;
+        case 'scale':
+            return <Button {...base} feedbackVariant="scale">{child}</Button>;
+        case 'none':
+            return <Button {...base} feedbackVariant="none">{child}</Button>;
+        case 'scale-highlight':
+        default:
+            return <Button {...base} feedbackVariant="scale-highlight">{child}</Button>;
+    }
 }

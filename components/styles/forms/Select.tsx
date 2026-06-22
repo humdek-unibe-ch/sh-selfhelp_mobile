@@ -35,18 +35,22 @@ function parseOptions(raw: unknown): IOption[] {
 
 export function Select({ section, values }: IStyleProps): React.ReactElement {
     const name = readField<string>(section, 'name') ?? '';
-    const label = useInterpolatedField(section, 'alt', values);
+    const label = useInterpolatedField(section, 'label', values);
     const placeholder = useInterpolatedField(section, 'placeholder', values) || 'Select…';
     const required = readBooleanField(section, 'is_required', false);
     const disabled = readBooleanField(section, 'disabled', false);
+    const multiple = readBooleanField(section, 'is_multiple', false);
     const options = parseOptions(readField(section, 'options'));
     const initial = readField<string>(section, 'value') ?? '';
+    // mobile-only: how the option list opens (bottom-sheet | dialog | popover).
+    // Empty falls back to the adapter default (bottom-sheet).
+    const presentation = (readField<string>(section, 'mobile_select_presentation') || undefined) as
+        | 'bottom-sheet' | 'dialog' | 'popover' | undefined;
     const { value, error, setValue } = useFieldBinding(name, initial);
 
-    // Renders through the swappable HeroUI Native select adapter. The adapter
-    // keeps HeroUI's trigger/value/items but presents the option list in a RN
-    // `Modal` so it works on every platform, including web (HeroUI's popover
-    // measurement does not resolve under react-native-web).
+    // Renders through the swappable HeroUI Native select adapter, which uses
+    // HeroUI's real Select presentations (bottom-sheet / dialog / popover) via
+    // the portal host mounted by HeroUINativeProvider.
     return (
         <FieldShell label={label} required={required} error={error} className={buildSectionClasses(section)}>
             <MobileSelect
@@ -55,6 +59,8 @@ export function Select({ section, values }: IStyleProps): React.ReactElement {
                 options={options.map((o) => ({ value: o.value, label: o.text }))}
                 placeholder={placeholder}
                 isDisabled={disabled}
+                multiple={multiple}
+                presentation={presentation}
                 accessibilityLabel={label}
             />
         </FieldShell>

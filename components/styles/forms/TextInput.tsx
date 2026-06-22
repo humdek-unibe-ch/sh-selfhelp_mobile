@@ -23,6 +23,9 @@ export function TextInput({ section, values }: IStyleProps): React.ReactElement 
         | 'default' | 'email-address' | 'numeric' | 'phone-pad' | 'url' | undefined;
     const autoCapitalize = (readField<string>(section, 'mobile_auto_capitalize') || undefined) as
         | 'none' | 'sentences' | 'words' | 'characters' | undefined;
+    // mobile-only: HeroUI Native field variant (primary bordered | secondary filled).
+    const variant = (readField<string>(section, 'mobile_input_variant') || undefined) as
+        | 'primary' | 'secondary' | undefined;
 
     const { value, error, setValue } = useFieldBinding(name, initial);
 
@@ -42,6 +45,7 @@ export function TextInput({ section, values }: IStyleProps): React.ReactElement 
                 secureTextEntry={secureTextEntry}
                 keyboardType={keyboardType}
                 autoCapitalize={autoCapitalize}
+                variant={variant}
                 accessibilityLabel={label}
             />
         </FieldShell>

@@ -19,6 +19,9 @@ export function Checkbox({ section, values }: IStyleProps): React.ReactElement {
     const initial = readField<string>(section, 'value') ?? offValue;
     const disabled = readBooleanField(section, 'disabled', false);
     const labelPosition = readField<string>(section, 'shared_label_position') === 'left' ? 'left' : 'right';
+    // mobile-only: HeroUI Native checkbox variant (primary | secondary).
+    const variant = (readField<string>(section, 'mobile_checkbox_variant') || undefined) as
+        | 'primary' | 'secondary' | undefined;
     const { value, error, setValue } = useFieldBinding(name, initial);
     const checked = value === onValue;
 
@@ -32,6 +35,7 @@ export function Checkbox({ section, values }: IStyleProps): React.ReactElement {
                 isDisabled={disabled}
                 label={label}
                 labelPosition={labelPosition}
+                variant={variant}
                 accessibilityLabel={label}
             />
         </FieldShell>

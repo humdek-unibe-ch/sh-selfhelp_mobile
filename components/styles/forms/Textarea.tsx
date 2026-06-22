@@ -21,6 +21,9 @@ export function Textarea({ section, values }: IStyleProps): React.ReactElement {
     const maxLength = readNumberField(section, 'shared_max_length');
     const autoCapitalize = (readField<string>(section, 'mobile_auto_capitalize') || undefined) as
         | 'none' | 'sentences' | 'words' | 'characters' | undefined;
+    // mobile-only: HeroUI Native field variant (primary bordered | secondary filled).
+    const variant = (readField<string>(section, 'mobile_textarea_variant') || undefined) as
+        | 'primary' | 'secondary' | undefined;
 
     const { value, error, setValue } = useFieldBinding(name, initial);
 
@@ -40,6 +43,7 @@ export function Textarea({ section, values }: IStyleProps): React.ReactElement {
                 numberOfLines={minRows}
                 maxLength={maxLength}
                 autoCapitalize={autoCapitalize}
+                variant={variant}
             />
         </FieldShell>
     );

@@ -18,10 +18,13 @@ import { useAppColors } from '@/hooks/useAppColors';
  * SHADOW (its `border-field` colour equals the `bg-field` fill by design), and
  * RN shadows do not render on `react-native-web` — so on the Expo-web build the
  * field looks borderless (white-on-white in light mode). We therefore pin an
- * explicit, theme-aware border + surface + text colour through the `style` prop
- * (HeroUI merges it: `style={[borderCurve, style]}`), guaranteeing a visible
- * outline on every platform and both colour schemes. The invalid state keeps
- * the danger border.
+ * explicit, theme-aware colour through the `style` prop (HeroUI merges it:
+ * `style={[borderCurve, style]}`), guaranteeing a visible field on every
+ * platform and both colour schemes. `variant` (from `mobile_input_variant`)
+ * switches the look: `primary` is the bordered field; `secondary` is the filled
+ * field (muted inset fill, no outline). The invalid state always keeps the
+ * danger border. The same `variant` is forwarded to HeroUI's `Input` so native
+ * also renders the matching variant.
  */
 export function MobileInput({
     value,
@@ -35,11 +38,13 @@ export function MobileInput({
     keyboardType = 'default',
     maxLength,
     autoCapitalize,
+    variant = 'primary',
     className,
     accessibilityLabel,
     testID,
 }: IMobileInputProps): React.ReactElement {
     const colors = useAppColors();
+    const isFilled = variant === 'secondary';
     return (
         <TextField
             isDisabled={isDisabled}
@@ -57,13 +62,14 @@ export function MobileInput({
                 keyboardType={keyboardType}
                 maxLength={maxLength}
                 autoCapitalize={autoCapitalize}
+                variant={variant}
                 isDisabled={isDisabled}
                 isInvalid={isInvalid}
                 accessibilityLabel={accessibilityLabel ?? label}
                 testID={testID}
                 style={{
-                    borderColor: isInvalid ? colors.danger : colors.border,
-                    backgroundColor: colors.surface,
+                    borderColor: isInvalid ? colors.danger : isFilled ? 'transparent' : colors.border,
+                    backgroundColor: isFilled ? colors.surfaceMuted : colors.surface,
                     color: colors.text,
                     opacity: isDisabled ? 0.6 : 1,
                 }}
