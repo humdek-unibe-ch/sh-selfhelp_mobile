@@ -13,7 +13,7 @@ SPDX-License-Identifier: MPL-2.0
 import { useMemo } from 'react';
 import { replaceCalcedValues } from '@selfhelp/shared';
 import type { IContentField } from '@selfhelp/shared';
-import { stripHtmlToText } from './sanitizeContent';
+import { stripHtmlToText, parseInlineRich, type IInlineNode } from './sanitizeContent';
 
 /**
  * Loose section shape: any object that *might* carry a `fields` map plus
@@ -52,6 +52,27 @@ export function useInterpolatedField(
     // structured payloads read via this path are left intact.
     return useMemo(
         () => stripHtmlToText(replaceCalcedValues(raw, values as Record<string, string | number | boolean | null | undefined>)),
+        [raw, values]
+    );
+}
+
+/**
+ * Like {@link useInterpolatedField} but for prose slots that should keep the
+ * author's inline formatting: interpolate first, then parse the safe inline
+ * subset into {@link IInlineNode} runs (instead of stripping to plain text), so a
+ * Ctrl+B bold / italic / underline / link authored on the web renders on mobile
+ * via `<InlineText>`. JSON-aware: a structured payload is returned as one
+ * untouched run.
+ */
+export function useInlineFormattedField(
+    section: TFieldHolder,
+    name: string,
+    values: Record<string, unknown>,
+    fallback = ''
+): IInlineNode[] {
+    const raw = readStringField(section, name, fallback);
+    return useMemo(
+        () => parseInlineRich(replaceCalcedValues(raw, values as Record<string, string | number | boolean | null | undefined>)),
         [raw, values]
     );
 }
