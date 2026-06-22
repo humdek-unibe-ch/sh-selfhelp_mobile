@@ -13,6 +13,7 @@ import {
     JUSTIFY_TO_CLASS,
     gapToClass,
 } from '@/styles/mantineToTailwind';
+import { readSizingStyle } from './_sizing';
 
 export function FlexBox({ section, values }: IStyleProps): React.ReactElement {
     const justify = readField<string>(section, 'shared_justify');
@@ -31,7 +32,7 @@ export function FlexBox({ section, values }: IStyleProps): React.ReactElement {
     ];
 
     return (
-        <View className={buildSectionClasses(section, { extra })}>
+        <View className={buildSectionClasses(section, { extra })} style={readSizingStyle(section)}>
             <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );

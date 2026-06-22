@@ -10,7 +10,7 @@ import type { TCanonicalSpacing } from '@selfhelp/shared';
 
 export function Space({ section }: IStyleProps): React.ReactElement {
     const size = readField<string>(section, 'shared_size') ?? 'md';
-    const direction = readField<string>(section, 'web_space_direction') ?? 'vertical';
+    const orientation = readField<string>(section, 'shared_orientation') ?? 'vertical';
     const px = SPACING_PX[size as TCanonicalSpacing] ?? 16;
-    return <View style={direction === 'horizontal' ? { width: px } : { height: px }} />;
+    return <View style={orientation === 'horizontal' ? { width: px } : { height: px }} />;
 }

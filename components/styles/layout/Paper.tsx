@@ -2,12 +2,13 @@
 SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
 import { Children } from '@/components/renderer/Children';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readField, readBooleanField } from '@/components/renderer/useField';
+import { readField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
 import { mobileStyleProps } from '@/components/ui/mobileStyleProps';
+import { useAppColors } from '@/hooks/useAppColors';
 
 const SHADOWS: Record<string, { offset: { width: number; height: number }; opacity: number; radius: number; elevation: number }> = {
     none: { offset: { width: 0, height: 0 }, opacity: 0, radius: 0, elevation: 0 },
@@ -19,9 +20,13 @@ const SHADOWS: Record<string, { offset: { width: number; height: number }; opaci
 };
 
 export function Paper({ section, values }: IStyleProps): React.ReactElement {
+    const colors = useAppColors();
     const resolved = mobileStyleProps(section);
-    const shadow = readField<string>(section, 'paper_shadow') ?? readField<string>(section, 'web_paper_shadow') ?? 'none';
-    const border = readBooleanField(section, 'border', false) || readBooleanField(section, 'web_border', false);
+    const shadow = readField<string>(section, 'web_paper_shadow') ?? 'none';
+    const border = readBooleanField(section, 'shared_border', false);
+    // Optional auto-styled heading: rendered only when filled (empty = a plain
+    // surface). HTML-stripped to plain text by the shared interpolation hook.
+    const title = useInterpolatedField(section, 'title', values);
 
     const s = SHADOWS[shadow] ?? SHADOWS.none;
     const borderRadius = resolved.radiusPx ?? 8;
@@ -30,11 +35,11 @@ export function Paper({ section, values }: IStyleProps): React.ReactElement {
         <View
             className={buildSectionClasses(section)}
             style={{
-                backgroundColor: '#ffffff',
+                backgroundColor: colors.surface,
                 borderRadius,
                 padding: 14,
                 borderWidth: border ? 1 : 0,
-                borderColor: '#e9ecef',
+                borderColor: colors.border,
                 shadowColor: '#000',
                 shadowOffset: s.offset,
                 shadowOpacity: s.opacity,
@@ -42,6 +47,11 @@ export function Paper({ section, values }: IStyleProps): React.ReactElement {
                 elevation: s.elevation,
             }}
         >
+            {title ? (
+                <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 8 }}>
+                    {title}
+                </Text>
+            ) : null}
             <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );

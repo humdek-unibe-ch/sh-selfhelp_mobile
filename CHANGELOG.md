@@ -4,6 +4,61 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.5
+
+### Layout styles cross-platform pass (box, container, paper, center, group, stack, flex, grid, grid-column, simple-grid, space, divider, scroll-area)
+
+Aligns the mobile layout renderers with backend migration `Version20260622063129`
+and `@selfhelp/shared` `1.14.13`. The layout styles carried most sizing/behaviour
+under `web_*`, so on mobile they were barely configurable (and several renderers
+read field names the migration renamed, so they had silently stopped working).
+Every portable property now reads the promoted `shared_*` field through the shared
+mapper.
+
+- **Sizing helper (`components/styles/layout/_sizing.ts`, new).** Reads the
+  cross-platform `shared_width`/`shared_height` (and `center`'s
+  `shared_miw`/`shared_mih`/`shared_maw`/`shared_mah`) through the shared
+  `parseDimensionToReactNative` mapper, so a CMS px string ("320px") becomes a
+  unitless RN number while `%`/`auto` stay strings. Consumed by `flex`, `group`,
+  `stack`, `grid`, `grid-column`, `center`, `simple-grid` (width+height) and
+  `scroll-area` (height).
+- **`paper` (`Paper.tsx`).** Dark-mode fix — the surface was a hard-coded
+  `#ffffff` background with an `#e9ecef` border (white-on-dark in dark mode); it
+  now paints `useAppColors().surface` + `.border`. Renders the new optional
+  auto-styled `title` heading above the children (themed text, HTML-stripped, only
+  when set, never creating a section). Border opts in via `shared_border`
+  (was the broken `border`/`web_border`).
+- **`grid-column` (`GridColumn.tsx`).** Was reading the renamed `web_grid_span`
+  (broken). Now maps `shared_grid_span` through the shared
+  `gridSpanToReactNativeColumn` mapper, plus `shared_grid_offset` (left margin) and
+  `shared_grid_grow`. `shared_grid_order` has no RN flexbox equivalent (web-only).
+- **`simple-grid` (`SimpleGrid.tsx`).** Was reading the renamed `web_cols` and a
+  non-existent `web_spacing` (broken). Now uses `shared_cols`, `shared_gap`
+  (column gutter) and `shared_vertical_spacing` (row gutter), with a border-box
+  gutter so a row sums to exactly 100% (no horizontal overflow).
+- **`divider` (`Divider.tsx`).** Was reading the renamed `divider_variant` /
+  `divider_label_position` (broken). Now uses `shared_divider_variant` (through the
+  shared `mapDividerVariantToReactNative` mapper) and `shared_divider_label_position`,
+  and lightens the line colour in dark mode (falls back to the theme border).
+- **`space` (`Space.tsx`).** Was reading the renamed `web_space_direction` (broken);
+  now reads `shared_orientation`.
+- **`scroll-area` (`ScrollArea.tsx`).** Was reading the renamed `web_height` with a
+  raw `Number()` parse (broken for px/%); now reads `shared_height` through the
+  shared mapper.
+- **`flex` / `group` / `stack` / `grid` / `center`.** Gained the cross-platform
+  width/height (center also min/max) via the sizing helper.
+- **`css_mobile` colour lockstep (via `@selfhelp/shared` `1.14.13`).** The web
+  `css`/`css_mobile` dropdown offers the standard Tailwind colour scale
+  (`bg-blue-500`, `text-white`, …), but those names are oklch-based and unknown to
+  the RN/Uniwind preset, so colour demos on the showcase page rendered with **no
+  background** on mobile. The shared classifier now remaps the standard scale onto
+  the hex-backed Mantine scale (`bg-blue-500` → `bg-blue-6`, `bg-gray-100` →
+  `bg-gray-1`, Tailwind-only `purple`/`fuchsia` → `grape`), allows `text-white` /
+  `text-black`, and drops web-only `hover:`/`focus:` state classes. No mobile code
+  changed — `cssMobileToUniwind` picks it up through the shared bump — but the
+  author's dropdown colour picks now actually paint on Expo/RN. Locked in by new
+  cases in `__tests__/unit/sectionClasses.test.mjs`.
+
 ## 0.1.4
 
 ### `card` / `card-segment` / `checkbox` / `chip` / `code` / `title` / `register` style-polish wave

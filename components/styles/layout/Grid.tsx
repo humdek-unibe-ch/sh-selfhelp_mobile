@@ -8,6 +8,7 @@ import { Children } from '@/components/renderer/Children';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField } from '@/components/renderer/useField';
 import { ALIGN_TO_CLASS, JUSTIFY_TO_CLASS, gapToClass } from '@/styles/mantineToTailwind';
+import { readSizingStyle } from './_sizing';
 
 export function Grid({ section, values }: IStyleProps): React.ReactElement {
     const justify = readField<string>(section, 'shared_justify');
@@ -26,6 +27,7 @@ export function Grid({ section, values }: IStyleProps): React.ReactElement {
                     gapToClass(gap),
                 ],
             })}
+            style={readSizingStyle(section)}
         >
             <Children sections={(section as { children?: never }).children} values={values} />
         </View>
