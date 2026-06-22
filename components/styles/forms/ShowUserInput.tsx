@@ -15,18 +15,23 @@ SPDX-License-Identifier: MPL-2.0
  * `/forms/delete` (with the page id the backend requires), then refetches the
  * page so the row disappears — same contract as the web table's delete column.
  *
+ * Columns: like the web table, the author picks which fields show (and their
+ * labels) through the `fields_map` JSON; with no mapping every data key is shown.
+ * `show_timestamp` adds a leading "Date" column.
+ *
  * Theme-aware: every colour resolves through `useAppColors` so the cards stay
  * legible in dark + light. `title` (optional heading) and `empty_text`
  * (empty-state message) are author-configurable content fields.
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Pressable, View, Text } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
+import { readBooleanField, readField, useInterpolatedField } from '@/components/renderer/useField';
 import { useAppColors } from '@/hooks/useAppColors';
 import { deleteFormRecord } from '@/services/formsService';
+import { buildShowUserInputColumns, type IShowUserInputColumn } from './showUserInputColumns';
 
 interface IUserInputEntry {
     record_id: number;
@@ -35,12 +40,11 @@ interface IUserInputEntry {
     [key: string]: unknown;
 }
 
-const INTERNAL_KEYS = new Set(['record_id', 'id_users', '_can_delete']);
-
-function entryRows(entry: IUserInputEntry): { key: string; value: string }[] {
-    return Object.entries(entry)
-        .filter(([key]) => !INTERNAL_KEYS.has(key))
-        .map(([key, value]) => ({ key, value: value === null || value === undefined ? '' : String(value) }));
+function entryRows(entry: IUserInputEntry, columns: IShowUserInputColumn[]): { key: string; label: string; value: string }[] {
+    return columns.map((col) => {
+        const value = entry[col.key];
+        return { key: col.key, label: col.label, value: value === null || value === undefined ? '' : String(value) };
+    });
 }
 
 export function ShowUserInput({ section, values }: IStyleProps): React.ReactElement {
@@ -48,7 +52,18 @@ export function ShowUserInput({ section, values }: IStyleProps): React.ReactElem
     const queryClient = useQueryClient();
     const heading = useInterpolatedField(section, 'title', values);
     const emptyText = useInterpolatedField(section, 'empty_text', values) || 'No entries found.';
-    const entries = (section as { entries?: IUserInputEntry[] }).entries ?? [];
+    const entries = useMemo<IUserInputEntry[]>(
+        () => (section as { entries?: IUserInputEntry[] }).entries ?? [],
+        [section]
+    );
+
+    // Author-selected columns (fields_map) + optional leading timestamp column.
+    const showTimestamp = readBooleanField(section, 'show_timestamp', false);
+    const rawFieldsMap = readField<string>(section, 'fields_map');
+    const columns = useMemo<IShowUserInputColumn[]>(
+        () => buildShowUserInputColumns(rawFieldsMap, entries[0], showTimestamp),
+        [rawFieldsMap, entries, showTimestamp]
+    );
 
     const deleteEnabled = readBooleanField(section, 'delete_entry', false);
     const deleteTitle = useInterpolatedField(section, 'delete_modal_title', values) || 'Delete entry';
@@ -106,9 +121,9 @@ export function ShowUserInput({ section, values }: IStyleProps): React.ReactElem
                         backgroundColor: colors.surface,
                     }}
                 >
-                    {entryRows(entry).map((row) => (
+                    {entryRows(entry, columns).map((row) => (
                         <View key={row.key} style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                            <Text style={{ fontWeight: '600', color: colors.textMuted }}>{row.key}:</Text>
+                            <Text style={{ fontWeight: '600', color: colors.textMuted }}>{row.label}:</Text>
                             <Text style={{ flex: 1, color: colors.text }}>{row.value}</Text>
                         </View>
                     ))}
