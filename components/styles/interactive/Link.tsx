@@ -6,13 +6,21 @@ import { Linking, Pressable, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
+import { readBooleanField, readField, useInterpolatedField } from '@/components/renderer/useField';
+import { colorToHex } from '@selfhelp/shared';
+import { useAppColors } from '@/hooks/useAppColors';
 
 export function Link({ section, values }: IStyleProps): React.ReactElement {
     const router = useRouter();
     const label = useInterpolatedField(section, 'label', values);
     const url = useInterpolatedField(section, 'url', values);
     const openInNewTab = readBooleanField(section, 'open_in_new_tab', false);
+    // shared_color is the cross-platform accent (same field the web Anchor uses);
+    // fall back to the theme link/primary token, lightened on dark backgrounds.
+    const color = readField<string>(section, 'shared_color');
+    const colors = useAppColors();
+    const accent = color ? (colorToHex(color, colors.isDark ? 5 : 7) ?? colors.primary) : colors.primary;
+    // web_link_underline is web-only; mobile keeps the link underlined.
 
     return (
         <Pressable
@@ -26,10 +34,10 @@ export function Link({ section, values }: IStyleProps): React.ReactElement {
         >
             <Text
                 style={{
-                    color: '#1c7ed6',
+                    color: accent,
                     fontWeight: '500',
                     textDecorationLine: 'underline',
-                    textDecorationColor: '#a5d8ff',
+                    textDecorationColor: accent,
                 }}
             >
                 {label}

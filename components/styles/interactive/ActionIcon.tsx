@@ -28,6 +28,7 @@ export function ActionIcon({ section, values }: IStyleProps): React.ReactElement
     const isLink = readBooleanField(section, 'is_link', false);
     const pageKeyword = useInterpolatedField(section, 'page_keyword', values);
     const openInNewTab = readBooleanField(section, 'open_in_new_tab', false);
+    const ariaLabel = useInterpolatedField(section, 'aria_label', values) || undefined;
 
     const dims = SIZE_PX[size] ?? SIZE_PX.md;
 
@@ -43,6 +44,7 @@ export function ActionIcon({ section, values }: IStyleProps): React.ReactElement
                 if (openInNewTab && pageKeyword) void Linking.openURL(pageKeyword);
             }}
             accessibilityRole="button"
+            accessibilityLabel={ariaLabel}
             className={buildSectionClasses(section)}
             style={({ pressed }) => ({
                 width: dims.box,
