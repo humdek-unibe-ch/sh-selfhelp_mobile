@@ -5,6 +5,7 @@ SPDX-License-Identifier: MPL-2.0
 import { Switch } from 'heroui-native';
 import { Text, View } from 'react-native';
 import type { IMobileSwitchProps } from '../types';
+import { useAppColors } from '@/hooks/useAppColors';
 
 /**
  * OSS MobileSwitch — real HeroUI Native `Switch` (compound `Switch`/
@@ -15,6 +16,13 @@ import type { IMobileSwitchProps } from '../types';
  * primitives: HeroUI Native exposes no generic body-text component (its
  * `Label` is a pressable form-field label tied to field context), so a plain
  * RN `Text` is the correct element for a descriptive switch label.
+ *
+ * `selectedColor` (resolved hex from the cross-platform `shared_color` field)
+ * tints the "on" track so the accent is configurable on mobile exactly like it
+ * is on web — HeroUI animates the track background, so the colour is supplied
+ * through the `animation.backgroundColor` tuple `[off, on]` (the only override
+ * point HeroUI exposes for the animated fill). The off track uses a theme-aware
+ * neutral so the control stays visible in both colour schemes.
  */
 export function MobileSwitch({
     isSelected = false,
@@ -24,7 +32,9 @@ export function MobileSwitch({
     className,
     accessibilityLabel,
     testID,
+    selectedColor,
 }: IMobileSwitchProps): React.ReactElement {
+    const colors = useAppColors();
     return (
         <View
             className={
@@ -41,6 +51,7 @@ export function MobileSwitch({
                 isDisabled={isDisabled}
                 accessibilityLabel={accessibilityLabel ?? label}
                 testID={testID}
+                animation={selectedColor ? { backgroundColor: { value: [colors.border, selectedColor] } } : undefined}
             >
                 <Switch.Thumb />
             </Switch>

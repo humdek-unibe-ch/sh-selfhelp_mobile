@@ -18,6 +18,9 @@ export function Textarea({ section, values }: IStyleProps): React.ReactElement {
     const initial = readField<string>(section, 'value') ?? '';
     const required = readBooleanField(section, 'is_required', false);
     const disabled = readBooleanField(section, 'disabled', false);
+    const maxLength = readNumberField(section, 'shared_max_length');
+    const autoCapitalize = (readField<string>(section, 'mobile_auto_capitalize') || undefined) as
+        | 'none' | 'sentences' | 'words' | 'characters' | undefined;
 
     const { value, error, setValue } = useFieldBinding(name, initial);
 
@@ -35,6 +38,8 @@ export function Textarea({ section, values }: IStyleProps): React.ReactElement {
                 isInvalid={!!error}
                 isRequired={required}
                 numberOfLines={minRows}
+                maxLength={maxLength}
+                autoCapitalize={autoCapitalize}
             />
         </FieldShell>
     );

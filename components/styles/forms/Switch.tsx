@@ -7,6 +7,7 @@ import type { IStyleProps } from '@/components/renderer/types';
 import { MobileSwitch } from '@/components/ui/adapters';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
+import { colorToHex } from '@selfhelp/shared';
 import { useFieldBinding } from './_useFieldBinding';
 import { FieldShell } from './_FieldShell';
 
@@ -18,6 +19,7 @@ export function Switch({ section, values }: IStyleProps): React.ReactElement {
     const offValue = readField<string>(section, 'web_switch_off_value') ?? '0';
     const initial = readField<string>(section, 'value') ?? offValue;
     const disabled = readBooleanField(section, 'disabled', false);
+    const selectedColor = colorToHex(readField<string>(section, 'shared_color') ?? '', 6);
     const { value, error, setValue } = useFieldBinding(name, initial);
     const isOn = value === onValue;
 
@@ -33,6 +35,7 @@ export function Switch({ section, values }: IStyleProps): React.ReactElement {
                     onSelectedChange={(next) => setValue(next ? onValue : offValue)}
                     isDisabled={disabled}
                     accessibilityLabel={label}
+                    selectedColor={selectedColor}
                 />
             </View>
         </FieldShell>

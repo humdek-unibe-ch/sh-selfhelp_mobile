@@ -26,6 +26,8 @@ export function MobileTextarea({
     isInvalid,
     isRequired,
     numberOfLines = 3,
+    maxLength,
+    autoCapitalize,
     className,
     accessibilityLabel,
     testID,
@@ -47,6 +49,8 @@ export function MobileTextarea({
                 isDisabled={isDisabled}
                 isInvalid={isInvalid}
                 numberOfLines={numberOfLines}
+                maxLength={maxLength}
+                autoCapitalize={autoCapitalize}
                 accessibilityLabel={accessibilityLabel ?? label}
                 testID={testID}
                 style={{

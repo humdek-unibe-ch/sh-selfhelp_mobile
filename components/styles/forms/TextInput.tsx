@@ -5,7 +5,7 @@ SPDX-License-Identifier: MPL-2.0
 import type { IStyleProps } from '@/components/renderer/types';
 import { MobileInput } from '@/components/ui/adapters';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
+import { readField, readBooleanField, readNumberField, useInterpolatedField } from '@/components/renderer/useField';
 import { useFieldBinding } from './_useFieldBinding';
 import { FieldShell } from './_FieldShell';
 
@@ -17,6 +17,12 @@ export function TextInput({ section, values }: IStyleProps): React.ReactElement 
     const initial = readField<string>(section, 'value') ?? '';
     const required = readBooleanField(section, 'is_required', false);
     const disabled = readBooleanField(section, 'disabled', false);
+    const maxLength = readNumberField(section, 'shared_max_length');
+    const secureTextEntry = readBooleanField(section, 'mobile_secure_entry', false);
+    const keyboardType = (readField<string>(section, 'mobile_keyboard_type') || undefined) as
+        | 'default' | 'email-address' | 'numeric' | 'phone-pad' | 'url' | undefined;
+    const autoCapitalize = (readField<string>(section, 'mobile_auto_capitalize') || undefined) as
+        | 'none' | 'sentences' | 'words' | 'characters' | undefined;
 
     const { value, error, setValue } = useFieldBinding(name, initial);
 
@@ -32,6 +38,10 @@ export function TextInput({ section, values }: IStyleProps): React.ReactElement 
                 isDisabled={disabled}
                 isInvalid={!!error}
                 isRequired={required}
+                maxLength={maxLength}
+                secureTextEntry={secureTextEntry}
+                keyboardType={keyboardType}
+                autoCapitalize={autoCapitalize}
                 accessibilityLabel={label}
             />
         </FieldShell>

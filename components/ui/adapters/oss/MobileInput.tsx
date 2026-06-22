@@ -33,6 +33,8 @@ export function MobileInput({
     isRequired,
     secureTextEntry,
     keyboardType = 'default',
+    maxLength,
+    autoCapitalize,
     className,
     accessibilityLabel,
     testID,
@@ -53,6 +55,8 @@ export function MobileInput({
                 placeholderTextColor={colors.textFaint}
                 secureTextEntry={secureTextEntry}
                 keyboardType={keyboardType}
+                maxLength={maxLength}
+                autoCapitalize={autoCapitalize}
                 isDisabled={isDisabled}
                 isInvalid={isInvalid}
                 accessibilityLabel={accessibilityLabel ?? label}

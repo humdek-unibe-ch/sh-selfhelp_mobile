@@ -36,6 +36,21 @@ export type {
     IMobileUiAdapters,
 } from '@selfhelp/shared';
 
+/**
+ * Mobile-local extension of the switch contract: the resolved hex for the "on"
+ * track, so the cross-platform `shared_color` field is honoured on mobile
+ * (web gets accent colouring natively from Mantine). Declared as a module
+ * augmentation to avoid editing the published `@selfhelp/shared` package from
+ * the mobile repo; fold this optional field into the canonical
+ * `IMobileSwitchProps` on the next `@selfhelp/shared` release.
+ */
+declare module '@selfhelp/shared' {
+    interface IMobileSwitchProps {
+        /** Resolved hex for the selected/"on" track (maps `shared_color`). */
+        selectedColor?: string;
+    }
+}
+
 /** Build tier identifier. */
 export type TMobileUiTier = 'oss' | 'pro';
 

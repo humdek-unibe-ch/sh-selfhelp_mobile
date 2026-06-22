@@ -6,6 +6,7 @@ import { Slider as HeroSlider } from 'heroui-native';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readNumberField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
+import { colorToHex } from '@selfhelp/shared';
 import { useFieldBinding } from './_useFieldBinding';
 import { FieldShell } from './_FieldShell';
 import { parseSliderValue } from './_sliderValue';
@@ -26,6 +27,7 @@ export function Slider({ section, values }: IStyleProps): React.ReactElement {
     const max = readNumberField(section, 'web_numeric_max', 100) ?? 100;
     const step = readNumberField(section, 'web_numeric_step', 1) ?? 1;
     const initial = readField<string>(section, 'value') ?? String(min);
+    const fillColor = colorToHex(readField<string>(section, 'shared_color') ?? '', 6);
     const { value, error, setValue } = useFieldBinding(name, initial);
 
     const current = parseSliderValue(value, min, max);
@@ -42,7 +44,7 @@ export function Slider({ section, values }: IStyleProps): React.ReactElement {
                 onChangeEnd={(next) => setValue(String(Array.isArray(next) ? next[0] : next))}
             >
                 <HeroSlider.Track>
-                    <HeroSlider.Fill />
+                    <HeroSlider.Fill style={fillColor ? { backgroundColor: fillColor } : undefined} />
                     <HeroSlider.Thumb />
                 </HeroSlider.Track>
                 <HeroSlider.Output />

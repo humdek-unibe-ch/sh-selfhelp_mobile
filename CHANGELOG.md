@@ -6,6 +6,52 @@ SPDX-License-Identifier: MPL-2.0
 
 ## 0.1.6
 
+### Dark-mode + `shared_color` fixes across the form/interactive renderers
+
+Live Expo-web verification of the `qa-style-showcase` page in dark mode surfaced
+seven renderers that painted with literal hexes (white-on-dark surfaces, an
+ignored authored accent, or invisible labels). All now resolve colour through
+theme tokens (`useAppColors`) or the shared `colorToHex` mapper so the style is
+legible in both schemes and the cross-platform `shared_color` is honoured on
+mobile exactly like on web.
+
+- **`components/styles/forms/NumberInput.tsx`.** Renders through
+  the themed `MobileInput` adapter instead of a raw `RNTextInput`, so the
+  field surface/border/text follow the colour scheme (was a white box in dark).
+- **`components/ui/adapters/oss/MobileSwitch.tsx` + `components/styles/forms/Switch.tsx`.**
+  `MobileSwitch` gained an optional `selectedColor`; `Switch` resolves
+  `shared_color` → hex and feeds the HeroUI Native `animation.backgroundColor`
+  `[off, on]` tuple (off = theme `border`), so the "on" track honours the
+  authored accent (was always blue). `selectedColor` is declared as a local
+  module augmentation of `IMobileSwitchProps` in
+  `components/ui/adapters/types.ts` until it lands in `@selfhelp/shared`.
+- **`components/styles/forms/Slider.tsx` / `RangeSlider.tsx`.** Tint
+  `HeroSlider.Fill` from `shared_color` (was always blue).
+- **`components/styles/forms/Radio.tsx`.** Option labels use `colors.text`
+  (were invisible in dark), the selected circle uses the `shared_color` accent,
+  and the unselected ring uses `colors.textFaint`.
+- **`components/styles/forms/Progress.tsx` / `ProgressRoot.tsx`.** Track uses
+  `colors.surfaceMuted` instead of a hard-coded `#e9ecef` (was a light bar on a
+  dark page).
+
+### Form capability pass: text-input / textarea keyboard knobs + progress radius
+
+The mobile `text-input` and `textarea` renderers now honour the new
+cross-platform `shared_max_length` and the `mobile_*` native keyboard knobs, and
+`progress-root` honours `shared_radius`. Requires `@selfhelp/shared` ≥ 1.14.17.
+
+- **`components/ui/adapters/oss/MobileInput.tsx` / `MobileTextarea.tsx`.** Pass
+  through the new `maxLength` + `autoCapitalize` adapter props (input also already
+  forwarded `secureTextEntry` + `keyboardType`).
+- **`components/styles/forms/TextInput.tsx`.** Reads `shared_max_length`
+  (`maxLength`), `mobile_keyboard_type` (`keyboardType`), `mobile_auto_capitalize`
+  (`autoCapitalize`), `mobile_secure_entry` (`secureTextEntry`).
+- **`components/styles/forms/Textarea.tsx`.** Reads `shared_max_length` +
+  `mobile_auto_capitalize`.
+- **`components/styles/forms/ProgressRoot.tsx`.** Reads `shared_radius` (maps to
+  the bar's `borderRadius` via the shared `RADIUS_PX` token), mirroring the
+  single `progress` renderer.
+
 ### Inline rich-text reaches mobile (text style)
 
 CMS inline formatting (bold / italic / underline / link) authored on the web now
