@@ -33,7 +33,7 @@ export function FieldShell({ label, description, error, required, children, clas
                 <Text style={{ color: colors.textFaint, fontSize: 12, marginBottom: 6 }}>{description}</Text>
             ) : null}
             {children}
-            {error ? <Text style={{ color: '#fa5252', fontSize: 12, marginTop: 4 }}>{error}</Text> : null}
+            {error ? <Text style={{ color: colors.danger, fontSize: 12, marginTop: 4 }}>{error}</Text> : null}
         </View>
     );
 }
