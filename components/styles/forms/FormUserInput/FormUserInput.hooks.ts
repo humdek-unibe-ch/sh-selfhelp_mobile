@@ -19,6 +19,8 @@ import { submitForm, updateForm, type TFormResult } from '@/services/formsServic
 
 interface IUseFormControllerArgs {
     sectionId: number;
+    /** CMS page the form lives on. The backend requires it to run the page-access check. */
+    pageId: number;
     formName: string;
     isLog: boolean;
     successMessage?: string | null;
@@ -35,7 +37,7 @@ export function useFormController(args: IUseFormControllerArgs): {
     onSubmit: () => Promise<void>;
     onCancel: () => void;
 } {
-    const { sectionId, formName, isLog, successMessage, errorMessage, cancelUrl, ajax } = args;
+    const { sectionId, pageId, formName, isLog, successMessage, errorMessage, cancelUrl, ajax } = args;
 
     const [formValues, setFormValues] = useState<Record<string, unknown>>({});
     const [errors, setErrors] = useState<Record<string, string | undefined>>({});
@@ -64,6 +66,7 @@ export function useFormController(args: IUseFormControllerArgs): {
         const action = isLog ? submitForm : updateForm;
         const result: TFormResult = await action({
             section_id: sectionId,
+            page_id: pageId,
             form_data: formValues,
         });
         setSubmitting(false);
@@ -86,7 +89,7 @@ export function useFormController(args: IUseFormControllerArgs): {
         if (!ajax && result.redirectUrl) {
             router.push(result.redirectUrl);
         }
-    }, [ajax, errorMessage, formValues, isLog, sectionId, successMessage]);
+    }, [ajax, errorMessage, formValues, isLog, pageId, sectionId, successMessage]);
 
     const onCancel = useCallback((): void => {
         if (cancelUrl) router.push(cancelUrl);

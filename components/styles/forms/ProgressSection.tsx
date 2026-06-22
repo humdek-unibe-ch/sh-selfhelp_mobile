@@ -15,7 +15,7 @@ import { colorToHex } from '@selfhelp/shared';
  */
 export function ProgressSection({ section }: IStyleProps): React.ReactElement {
     const value = Math.max(0, Math.min(100, readNumberField(section, 'value', 0) ?? 0));
-    const color = readField<string>(section, 'shared_color') ?? 'blue';
+    const color = readField<string>(section, 'color') ?? 'blue';
     return (
         <View
             className={buildSectionClasses(section)}

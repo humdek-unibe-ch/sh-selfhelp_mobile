@@ -18,7 +18,7 @@ import type { TCanonicalRadius } from '@selfhelp/shared';
  */
 export function ProgressRoot({ section, values }: IStyleProps): React.ReactElement {
     const colors = useAppColors();
-    const radius = readField<string>(section, 'shared_radius') ?? 'sm';
+    const radius = readField<string>(section, 'radius') ?? 'sm';
     return (
         <View
             className={buildSectionClasses(section)}

@@ -19,7 +19,7 @@ export function Switch({ section, values }: IStyleProps): React.ReactElement {
     const offValue = readField<string>(section, 'web_switch_off_value') ?? '0';
     const initial = readField<string>(section, 'value') ?? offValue;
     const disabled = readBooleanField(section, 'disabled', false);
-    const selectedColor = colorToHex(readField<string>(section, 'shared_color') ?? '', 6);
+    const selectedColor = colorToHex(readField<string>(section, 'color') ?? '', 6);
     const { value, error, setValue } = useFieldBinding(name, initial);
     const isOn = value === onValue;
 

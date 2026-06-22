@@ -20,9 +20,9 @@ const SIZE_TO_HEIGHT: Record<TMantineSize, number> = { xs: 4, sm: 6, md: 10, lg:
 export function Progress({ section }: IStyleProps): React.ReactElement {
     const colors = useAppColors();
     const value = Math.max(0, Math.min(100, readNumberField(section, 'value', 0) ?? 0));
-    const color = readField<string>(section, 'shared_color') ?? 'blue';
-    const radius = readField<string>(section, 'shared_radius') ?? 'sm';
-    const size = (readField<string>(section, 'shared_size') as TMantineSize | undefined) ?? 'md';
+    const color = readField<string>(section, 'color') ?? 'blue';
+    const radius = readField<string>(section, 'radius') ?? 'sm';
+    const size = (readField<string>(section, 'size') as TMantineSize | undefined) ?? 'md';
     const height = SIZE_TO_HEIGHT[size] ?? 10;
 
     return (

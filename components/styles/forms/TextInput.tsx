@@ -17,7 +17,7 @@ export function TextInput({ section, values }: IStyleProps): React.ReactElement 
     const initial = readField<string>(section, 'value') ?? '';
     const required = readBooleanField(section, 'is_required', false);
     const disabled = readBooleanField(section, 'disabled', false);
-    const maxLength = readNumberField(section, 'shared_max_length');
+    const maxLength = readNumberField(section, 'max_length');
     const secureTextEntry = readBooleanField(section, 'mobile_secure_entry', false);
     const keyboardType = (readField<string>(section, 'mobile_keyboard_type') || undefined) as
         | 'default' | 'email-address' | 'numeric' | 'phone-pad' | 'url' | undefined;

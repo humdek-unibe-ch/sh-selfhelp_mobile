@@ -31,7 +31,7 @@ export function RangeSlider({ section, values }: IStyleProps): React.ReactElemen
     const max = readNumberField(section, 'web_numeric_max', 100) ?? 100;
     const step = readNumberField(section, 'web_numeric_step', 1) ?? 1;
     const initial = readField<string>(section, 'value') ?? '';
-    const fillColor = colorToHex(readField<string>(section, 'shared_color') ?? '', 6);
+    const fillColor = colorToHex(readField<string>(section, 'color') ?? '', 6);
     // mobile-only: show the value bubble above the slider (default on).
     const showValue = readBooleanField(section, 'mobile_range_slider_show_value', true);
     const { value, error, setValue } = useFieldBinding(name, initial);

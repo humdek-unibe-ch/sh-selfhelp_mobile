@@ -14,11 +14,11 @@ export function Textarea({ section, values }: IStyleProps): React.ReactElement {
     const label = useInterpolatedField(section, 'label', values);
     const description = useInterpolatedField(section, 'description', values);
     const placeholder = useInterpolatedField(section, 'placeholder', values);
-    const minRows = readNumberField(section, 'shared_min_rows', 3) ?? 3;
+    const minRows = readNumberField(section, 'min_rows', 3) ?? 3;
     const initial = readField<string>(section, 'value') ?? '';
     const required = readBooleanField(section, 'is_required', false);
     const disabled = readBooleanField(section, 'disabled', false);
-    const maxLength = readNumberField(section, 'shared_max_length');
+    const maxLength = readNumberField(section, 'max_length');
     const autoCapitalize = (readField<string>(section, 'mobile_auto_capitalize') || undefined) as
         | 'none' | 'sentences' | 'words' | 'characters' | undefined;
     // mobile-only: HeroUI Native field variant (primary bordered | secondary filled).

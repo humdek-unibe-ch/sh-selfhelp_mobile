@@ -43,7 +43,7 @@ export function Radio({ section, values }: IStyleProps): React.ReactElement {
     const required = readBooleanField(section, 'is_required', false);
     const initial = readField<string>(section, 'value') ?? '';
     const items = parseItems(readField(section, 'items') ?? readField(section, 'radio_options'));
-    const accent = colorToHex(readField<string>(section, 'shared_color') ?? 'blue', 6) ?? colors.primary;
+    const accent = colorToHex(readField<string>(section, 'color') ?? 'blue', 6) ?? colors.primary;
     const { value, error, setValue } = useFieldBinding(name, initial);
 
     return (

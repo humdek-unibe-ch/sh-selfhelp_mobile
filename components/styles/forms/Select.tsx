@@ -19,7 +19,7 @@ function parseOptions(raw: unknown): IOption[] {
     if (Array.isArray(raw)) {
         return raw.map((entry) => {
             const obj = entry as Record<string, unknown>;
-            return { value: String(obj.value ?? ''), text: String(obj.text ?? obj.value ?? '') };
+            return { value: String(obj.value ?? ''), text: String(obj.text ?? obj.label ?? obj.value ?? '') };
         });
     }
     if (typeof raw === 'string') {
@@ -40,7 +40,9 @@ export function Select({ section, values }: IStyleProps): React.ReactElement {
     const required = readBooleanField(section, 'is_required', false);
     const disabled = readBooleanField(section, 'disabled', false);
     const multiple = readBooleanField(section, 'is_multiple', false);
-    const options = parseOptions(readField(section, 'options'));
+    // The `select` style stores its choices under `options`; the `combobox` style
+    // (which reuses this component on mobile) stores them under `combobox_options`.
+    const options = parseOptions(readField(section, 'options') ?? readField(section, 'combobox_options'));
     const initial = readField<string>(section, 'value') ?? '';
     // mobile-only: how the option list opens (bottom-sheet | dialog | popover).
     // Empty falls back to the adapter default (bottom-sheet).
