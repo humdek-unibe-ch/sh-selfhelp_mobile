@@ -2,39 +2,27 @@
 SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
 import { Children } from '@/components/renderer/Children';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { useInterpolatedField } from '@/components/renderer/useField';
-import { useTabsContext } from './Tabs';
+import { useAppColors } from '@/hooks/useAppColors';
 
 /**
- * Self-contained tab: renders its label in the parent tab strip and its
- * content below. Position within siblings = tab index. v1 doesn't
- * support deep nesting; flatten in the CMS.
+ * Tab — the tab panels are normally rendered by the parent `Tabs`, which reads
+ * its `tab` children directly to build the label strip + the active panel. This
+ * component is the standalone fallback for a `tab` section rendered OUTSIDE a
+ * `Tabs` container: it shows the tab label followed by its content so nothing is
+ * lost. Position within siblings = tab order in the strip.
  */
-export function Tab({ section, values }: IStyleProps): React.ReactElement | null {
-    const ctx = useTabsContext();
+export function Tab({ section, values }: IStyleProps): React.ReactElement {
+    const colors = useAppColors();
     const label = useInterpolatedField(section, 'label', values);
-    if (!ctx) return null;
-    const idx = section.position ?? 0;
-    const active = ctx.active === idx;
-
     return (
-        <View>
-            <Pressable
-                onPress={() => ctx.setActive(idx)}
-                className={buildSectionClasses(section)}
-                style={{ paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 2, borderColor: active ? '#228be6' : 'transparent' }}
-            >
-                <Text style={{ color: active ? '#228be6' : '#495057', fontWeight: active ? '600' : '400' }}>{label}</Text>
-            </Pressable>
-            {active ? (
-                <View style={{ padding: 12 }}>
-                    <Children sections={(section as { children?: never }).children} values={values} />
-                </View>
-            ) : null}
+        <View className={buildSectionClasses(section)}>
+            {label ? <Text style={{ fontWeight: '600', color: colors.text, marginBottom: 6 }}>{label}</Text> : null}
+            <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );
 }

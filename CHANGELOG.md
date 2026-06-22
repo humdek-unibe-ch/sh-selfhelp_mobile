@@ -6,6 +6,37 @@ SPDX-License-Identifier: MPL-2.0
 
 ## 0.1.6
 
+### Interactive renderers: working `select`, `datepicker`, `color-input`, `tabs`
+
+Live Expo-web verification surfaced four interactive renderers that did not
+function on mobile: the `select` dropdown never opened, `datepicker` /
+`color-input` had no picker, and `tabs` opened with nothing selected. All four
+now work and stay theme-aware in both schemes.
+
+- **`components/ui/adapters/oss/MobileSelect.tsx`.** Keeps the HeroUI Native
+  `Select` trigger/value/item for styling but renders the option list in a React
+  Native `Modal` instead of HeroUI's popover. HeroUI's `Select.Content` positions
+  itself from `View.measure()`, which never resolves on `react-native-web`, so the
+  list stayed unmounted (nothing opened). The modal uses a `colors.backdrop`
+  scrim and a `colors.surface` sheet.
+- **`components/styles/forms/DatePicker.tsx`.** Renders a native
+  `<input type="date">` on web (themed via inline styles + `colorScheme`) for a
+  real calendar picker; native platforms keep the themed `MobileInput` ISO-date
+  fallback.
+- **`components/styles/forms/ColorInput.tsx`.** Renders a native
+  `<input type="color">` swatch synced to a themed hex `MobileInput` on web;
+  native platforms show a themed swatch beside the hex input. Values normalise
+  through `colorToHex`, and the whole control is theme-aware (was hard-coded
+  light).
+- **`components/styles/composite/Tabs.tsx`.** Defaults the active tab to the
+  first `tab` child's `id` (state was an index `0` compared against position-based
+  ids, so nothing was selected). Renders a horizontal label strip
+  (`ScrollView` of `Pressable`) above a separate full-width content panel, with
+  the active label/underline tinted from `shared_color`.
+- **`components/styles/composite/Tab.tsx`.** Now a standalone fallback (no
+  `TabsContext`): renders its interpolated label + children stacked, so it still
+  shows content when used outside a `Tabs` container.
+
 ### Dark-mode + `shared_color` fixes across the form/interactive renderers
 
 Live Expo-web verification of the `qa-style-showcase` page in dark mode surfaced

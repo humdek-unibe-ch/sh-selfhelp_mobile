@@ -43,9 +43,10 @@ export function Select({ section, values }: IStyleProps): React.ReactElement {
     const initial = readField<string>(section, 'value') ?? '';
     const { value, error, setValue } = useFieldBinding(name, initial);
 
-    // Renders through the swappable HeroUI Native select adapter (popover
-    // presentation via the provider portal host) on every platform, including
-    // web — the portal host is mounted by `HeroUINativeProvider` everywhere.
+    // Renders through the swappable HeroUI Native select adapter. The adapter
+    // keeps HeroUI's trigger/value/items but presents the option list in a RN
+    // `Modal` so it works on every platform, including web (HeroUI's popover
+    // measurement does not resolve under react-native-web).
     return (
         <FieldShell label={label} required={required} error={error} className={buildSectionClasses(section)}>
             <MobileSelect
