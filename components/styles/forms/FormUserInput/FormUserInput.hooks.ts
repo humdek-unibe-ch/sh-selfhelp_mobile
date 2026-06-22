@@ -13,6 +13,7 @@ SPDX-License-Identifier: MPL-2.0
 
 import { useCallback, useMemo, useState } from 'react';
 import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 
 import type { IFormContext } from '../FormContext';
 import { submitForm, updateForm, type TFormResult } from '@/services/formsService';
@@ -39,6 +40,7 @@ export function useFormController(args: IUseFormControllerArgs): {
 } {
     const { sectionId, pageId, formName, isLog, successMessage, errorMessage, cancelUrl, ajax } = args;
 
+    const queryClient = useQueryClient();
     const [formValues, setFormValues] = useState<Record<string, unknown>>({});
     const [errors, setErrors] = useState<Record<string, string | undefined>>({});
     const [isSubmitting, setSubmitting] = useState(false);
@@ -86,10 +88,14 @@ export function useFormController(args: IUseFormControllerArgs): {
         setResultMessage(successMessage || result.message || 'Saved');
         if (isLog) setFormValues({});
 
+        // Refetch the page so a sibling show-user-input (and form-record values)
+        // reflects the new/updated submission immediately.
+        void queryClient.invalidateQueries({ queryKey: ['page'] });
+
         if (!ajax && result.redirectUrl) {
             router.push(result.redirectUrl);
         }
-    }, [ajax, errorMessage, formValues, isLog, pageId, sectionId, successMessage]);
+    }, [ajax, errorMessage, formValues, isLog, pageId, queryClient, sectionId, successMessage]);
 
     const onCancel = useCallback((): void => {
         if (cancelUrl) router.push(cancelUrl);
