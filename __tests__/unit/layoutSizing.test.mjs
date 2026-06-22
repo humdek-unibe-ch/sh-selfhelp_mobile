@@ -39,7 +39,7 @@ test('readSizingStyle omits unset/invalid dimensions', () => {
 
 test('readConstraintStyle maps the center min/max constraints', () => {
     const s = readConstraintStyle(
-        section({ shared_miw: '100px', shared_maw: '90%', shared_mih: '50px', shared_mah: '300px' }),
+        section({ miw: '100px', maw: '90%', mih: '50px', mah: '300px' }),
     );
     assert.equal(s.minWidth, 100);
     assert.equal(s.maxWidth, '90%');

@@ -9,9 +9,9 @@ SPDX-License-Identifier: MPL-2.0
  * needed.
  *
  * Reads the cross-platform `shared_*` fields only (never `web_*`):
- *   - `shared_multiple`           -> selectionMode single | multiple
- *   - `shared_accordion_variant`  -> HeroUI variant default | surface (mapper)
- *   - `shared_radius`             -> container border radius (surface box)
+ *   - `multiple`           -> selectionMode single | multiple
+ *   - `accordion_variant`  -> HeroUI variant default | surface (mapper)
+ *   - `radius`             -> container border radius (surface box)
  */
 
 import { Accordion as HeroAccordion } from 'heroui-native';
@@ -24,9 +24,9 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readBooleanField, readField } from '@/components/renderer/useField';
 
 export function Accordion({ section, values }: IStyleProps): React.ReactElement {
-    const multiple = readBooleanField(section, 'shared_multiple', false);
-    const variant = mapAccordionVariantToHeroUiVariant(readField<string>(section, 'shared_accordion_variant'));
-    const radiusPx = mapRadiusToPx(readField<string>(section, 'shared_radius') as TSemanticRadius | undefined);
+    const multiple = readBooleanField(section, 'multiple', false);
+    const variant = mapAccordionVariantToHeroUiVariant(readField<string>(section, 'accordion_variant'));
+    const radiusPx = mapRadiusToPx(readField<string>(section, 'radius') as TSemanticRadius | undefined);
 
     return (
         <HeroAccordion

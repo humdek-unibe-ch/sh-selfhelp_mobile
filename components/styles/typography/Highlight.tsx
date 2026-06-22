@@ -10,7 +10,7 @@ import { colorToHex } from '@selfhelp/shared';
 import { useAppColors } from '@/hooks/useAppColors';
 
 export function Highlight({ section, values }: IStyleProps): React.ReactElement {
-    const color = readField<string>(section, 'shared_color') ?? 'yellow';
+    const color = readField<string>(section, 'color') ?? 'yellow';
     const text = useInterpolatedField(section, 'text', values);
     const highlight = useInterpolatedField(section, 'highlight_highlight', values);
     const colors = useAppColors();

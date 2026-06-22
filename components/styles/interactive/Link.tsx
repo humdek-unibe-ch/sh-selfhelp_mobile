@@ -15,9 +15,9 @@ export function Link({ section, values }: IStyleProps): React.ReactElement {
     const label = useInterpolatedField(section, 'label', values);
     const url = useInterpolatedField(section, 'url', values);
     const openInNewTab = readBooleanField(section, 'open_in_new_tab', false);
-    // shared_color is the cross-platform accent (same field the web Anchor uses);
+    // color is the cross-platform accent (same field the web Anchor uses);
     // fall back to the theme link/primary token, lightened on dark backgrounds.
-    const color = readField<string>(section, 'shared_color');
+    const color = readField<string>(section, 'color');
     const colors = useAppColors();
     const accent = color ? (colorToHex(color, colors.isDark ? 5 : 7) ?? colors.primary) : colors.primary;
     // web_link_underline is web-only; mobile keeps the link underlined.

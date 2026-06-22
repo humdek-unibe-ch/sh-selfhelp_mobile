@@ -4,7 +4,7 @@ SPDX-License-Identifier: MPL-2.0
 */
 /**
  * Wrapper around the shared `parseSpacing` + `spacingToClasses` so style
- * components can convert the `shared_spacing` box-model JSON
+ * components can convert the `spacing` box-model JSON
  * blob into Uniwind classes in one call.
  */
 

@@ -10,7 +10,7 @@ SPDX-License-Identifier: MPL-2.0
  *
  * Field reading delegates to the shared `resolveSharedStyleProps`, the single
  * source of truth for the `shared_*` field names and their narrowed domains
- * (`shared_size` = sm|md|lg, `shared_radius` = none|sm|md|lg|full). Per the
+ * (`size` = sm|md|lg, `radius` = none|sm|md|lg|full). Per the
  * mobile rendering plan (section 6.3) the mobile renderer NEVER reads `web_*`
  * fields — there is no web->mobile fallback. The only mobile-local mapping is
  * the documented `mobile_variant` override.
@@ -38,15 +38,15 @@ function pick<T>(value: string | undefined, allowed: Set<T>): T | undefined {
 /** Flatten the `shared_*` fields the shared resolver reads off a section. */
 function sharedFieldRecord(section: TSectionLike): Record<string, unknown> {
     return {
-        shared_size: readField(section, 'shared_size'),
-        shared_radius: readField(section, 'shared_radius'),
+        size: readField(section, 'size'),
+        radius: readField(section, 'radius'),
         // The REAL cross-platform appearance fields (Mantine palette/variant the
         // web renderer reads too). `shared_intent` is kept for back-compat only —
         // it is not in the live catalog.
-        shared_color: readField(section, 'shared_color'),
-        shared_variant: readField(section, 'shared_variant'),
+        color: readField(section, 'color'),
+        variant: readField(section, 'variant'),
         shared_intent: readField(section, 'shared_intent'),
-        shared_full_width: readField(section, 'shared_full_width'),
+        full_width: readField(section, 'full_width'),
     };
 }
 
@@ -85,11 +85,11 @@ export function mobileStyleProps(section: TSectionLike): IHeroUiResolvedStyle {
 /**
  * Clean-RN palette for components HeroUI Native does not ship (badge, alert
  * surface on web preview, etc.). The colour comes from the REAL cross-platform
- * fields the CMS stores — `shared_color` (a Mantine palette value) and
- * `shared_variant` (a Mantine variant) — fed straight into the shared Mantine
+ * fields the CMS stores — `color` (a Mantine palette value) and
+ * `variant` (a Mantine variant) — fed straight into the shared Mantine
  * variant resolver, exactly like the web renderer. The mobile renderer never
  * reads `web_*` (plan section 6.3); `shared_intent` is not in the catalog.
- * `defaultVariant` is the caller's fallback when no `shared_variant` is authored.
+ * `defaultVariant` is the caller's fallback when no `variant` is authored.
  */
 export function mobileIntentPalette(
     section: TSectionLike,

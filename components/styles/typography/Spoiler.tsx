@@ -15,7 +15,7 @@ export function Spoiler({ section, values }: IStyleProps): React.ReactElement {
     const [open, setOpen] = useState(false);
     const showLabel = useInterpolatedField(section, 'spoiler_show_label', values) || 'Show';
     const hideLabel = useInterpolatedField(section, 'spoiler_hide_label', values) || 'Hide';
-    const color = readField<string>(section, 'shared_color');
+    const color = readField<string>(section, 'color');
     const colors = useAppColors();
     const controlColor = color ? (colorToHex(color, colors.isDark ? 5 : 7) ?? colors.primary) : colors.primary;
 

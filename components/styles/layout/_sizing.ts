@@ -31,10 +31,10 @@ export function readSizingStyle(section: TFieldHolder): ViewStyle {
 /** `center` additionally supports the min/max width + height constraints. */
 export function readConstraintStyle(section: TFieldHolder): ViewStyle {
     const style = readSizingStyle(section);
-    const miw = parseDimensionToReactNative(readField<string>(section, 'shared_miw'));
-    const mih = parseDimensionToReactNative(readField<string>(section, 'shared_mih'));
-    const maw = parseDimensionToReactNative(readField<string>(section, 'shared_maw'));
-    const mah = parseDimensionToReactNative(readField<string>(section, 'shared_mah'));
+    const miw = parseDimensionToReactNative(readField<string>(section, 'miw'));
+    const mih = parseDimensionToReactNative(readField<string>(section, 'mih'));
+    const maw = parseDimensionToReactNative(readField<string>(section, 'maw'));
+    const mah = parseDimensionToReactNative(readField<string>(section, 'mah'));
     if (miw !== undefined) style.minWidth = miw;
     if (mih !== undefined) style.minHeight = mih;
     if (maw !== undefined) style.maxWidth = maw;

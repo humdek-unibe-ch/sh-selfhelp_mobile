@@ -17,7 +17,7 @@ import { useAppColors } from '@/hooks/useAppColors';
  * `Label` is a pressable form-field label tied to field context), so a plain
  * RN `Text` is the correct element for a descriptive switch label.
  *
- * `selectedColor` (resolved hex from the cross-platform `shared_color` field)
+ * `selectedColor` (resolved hex from the cross-platform `color` field)
  * tints the "on" track so the accent is configurable on mobile exactly like it
  * is on web — HeroUI animates the track background, so the colour is supplied
  * through the `animation.backgroundColor` tuple `[off, on]` (the only override

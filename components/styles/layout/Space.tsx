@@ -9,8 +9,8 @@ import { SPACING_PX } from '@selfhelp/shared';
 import type { TCanonicalSpacing } from '@selfhelp/shared';
 
 export function Space({ section }: IStyleProps): React.ReactElement {
-    const size = readField<string>(section, 'shared_size') ?? 'md';
-    const orientation = readField<string>(section, 'shared_orientation') ?? 'vertical';
+    const size = readField<string>(section, 'size') ?? 'md';
+    const orientation = readField<string>(section, 'orientation') ?? 'vertical';
     const px = SPACING_PX[size as TCanonicalSpacing] ?? 16;
     return <View style={orientation === 'horizontal' ? { width: px } : { height: px }} />;
 }

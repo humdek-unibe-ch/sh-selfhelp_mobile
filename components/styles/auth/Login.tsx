@@ -40,14 +40,14 @@ export function Login({ section, values }: IStyleProps): React.ReactElement {
     const labelPwReset = useInterpolatedField(section, 'label_pw_reset', values) || 'Forgot password?';
     const labelRegister = useInterpolatedField(section, 'label_register', values) || 'Create account';
 
-    // Configurable accent (`shared_color`) — the SAME cross-platform field the web
+    // Configurable accent (`color`) — the SAME cross-platform field the web
     // renderer feeds into the Mantine button `color`. Web maps the full Mantine
     // palette exactly; mobile resolves the exact accent hex through the shared
     // variant resolver and applies it to BOTH the submit button (via the adapter's
     // `accentColor`, which overrides the HeroUI variant fill while keeping the
     // readable white label) AND the two aux links. One field drives every accent,
-    // so the colour is consistent and `shared_color` works on mobile just like web.
-    const sharedColor = readField<string>(section, 'shared_color');
+    // so the colour is consistent and `color` works on mobile just like web.
+    const sharedColor = readField<string>(section, 'color');
     const accent = sharedColor ? resolveMantineVariant('filled', sharedColor).accent : colors.primary;
     const buttonVariant = mobileStyleProps(section).buttonVariant ?? 'primary';
 

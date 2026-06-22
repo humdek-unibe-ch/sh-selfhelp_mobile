@@ -12,7 +12,7 @@ SPDX-License-Identifier: MPL-2.0
  * pale, disconnected rail in dark mode). Matches the shared `ITimelineItemStyle`
  * contract; placement is enforced by the backend parent/child rules. The
  * web-only bullet/line fields (`web_timeline_item_*`) and the per-item semantic
- * `shared_color` are not yet mapped on mobile.
+ * `color` are not yet mapped on mobile.
  *
  * HeroUI Native **Pro** override (RF-31): `Stepper` step, swapped in by the Pro
  * mobile build via the `@selfhelp/mobile-pro-ui` adapter seam.

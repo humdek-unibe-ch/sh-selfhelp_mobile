@@ -25,17 +25,17 @@ export function Title({ section, values }: IStyleProps): React.ReactElement {
     const content = contentField || textField;
     const colors = useAppColors();
 
-    // `shared_color` (a Mantine palette name) drives the heading colour on both
+    // `color` (a Mantine palette name) drives the heading colour on both
     // platforms; resolve it to a concrete accent hex (lightened on dark for
     // contrast) and fall back to the themed body-text colour when unset.
-    const sharedColor = readField<string>(section, 'shared_color');
+    const sharedColor = readField<string>(section, 'color');
     const color = sharedColor
         ? resolveMantineVariant('filled', sharedColor).accent ?? colors.text
         : colors.text;
 
-    // `shared_line_clamp` truncates the heading to N lines (matches the web
+    // `line_clamp` truncates the heading to N lines (matches the web
     // `lineClamp`); empty = no clamp.
-    const clampRaw = readField<string>(section, 'shared_line_clamp');
+    const clampRaw = readField<string>(section, 'line_clamp');
     const numberOfLines = clampRaw && /^\d+$/.test(clampRaw) ? Number(clampRaw) : undefined;
 
     const g = ORDER_TO_GEOMETRY[order] ?? ORDER_TO_GEOMETRY['2'];

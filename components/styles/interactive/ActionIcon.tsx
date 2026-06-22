@@ -22,7 +22,7 @@ export function ActionIcon({ section, values }: IStyleProps): React.ReactElement
     const router = useRouter();
     const resolved = mobileStyleProps(section);
     const { palette: v } = mobileIntentPalette(section, 'subtle');
-    const size = (readField<string>(section, 'shared_size') as TMantineSize | undefined) ?? 'md';
+    const size = (readField<string>(section, 'size') as TMantineSize | undefined) ?? 'md';
     const icon = readField<string>(section, 'left_icon') ?? readField<string>(section, 'web_left_icon') ?? '?';
     const disabled = resolved.isDisabled ?? readBooleanField(section, 'disabled', false);
     const isLink = readBooleanField(section, 'is_link', false);

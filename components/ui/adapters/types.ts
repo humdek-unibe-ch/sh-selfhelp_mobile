@@ -38,7 +38,7 @@ export type {
 
 /**
  * Mobile-local extension of the switch contract: the resolved hex for the "on"
- * track, so the cross-platform `shared_color` field is honoured on mobile
+ * track, so the cross-platform `color` field is honoured on mobile
  * (web gets accent colouring natively from Mantine). Declared as a module
  * augmentation to avoid editing the published `@selfhelp/shared` package from
  * the mobile repo; fold this optional field into the canonical
@@ -46,7 +46,7 @@ export type {
  */
 declare module '@selfhelp/shared' {
     interface IMobileSwitchProps {
-        /** Resolved hex for the selected/"on" track (maps `shared_color`). */
+        /** Resolved hex for the selected/"on" track (maps `color`). */
         selectedColor?: string;
     }
 }

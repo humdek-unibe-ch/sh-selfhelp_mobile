@@ -23,7 +23,7 @@ import { useAppColors } from '@/hooks/useAppColors';
  *
  * Reads the tab panels directly from `section.children` instead of routing the
  * `tab` children through the registry, so the labels live in the strip while the
- * content lives in one full-width panel. The active accent honours `shared_color`.
+ * content lives in one full-width panel. The active accent honours `color`.
  */
 function tabLabel(tab: IPageSectionWithFields, values: Record<string, unknown>, index: number): string {
     const raw = readStringField(tab, 'label', '');
@@ -35,7 +35,7 @@ function tabLabel(tab: IPageSectionWithFields, values: Record<string, unknown>, 
 
 export function Tabs({ section, values }: IStyleProps): React.ReactElement {
     const colors = useAppColors();
-    const accent = colorToHex(readStringField(section, 'shared_color', '')) || colors.primary;
+    const accent = colorToHex(readStringField(section, 'color', '')) || colors.primary;
     const tabs = useMemo(
         () =>
             ((section as { children?: IPageSectionWithFields[] }).children ?? []).filter(

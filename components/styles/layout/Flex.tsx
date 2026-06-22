@@ -16,11 +16,11 @@ import {
 import { readSizingStyle } from './_sizing';
 
 export function FlexBox({ section, values }: IStyleProps): React.ReactElement {
-    const justify = readField<string>(section, 'shared_justify');
-    const align = readField<string>(section, 'shared_align');
-    const direction = readField<string>(section, 'shared_direction') ?? 'row';
-    const wrap = readField<string>(section, 'shared_wrap');
-    const gap = readField<string>(section, 'shared_gap');
+    const justify = readField<string>(section, 'justify');
+    const align = readField<string>(section, 'align');
+    const direction = readField<string>(section, 'direction') ?? 'row';
+    const wrap = readField<string>(section, 'wrap');
+    const gap = readField<string>(section, 'gap');
 
     const extra = [
         'flex',

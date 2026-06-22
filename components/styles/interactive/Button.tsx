@@ -38,7 +38,7 @@ export function Button({ section, values }: IStyleProps): React.ReactElement {
     // Renders through the swappable HeroUI Native button adapter (intent/size
     // resolved by the shared semantic mapper) on every platform, including web.
     // HeroUI Native **Pro** override (RF-32): `ProgressButton` / `SlideButton` /
-    // `SocialAuthButton` / `ToggleButton(+Group)` — opt-in via `shared_variant`
+    // `SocialAuthButton` / `ToggleButton(+Group)` — opt-in via `variant`
     // or dedicated styles; the Pro adapter swaps the base button where applicable.
     return (
         <MobileButton

@@ -22,7 +22,7 @@ import { useAppColors } from '@/hooks/useAppColors';
  * `MobileButton`); colours resolve through theme tokens + the shared variant
  * resolver (never hard-coded), so it is correct in dark and light. It exposes
  * the same CMS fields as the web renderer: email + an optional validation code
- * (shown unless `open_registration` is on), driven by the `shared_color` accent.
+ * (shown unless `open_registration` is on), driven by the `color` accent.
  */
 export function Register({ section, values }: IStyleProps): React.ReactElement {
     const colors = useAppColors();
@@ -40,8 +40,8 @@ export function Register({ section, values }: IStyleProps): React.ReactElement {
     // field, matching the web renderer + backend policy.
     const codeRequired = !readBooleanField(section, 'open_registration', false);
 
-    // Configurable accent — the SAME `shared_color` the web button reads.
-    const sharedColor = readField<string>(section, 'shared_color');
+    // Configurable accent — the SAME `color` the web button reads.
+    const sharedColor = readField<string>(section, 'color');
     const accent = sharedColor ? resolveMantineVariant('filled', sharedColor).accent : colors.primary;
     const buttonVariant = mobileStyleProps(section).buttonVariant ?? 'primary';
 

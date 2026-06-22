@@ -15,7 +15,7 @@ import type { IMobileButtonProps } from '../types';
  *
  * `accentColor` (resolved hex) overrides the variant's themed fill so a CMS
  * style can colour the button for cross-platform parity — e.g. `login`'s
- * `shared_color`, which Mantine applies to the web button via `color`. HeroUI
+ * `color`, which Mantine applies to the web button via `color`. HeroUI
  * paints the fill through a `bg-*` class (`bg-accent` for `primary`); the inline
  * `style` background wins over that class while the variant keeps its readable
  * foreground (white label on a filled button), so passing `accentColor` with the

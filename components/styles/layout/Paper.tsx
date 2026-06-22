@@ -23,7 +23,7 @@ export function Paper({ section, values }: IStyleProps): React.ReactElement {
     const colors = useAppColors();
     const resolved = mobileStyleProps(section);
     const shadow = readField<string>(section, 'web_paper_shadow') ?? 'none';
-    const border = readBooleanField(section, 'shared_border', false);
+    const border = readBooleanField(section, 'border', false);
     // Optional auto-styled heading: rendered only when filled (empty = a plain
     // surface). HTML-stripped to plain text by the shared interpolation hook.
     const title = useInterpolatedField(section, 'title', values);

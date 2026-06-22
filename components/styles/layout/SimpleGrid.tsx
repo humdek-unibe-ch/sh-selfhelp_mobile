@@ -13,19 +13,19 @@ import { readSizingStyle } from './_sizing';
 
 /**
  * SimpleGrid renders rows of N equal-width columns. The column count is the
- * cross-platform `shared_cols` (read on web AND mobile); the web-only
+ * cross-platform `cols` (read on web AND mobile); the web-only
  * responsive overrides (`web_cols_sm`/`md`/`lg`) are intentionally ignored here
- * — mobile uses the single base count. Horizontal spacing is `shared_gap`,
- * row spacing is `shared_vertical_spacing`.
+ * — mobile uses the single base count. Horizontal spacing is `gap`,
+ * row spacing is `vertical_spacing`.
  *
  * Gutters use the border-box model (padding inside each cell's percentage
  * width) so the row always sums to exactly 100% — no negative margins, no
  * horizontal overflow.
  */
 export function SimpleGrid({ section, values }: IStyleProps): React.ReactElement {
-    const cols = Math.max(1, readNumberField(section, 'shared_cols', 2) ?? 2);
-    const colGap = SPACING_PX[(readField<string>(section, 'shared_gap') ?? 'md') as TCanonicalSpacing] ?? 16;
-    const rowGap = SPACING_PX[(readField<string>(section, 'shared_vertical_spacing') ?? 'md') as TCanonicalSpacing] ?? 16;
+    const cols = Math.max(1, readNumberField(section, 'cols', 2) ?? 2);
+    const colGap = SPACING_PX[(readField<string>(section, 'gap') ?? 'md') as TCanonicalSpacing] ?? 16;
+    const rowGap = SPACING_PX[(readField<string>(section, 'vertical_spacing') ?? 'md') as TCanonicalSpacing] ?? 16;
 
     const children = ((section as { children?: never }).children as never as React.ReactNode[]) ?? [];
     const arr = Array.isArray(children) ? children : [];

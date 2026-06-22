@@ -6,7 +6,7 @@ SPDX-License-Identifier: MPL-2.0
  * Common class-string composer used by every container/leaf style.
  * Combines:
  *   - `css_mobile` (after allow-list filtering)
- *   - parsed `shared_spacing` (portable box-model; RF-15), falling back to the
+ *   - parsed `spacing` (portable box-model; RF-15), falling back to the
  *     legacy margin-only `web_spacing_margin` for not-yet-migrated sections
  *   - any extra classes the style itself wants
  *
@@ -28,7 +28,7 @@ export function buildSectionClasses(section: TSectionLike, options: ISectionClas
     const cssClasses = cssMobileToUniwind(cssMobile);
 
     const spacing =
-        readField<string>(section, 'shared_spacing') ??
+        readField<string>(section, 'spacing') ??
         readField<string>(section, 'web_spacing_margin');
     const spacingClasses = spacingClassNamesFromField(spacing).join(' ');
 

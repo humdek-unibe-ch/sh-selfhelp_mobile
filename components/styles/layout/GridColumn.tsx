@@ -11,20 +11,20 @@ import { gridSpanToReactNativeColumn } from '@selfhelp/shared';
 import { readSizingStyle } from './_sizing';
 
 /**
- * GridColumn is a child of `grid`. The cross-platform `shared_grid_span`
+ * GridColumn is a child of `grid`. The cross-platform `grid_span`
  * ("6" | "auto" | "content" | responsive JSON) is mapped to a React Native
  * flex layout via the shared `gridSpanToReactNativeColumn` mapper (parent grid
- * assumed 12 columns, matching Mantine). `shared_grid_offset` becomes a left
- * margin, `shared_grid_grow` forces flex-grow.
+ * assumed 12 columns, matching Mantine). `grid_offset` becomes a left
+ * margin, `grid_grow` forces flex-grow.
  *
- * `shared_grid_order` (CSS flex `order`) has no React Native equivalent — RN
+ * `grid_order` (CSS flex `order`) has no React Native equivalent — RN
  * flexbox cannot reorder children — so it only affects the web renderer.
  */
 export function GridColumn({ section, values }: IStyleProps): React.ReactElement {
-    const span = readField<string>(section, 'shared_grid_span');
+    const span = readField<string>(section, 'grid_span');
     const col = gridSpanToReactNativeColumn(span, 12);
-    const grow = readBooleanField(section, 'shared_grid_grow', false);
-    const offset = readNumberField(section, 'shared_grid_offset', 0) ?? 0;
+    const grow = readBooleanField(section, 'grid_grow', false);
+    const offset = readNumberField(section, 'grid_offset', 0) ?? 0;
 
     return (
         <View

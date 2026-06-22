@@ -13,7 +13,7 @@ import { mobileStyleProps } from '@/components/ui/mobileStyleProps';
 /**
  * Chip — interactive selectable pill. Renders the HeroUI Native `Chip`
  * (animated, themed) on every platform, including web. It consumes the shared
- * semantic fields (`shared_color` -> color, `shared_size`, `shared_chip_variant`);
+ * semantic fields (`color` -> color, `size`, `chip_variant`);
  * selection emphasises the pill with the `primary` variant.
  */
 export function Chip({ section, values }: IStyleProps): React.ReactElement {
@@ -25,10 +25,10 @@ export function Chip({ section, values }: IStyleProps): React.ReactElement {
     const disabled = resolved.isDisabled ?? false;
     const [checked, setChecked] = useState(initiallyChecked);
 
-    // `shared_chip_variant` (Mantine filled|light|outline) maps to the HeroUI
+    // `chip_variant` (Mantine filled|light|outline) maps to the HeroUI
     // Native chip look for the resting (unselected) state; selecting emphasises
     // the pill with `primary`.
-    const baseVariant = mapChipVariantToHeroUiVariant(readField<string>(section, 'shared_chip_variant'));
+    const baseVariant = mapChipVariantToHeroUiVariant(readField<string>(section, 'chip_variant'));
 
     return (
         <HeroChip

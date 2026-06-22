@@ -11,11 +11,11 @@ import { ALIGN_TO_CLASS, JUSTIFY_TO_CLASS, gapToClass } from '@/styles/mantineTo
 import { readSizingStyle } from './_sizing';
 
 export function Group({ section, values }: IStyleProps): React.ReactElement {
-    const justify = readField<string>(section, 'shared_justify');
-    const align = readField<string>(section, 'shared_align') ?? 'center';
+    const justify = readField<string>(section, 'justify');
+    const align = readField<string>(section, 'align') ?? 'center';
     const wrap = readBooleanField(section, 'web_group_wrap', false);
     const grow = readBooleanField(section, 'web_group_grow', false);
-    const gap = readField<string>(section, 'shared_gap') ?? 'md';
+    const gap = readField<string>(section, 'gap') ?? 'md';
 
     const extra = [
         'flex',

@@ -15,7 +15,7 @@ export function Blockquote({ section, values }: IStyleProps): React.ReactElement
     // underline/links via InlineText instead of stripping to plain text.
     const nodes = useInlineFormattedField(section, 'blockquote_content', values);
     const cite = useInterpolatedField(section, 'cite', values);
-    const color = readField<string>(section, 'shared_color') ?? 'blue';
+    const color = readField<string>(section, 'color') ?? 'blue';
     const colors = useAppColors();
     const accent = colorToHex(color, colors.isDark ? 5 : 6) ?? colors.primary;
     return (

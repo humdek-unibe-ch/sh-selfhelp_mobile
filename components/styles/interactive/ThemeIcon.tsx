@@ -19,7 +19,7 @@ const SIZE_PX: Record<TMantineSize, number> = { xs: 16, sm: 20, md: 28, lg: 36, 
 export function ThemeIcon({ section }: IStyleProps): React.ReactElement {
     const resolved = mobileStyleProps(section);
     const { palette, variant } = mobileIntentPalette(section, 'filled');
-    const size = (readField<string>(section, 'shared_size') as TMantineSize | undefined) ?? 'md';
+    const size = (readField<string>(section, 'size') as TMantineSize | undefined) ?? 'md';
     const icon = readField<string>(section, 'left_icon') ?? readField<string>(section, 'web_left_icon') ?? '★';
 
     const dim = SIZE_PX[size] ?? 28;

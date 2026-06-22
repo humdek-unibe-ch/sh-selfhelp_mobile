@@ -10,14 +10,14 @@ import { readBooleanField } from '@/components/renderer/useField';
 import { useAppColors } from '@/hooks/useAppColors';
 
 /**
- * CardSegment — an edge-to-edge band inside a Card. `shared_border` opts into a
+ * CardSegment — an edge-to-edge band inside a Card. `border` opts into a
  * themed top divider (matches the web Mantine `Card.Section withBorder`). The
  * divider colour resolves through the theme so it stays visible in dark mode.
  * `web_segment_inherit_padding` is web-only and intentionally not read here.
  */
 export function CardSegment({ section, values }: IStyleProps): React.ReactElement {
     const colors = useAppColors();
-    const withBorder = readBooleanField(section, 'shared_border', false);
+    const withBorder = readBooleanField(section, 'border', false);
 
     return (
         <View

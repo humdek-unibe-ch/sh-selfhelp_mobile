@@ -29,10 +29,10 @@ test('buildSectionClasses appends classified css_mobile classes', () => {
     assert.equal(out, 'style-section-1 flex mt-md w-full');
 });
 
-test('buildSectionClasses parses the unified shared_spacing field into classes', () => {
+test('buildSectionClasses parses the unified spacing field into classes', () => {
     const section = {
         id: 2,
-        fields: { shared_spacing: { content: '{"mt":"md","pb":"sm"}' } },
+        fields: { spacing: { content: '{"mt":"md","pb":"sm"}' } },
     };
     // md → 4, sm → 3 via SPACING_TO_TAILWIND.
     const classes = buildSectionClasses(section).split(' ');

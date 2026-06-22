@@ -7,8 +7,8 @@ SPDX-License-Identifier: MPL-2.0
  *
  * These prove the mobile adapter props are produced by the SHARED semantic
  * mapper (the single source of truth) reading the REAL cross-platform CMS
- * fields: `shared_color` (Mantine palette), `shared_variant` (Mantine variant),
- * `shared_size`, `shared_radius`, `shared_full_width` — the same fields the web
+ * fields: `color` (Mantine palette), `variant` (Mantine variant),
+ * `size`, `radius`, `full_width` — the same fields the web
  * renderer reads. The mobile renderer NEVER reads `web_*` (plan section 6.3),
  * and `shared_intent` is NOT in the live catalog. `mobileStyleProps` routes
  * through `toHeroUiSemanticProps`; the only mobile-local mapping is the
@@ -31,11 +31,11 @@ const sectionWithBag = (fields) => ({
 test('readSharedStyleProps extracts the REAL shared_* appearance fields', () => {
     const props = readSharedStyleProps(
         sectionWithBag({
-            shared_color: 'red',
-            shared_variant: 'filled',
-            shared_size: 'lg',
-            shared_radius: 'sm',
-            shared_full_width: '1',
+            color: 'red',
+            variant: 'filled',
+            size: 'lg',
+            radius: 'sm',
+            full_width: '1',
         }),
     );
     assert.equal(props.color, 'red');
@@ -48,7 +48,7 @@ test('readSharedStyleProps extracts the REAL shared_* appearance fields', () => 
 
 test('readSharedStyleProps ignores out-of-domain values and never reads web_*', () => {
     const props = readSharedStyleProps(
-        sectionWithBag({ shared_size: 'xl', shared_radius: 'xs', web_size: 'lg', web_radius: 'lg', web_justify: 'center' }),
+        sectionWithBag({ size: 'xl', radius: 'xs', web_size: 'lg', web_radius: 'lg', web_justify: 'center' }),
     );
     // 'xl'/'xs' are outside the narrowed shared scales -> ignored, not clamped;
     // web_* is never read on mobile.
@@ -62,38 +62,38 @@ test('readSharedStyleProps collects boolean states', () => {
 });
 
 test('mobileStyleProps routes through the shared HeroUI resolver (single source of truth)', () => {
-    const section = sectionWithBag({ shared_color: 'red', shared_variant: 'filled', shared_size: 'lg', shared_full_width: '1' });
+    const section = sectionWithBag({ color: 'red', variant: 'filled', size: 'lg', full_width: '1' });
     const expected = toHeroUiSemanticProps(readSharedStyleProps(section));
     assert.deepEqual(mobileStyleProps(section), expected);
 });
 
-test('mobileStyleProps derives the HeroUI button variant + colour from shared_color/shared_variant', () => {
+test('mobileStyleProps derives the HeroUI button variant + colour from color/variant', () => {
     // filled -> primary button variant; red -> danger semantic colour
-    const filled = mobileStyleProps(sectionWithBag({ shared_color: 'red', shared_variant: 'filled' }));
+    const filled = mobileStyleProps(sectionWithBag({ color: 'red', variant: 'filled' }));
     assert.equal(filled.buttonVariant, 'primary');
     assert.equal(filled.color, 'danger');
     // an explicit variant maps straight onto the HeroUI vocabulary
-    const outline = mobileStyleProps(sectionWithBag({ shared_variant: 'outline' }));
+    const outline = mobileStyleProps(sectionWithBag({ variant: 'outline' }));
     assert.equal(outline.buttonVariant, 'outline');
     // colour-only (no variant) still drives the button variant: red -> danger
-    const colorOnly = mobileStyleProps(sectionWithBag({ shared_color: 'red' }));
+    const colorOnly = mobileStyleProps(sectionWithBag({ color: 'red' }));
     assert.equal(colorOnly.buttonVariant, 'danger');
 });
 
 test('mobile_variant overrides the resolved button variant', () => {
-    const base = sectionWithBag({ shared_color: 'red', shared_variant: 'filled' });
-    const withOverride = sectionWithBag({ shared_color: 'red', shared_variant: 'filled', mobile_variant: 'ghost' });
+    const base = sectionWithBag({ color: 'red', variant: 'filled' });
+    const withOverride = sectionWithBag({ color: 'red', variant: 'filled', mobile_variant: 'ghost' });
     assert.notEqual(mobileStyleProps(base).buttonVariant, 'ghost');
     assert.equal(mobileStyleProps(withOverride).buttonVariant, 'ghost');
 });
 
 test('an unknown mobile_variant is ignored (stays with the shared mapping)', () => {
-    const section = sectionWithBag({ shared_color: 'red', shared_variant: 'filled', mobile_variant: 'not-a-variant' });
+    const section = sectionWithBag({ color: 'red', variant: 'filled', mobile_variant: 'not-a-variant' });
     assert.deepEqual(mobileStyleProps(section), toHeroUiSemanticProps(readSharedStyleProps(section)));
 });
 
-test('mobileIntentPalette resolves from shared_color/shared_variant (not web_*, not intent)', () => {
-    const resolved = mobileIntentPalette(sectionWithBag({ shared_color: 'red', shared_variant: 'outline' }), 'light');
+test('mobileIntentPalette resolves from color/variant (not web_*, not intent)', () => {
+    const resolved = mobileIntentPalette(sectionWithBag({ color: 'red', variant: 'outline' }), 'light');
     assert.equal(resolved.colorName, 'red');
     assert.equal(resolved.variant, 'outline');
     // falls back to gray + the caller's default variant when nothing is authored

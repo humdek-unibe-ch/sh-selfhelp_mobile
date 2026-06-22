@@ -14,9 +14,9 @@ export function Code({ section, values }: IStyleProps): React.ReactElement {
     const block = readBooleanField(section, 'code_block', false);
     const text = useInterpolatedField(section, 'content', values);
     const colors = useAppColors();
-    // `shared_radius` rounds the code surface (block mode); empty falls back to a
+    // `radius` rounds the code surface (block mode); empty falls back to a
     // subtle default that matches the web renderer.
-    const radius = readField<string>(section, 'shared_radius');
+    const radius = readField<string>(section, 'radius');
     const radiusPx = radius ? RADIUS_PX[radius as TCanonicalRadius] ?? 4 : 4;
     if (block) {
         return (

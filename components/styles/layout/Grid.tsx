@@ -11,9 +11,9 @@ import { ALIGN_TO_CLASS, JUSTIFY_TO_CLASS, gapToClass } from '@/styles/mantineTo
 import { readSizingStyle } from './_sizing';
 
 export function Grid({ section, values }: IStyleProps): React.ReactElement {
-    const justify = readField<string>(section, 'shared_justify');
-    const align = readField<string>(section, 'shared_align');
-    const gap = readField<string>(section, 'shared_gap') ?? 'md';
+    const justify = readField<string>(section, 'justify');
+    const align = readField<string>(section, 'align');
+    const gap = readField<string>(section, 'gap') ?? 'md';
 
     return (
         <View

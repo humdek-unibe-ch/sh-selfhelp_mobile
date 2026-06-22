@@ -8,8 +8,8 @@ SPDX-License-Identifier: MPL-2.0
  * `no-access` / `not-found` / `missing` render an accessible message card from
  * the section's `title` / `message` content fields (interpolated against the
  * page values), matching the shared `INoAccessStyle` / `INotFoundStyle` /
- * `IMissingStyle` contracts. The corner radius honours `shared_radius`. The
- * presentation fields (`shared_color` / `web_shadow` / `shared_variant` button
+ * `IMissingStyle` contracts. The corner radius honours `radius`. The
+ * presentation fields (`color` / `web_shadow` / `variant` button
  * variant) are not read on mobile; a plain accessible RN surface is the
  * documented fallback.
  *

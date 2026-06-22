@@ -47,7 +47,7 @@ export function ImageStyle({ section, values }: IStyleProps): React.ReactElement
     const alt = useInterpolatedField(section, 'alt', values);
     const fallback = useInterpolatedField(section, 'fallback_src', values);
     const blurhash = readField<string>(section, 'blurhash') ?? readField<string>(section, 'web_image_blurhash');
-    const radius = readField<string>(section, 'shared_radius') ?? 'sm';
+    const radius = readField<string>(section, 'radius') ?? 'sm';
     const fit = (readField<string>(section, 'web_image_fit') ?? 'cover');
     const width = readNumberField(section, 'width') ?? readNumberField(section, 'web_width');
     const height = readNumberField(section, 'height') ?? readNumberField(section, 'web_height') ?? 200;
