@@ -11,14 +11,6 @@ SPDX-License-Identifier: MPL-2.0
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
-    page: {
-        paddingHorizontal: 16,
-    },
-    image: {
-        width: '100%',
-        height: 220,
-        borderRadius: 4,
-    },
     dotsRow: {
         flexDirection: 'row',
         justifyContent: 'center',
@@ -29,12 +21,6 @@ export const styles = StyleSheet.create({
         height: 8,
         borderRadius: 4,
         marginHorizontal: 3,
-    },
-    dotActive: {
-        backgroundColor: '#228be6',
-    },
-    dotInactive: {
-        backgroundColor: '#dee2e6',
     },
     arrowsOverlay: {
         position: 'absolute',

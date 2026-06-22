@@ -6,55 +6,64 @@ SPDX-License-Identifier: MPL-2.0
  * V1 carousel — horizontal FlatList with snap-to-page and prev/next
  * arrows. Swap to `react-native-reanimated-carousel` if autoplay /
  * infinite-loop / advanced easing is required.
+ *
+ * Slides are the carousel section's **child sections** (mirrors the web
+ * `CarouselStyle`, which renders `style.children` as `Carousel.Slide`s).
+ * Each child is rendered through `BasicStyle` so any style — usually
+ * `image` — can be a slide and goes through the normal renderer.
  */
 
-import { FlatList, Image, Pressable, Text, View } from 'react-native';
+import { useState } from 'react';
+import { FlatList, type LayoutChangeEvent, Pressable, Text, View } from 'react-native';
+import type { IPageSectionWithFields } from '@selfhelp/shared';
 
 import type { IStyleProps } from '@/components/renderer/types';
+import { BasicStyle } from '@/components/renderer/BasicStyle';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readField } from '@/components/renderer/useField';
-import { resolveAssetSources } from '@selfhelp/shared';
-import { useServerStore } from '@/stores/serverStore';
+import { useAppColors } from '@/hooks/useAppColors';
 
-import type { ICarouselSource } from './Carousel.types';
 import { useCarouselPaging } from './Carousel.hooks';
 import { styles } from './Carousel.styles';
 
-export function Carousel({ section }: IStyleProps): React.ReactElement | null {
-    const baseUrl = useServerStore((s) => s.serverUrl) ?? '';
-    const sources = readField<ICarouselSource[]>(section, 'sources') ?? [];
-    const resolved = resolveAssetSources(sources, baseUrl);
+export function Carousel({ section, values }: IStyleProps): React.ReactElement | null {
+    const colors = useAppColors();
+    const slides = (section as { children?: IPageSectionWithFields[] }).children ?? [];
+    const [pageWidth, setPageWidth] = useState(0);
 
-    const { listRef, index, onMomentumEnd, goTo, pageWidth } = useCarouselPaging(resolved.length);
+    const { listRef, index, onMomentumEnd, goTo } = useCarouselPaging(slides.length, pageWidth);
 
-    if (!resolved.length) return null;
+    if (!slides.length) return null;
+
+    const onLayout = (e: LayoutChangeEvent): void => setPageWidth(e.nativeEvent.layout.width);
 
     return (
-        <View className={buildSectionClasses(section)} style={{ position: 'relative' }}>
-            <FlatList
-                ref={listRef}
-                data={resolved}
-                keyExtractor={(_, i) => String(i)}
-                renderItem={({ item }) => (
-                    <View style={[{ width: pageWidth }, styles.page]}>
-                        <Image source={{ uri: item.src }} style={styles.image} resizeMode="cover" />
-                    </View>
-                )}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={onMomentumEnd}
-                getItemLayout={(_, i) => ({ length: pageWidth, offset: pageWidth * i, index: i })}
-            />
+        <View className={buildSectionClasses(section)} style={{ position: 'relative' }} onLayout={onLayout}>
+            {pageWidth > 0 ? (
+                <FlatList
+                    ref={listRef}
+                    data={slides}
+                    keyExtractor={(item) => String(item.id)}
+                    renderItem={({ item }) => (
+                        <View style={{ width: pageWidth }}>
+                            <BasicStyle section={item} values={values} />
+                        </View>
+                    )}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onMomentumScrollEnd={onMomentumEnd}
+                    getItemLayout={(_, i) => ({ length: pageWidth, offset: pageWidth * i, index: i })}
+                />
+            ) : null}
             <View style={styles.dotsRow}>
-                {resolved.map((_, i) => (
+                {slides.map((slide, i) => (
                     <View
-                        key={i}
-                        style={[styles.dotBase, i === index ? styles.dotActive : styles.dotInactive]}
+                        key={slide.id}
+                        style={[styles.dotBase, { backgroundColor: i === index ? colors.primary : colors.border }]}
                     />
                 ))}
             </View>
-            {resolved.length > 1 ? (
+            {slides.length > 1 ? (
                 <View style={styles.arrowsOverlay} pointerEvents="box-none">
                     <Pressable onPress={() => goTo(index - 1)} style={[styles.arrowButton, styles.arrowLeft]}>
                         <Text style={styles.arrowText}>{'\u2039'}</Text>
