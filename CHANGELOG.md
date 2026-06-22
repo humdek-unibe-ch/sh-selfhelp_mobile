@@ -4,6 +4,82 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.6
+
+### Inline rich-text reaches mobile (text style)
+
+CMS inline formatting (bold / italic / underline / link) authored on the web now
+renders on the mobile app — the cross-platform goal. React Native `<Text>` cannot
+render HTML, so the `text` renderer parses the safe inline subset and renders
+nested `<Text>` runs instead of stripping the markup to plain text.
+
+- **`components/renderer/InlineText.tsx` (new).** Renders a list of inline runs
+  as one `<Text>` with nested `<Text>` children carrying `fontWeight` /
+  `fontStyle` / `textDecorationLine`; anchor runs open via `Linking`. The base
+  typography (size/colour/align) stays on the outer `<Text>`.
+- **`components/renderer/sanitizeContent.ts`.** Added `parseInlineRich`,
+  `hasInlineFormatting`, and the `IInlineNode` type — behaviour-identical local
+  copies of the `@selfhelp/shared` 1.14.14 `content` helpers (same transitional
+  pattern as `stripHtmlToText`). Block tags + `<br>` collapse to spaces; JSON
+  payloads pass through untouched.
+- **`components/renderer/useField.ts`.** Added `useInlineFormattedField`, the
+  inline-aware sibling of the stripping `useInterpolatedField`.
+- **`components/styles/typography/TextStyle.tsx`.** Renders `<InlineText>` from
+  the parsed runs (was a stripped plain `<Text>`).
+- **Tests.** `__tests__/unit/sanitizeContent.test.mjs` now also covers
+  `parseInlineRich` / `hasInlineFormatting` (15 assertions total, green).
+- **`blockquote` + `list-item` too.** `Blockquote.tsx` (dedicated
+  `blockquote_content`) and `ListItem.tsx` (`list_item_content`) also render the
+  inline subset via `<InlineText>` instead of stripping it.
+
+### Mobile rich-text editor (lightweight toolbar)
+
+The `rich-text-editor` style is now an actual editor on mobile instead of a raw
+HTML `TextInput`. A themed toolbar applies the same safe inline subset the
+renderers understand, so what an author formats is what the page shows.
+
+- **`components/styles/forms/RichTextEditor.tsx`.** Rebuilt with a Bold / Italic
+  / Underline / Link toolbar over a themed source field plus a live `<InlineText>`
+  preview. All colours come from `useAppColors` (readable in light and dark).
+- **`components/styles/forms/richTextMarkup.ts` (new).** Pure, RN-free helper
+  that wraps the current selection in `<strong>` / `<em>` / `<u>` / `<a>` and
+  reports the new selection — unit-tested under `node --test`.
+- **`components/styles/forms/_FieldShell.tsx`.** Error text uses `colors.danger`
+  (was a hardcoded red).
+- **Tests.** `__tests__/unit/richTextMarkup.test.mjs` (new) covers the wrapping,
+  empty-selection, clamping, and round-trip cases.
+
+### Text / media / interactive field pass
+
+Mobile renderers now read the new fields added by backend migration
+`Version20260622110041`:
+
+- **`image`** — `fallback_src` is shown when the main source can't load. Failure
+  is detected deterministically with `Image.prefetch` (reliable on web + native,
+  unlike expo-image's `onError`), then the fallback is rendered.
+- **`figure`** — optional built-in `img_src` / `alt` (no child section needed).
+- **`link`** — `shared_color` accent (lightened on dark) + underline.
+- **`action-icon`** — `aria_label` drives the accessible name.
+- **`spoiler`** — `shared_color` control colour.
+- **`audio`** / **`video`** — `has_controls` / `media_loop` / `media_autoplay`
+  (+ `media_muted` for video) playback toggles; `video` reads `video_src`.
+
+### Carousel renders child sections as slides
+
+`components/styles/media/Carousel/*` — the carousel paged an empty `sources`
+field and therefore rendered nothing. It now pages through its **child sections**
+(rendered via `BasicStyle`, mirroring the web `CarouselStyle`), measures the
+container width with `onLayout` so snapping aligns, and themes the active /
+inactive dots with `useAppColors`. Swipe + prev/next arrows verified.
+
+### Dark-mode polish
+
+Replaced hardcoded light colours that looked wrong on dark backgrounds with
+`useAppColors` tokens: `Kbd` (surface/border/text), `Highlight` (surrounding
+text + dark ink on the light marker), `Indicator` (badge ring now matches the
+page background instead of glaring white), the carousel dots, and the
+`video`/`audio` empty states.
+
 ## 0.1.5
 
 ### Layout styles cross-platform pass (box, container, paper, center, group, stack, flex, grid, grid-column, simple-grid, space, divider, scroll-area)
