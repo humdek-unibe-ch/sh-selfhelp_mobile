@@ -59,7 +59,7 @@ export function ImageStyle({ section, values }: IStyleProps): React.ReactElement
     // success and rejects when the asset can't load, so a 404 deterministically
     // flips to the fallback regardless of the expo-image/web onError quirks.
     useEffect(() => {
-        if (!fallback || !resolvedSrc) return;
+        if (!fallback || !resolvedSrc) return undefined;
         let cancelled = false;
         setErrored(false);
         RNImage.prefetch(resolvedSrc)
