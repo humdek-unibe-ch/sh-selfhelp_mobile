@@ -10,6 +10,7 @@ SPDX-License-Identifier: MPL-2.0
 
 import {
     ENDPOINTS,
+    type IFormDeleteRequest,
     type IFormDeleteResponse,
     type IFormSubmitData,
     type IFormSubmitRequest,
@@ -54,7 +55,7 @@ export async function updateForm(payload: IFormUpdateRequest): Promise<TFormResu
     }
 }
 
-export async function deleteFormRecord(payload: { section_id: number; record_id?: number }): Promise<TFormResult> {
+export async function deleteFormRecord(payload: IFormDeleteRequest): Promise<TFormResult> {
     try {
         const resp = await getApiClient().post<IFormDeleteResponse>(ENDPOINTS.FORMS.DELETE, payload);
         if (resp.data.error) return { kind: 'error', message: resp.data.error };

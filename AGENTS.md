@@ -39,7 +39,7 @@ This repository is the SelfHelp mobile frontend app. It displays end-user pages 
 - `config/`: runtime config and dev server presets.
 - `docs/`: architecture, setup, development, builds, styling docs, and cookbooks.
 - `scripts/`: EAS instance helper scripts.
-- `__tests__/`: Node test suite, currently registry parity tests.
+- `__tests__/`: Node test suite for registry parity, renderer helpers, style behavior, and mobile UI contracts.
 
 ## Documentation Rules
 
@@ -95,6 +95,7 @@ These rules apply to every documentation change in active SelfHelp2 repositories
 - Interfaces are commonly prefixed with `I`; type aliases are commonly prefixed with `T`.
 - New TS/TSX/JS files should include the two-line MPL-2.0 SPDX header from `header.txt`.
 - Use `readField`, `readStringField`, `readBooleanField`, `readNumberField`, and `useInterpolatedField` from `components/renderer/useField.ts`. Do not read `section.fields[...]` directly.
+- CMS style property fields are unprefixed when both platforms consume them (`color`, `variant`, `size`, `spacing`, etc.). Only `web_*` / `mobile_*` are platform-specific; the reserved collision exceptions are `shared_height`, `shared_width`, and `shared_icon`. Do not reintroduce general `shared_*` reads.
 - Use `buildSectionClasses(section)` for CMS style class names.
 - Mobile reads `css_mobile`, never `css`.
 - For non-trivial style components, use the 4-file pattern: `Component.tsx`, `Component.styles.ts`, `Component.types.ts`, optional `Component.hooks.ts`, and `index.ts`.
@@ -262,7 +263,7 @@ Do not hardcode enum string unions in plugin-related mobile components. Consume 
 ## Testing Rules
 
 - `npm test` runs Node's built-in test runner over `__tests__/**/*.test.mjs`.
-- The current test suite checks parity between the shared style registry and mobile `styleImpls`.
+- The test suite checks shared-registry parity plus renderer helpers, style behavior, and mobile UI adapter contracts.
 - `npm run typecheck` runs `tsc --noEmit`.
 - `npm run lint` runs the ESLint flat config and currently passes clean with `--max-warnings=0` (zero errors, zero warnings); CI enforces this in `plugin-mobile-check.yml`. Keep it green — do not add new errors or warnings.
 - Add or update tests when changing registry behavior, scripts, shared-contract handling, or parsing/normalization logic.

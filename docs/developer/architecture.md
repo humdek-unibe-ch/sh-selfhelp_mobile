@@ -7,7 +7,7 @@ SPDX-License-Identifier: MPL-2.0
 Audience: Developers and technical operators.
 Status: active.
 Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
-Last verified: 2026-06-03.
+Last verified: 2026-06-23.
 Source of truth: Runtime code, configuration, and tests in this repository.
 
 How the mobile app, backend, and shared package fit together.
@@ -105,7 +105,7 @@ For every section in the tree:
 1. **Condition** — `evaluateCondition` from the shared package runs JSON-Logic with the context `{ platform: 'mobile', language, current_date, ... sectionVars }`. Falsy → skip.
 2. **Interpolation** — every `{{field}}` placeholder is resolved via `replaceCalcedValues` against the page's value map.
 3. **Class string** — `buildSectionClasses(section)` parses `css_mobile`, runs each token through the shared allow-list + remap, and joins the survivors. Unsupported tokens are dropped + warned in `__DEV__`.
-4. **Theme props** — Mantine semantic props (`mantine_size`, `mantine_color`, `mantine_radius`, `mantine_spacing_margin_padding`, `mantine_variant`) are mapped to HeroUI props by the helpers in `styles/`.
+4. **Theme props** — the unprefixed portable semantic fields (`size`, `color`, `radius`, `spacing`, `variant`) are mapped to HeroUI props by the helpers in `styles/`.
 5. **Render** — the registered HeroUI Native impl receives `{ section, values }`. Children (when present) are recursively rendered through `<Children>`.
 
 ## State + cache

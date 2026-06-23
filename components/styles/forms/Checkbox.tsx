@@ -2,8 +2,8 @@
 SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
-import { Pressable, Text, View } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
+import { MobileCheckbox } from '@/components/ui/adapters';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
 import { useFieldBinding } from './_useFieldBinding';
@@ -18,33 +18,26 @@ export function Checkbox({ section, values }: IStyleProps): React.ReactElement {
     const offValue = '0';
     const initial = readField<string>(section, 'value') ?? offValue;
     const disabled = readBooleanField(section, 'disabled', false);
+    const labelPosition = readField<string>(section, 'label_position') === 'left' ? 'left' : 'right';
+    // mobile-only: HeroUI Native checkbox variant (primary | secondary).
+    const variant = (readField<string>(section, 'mobile_checkbox_variant') || undefined) as
+        | 'primary' | 'secondary' | undefined;
     const { value, error, setValue } = useFieldBinding(name, initial);
     const checked = value === onValue;
 
+    // Renders through the swappable HeroUI Native checkbox adapter (animated
+    // indicator + native selection state) on every platform, including web.
     return (
         <FieldShell description={description} required={required} error={error} className={buildSectionClasses(section)}>
-            <Pressable
-                disabled={disabled}
-                onPress={() => setValue(checked ? offValue : onValue)}
-                style={{ flexDirection: 'row', alignItems: 'center' }}
-            >
-                <View
-                    style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: 4,
-                        borderWidth: 2,
-                        borderColor: checked ? '#228be6' : '#adb5bd',
-                        backgroundColor: checked ? '#228be6' : 'transparent',
-                        marginRight: 8,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    {checked ? <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>✓</Text> : null}
-                </View>
-                {label ? <Text>{label}</Text> : null}
-            </Pressable>
+            <MobileCheckbox
+                isSelected={checked}
+                onSelectedChange={(next) => setValue(next ? onValue : offValue)}
+                isDisabled={disabled}
+                label={label}
+                labelPosition={labelPosition}
+                variant={variant}
+                accessibilityLabel={label}
+            />
         </FieldShell>
     );
 }

@@ -13,13 +13,14 @@ import {
     JUSTIFY_TO_CLASS,
     gapToClass,
 } from '@/styles/mantineToTailwind';
+import { readSizingStyle } from './_sizing';
 
 export function FlexBox({ section, values }: IStyleProps): React.ReactElement {
-    const justify = readField<string>(section, 'mantine_justify');
-    const align = readField<string>(section, 'mantine_align');
-    const direction = readField<string>(section, 'mantine_direction') ?? 'row';
-    const wrap = readField<string>(section, 'mantine_wrap');
-    const gap = readField<string>(section, 'mantine_gap');
+    const justify = readField<string>(section, 'justify');
+    const align = readField<string>(section, 'align');
+    const direction = readField<string>(section, 'direction') ?? 'row';
+    const wrap = readField<string>(section, 'wrap');
+    const gap = readField<string>(section, 'gap');
 
     const extra = [
         'flex',
@@ -31,7 +32,7 @@ export function FlexBox({ section, values }: IStyleProps): React.ReactElement {
     ];
 
     return (
-        <View className={buildSectionClasses(section, { extra })}>
+        <View className={buildSectionClasses(section, { extra })} style={readSizingStyle(section)}>
             <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );

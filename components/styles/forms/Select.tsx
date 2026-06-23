@@ -2,9 +2,8 @@
 SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
-import { useState } from 'react';
-import { Modal, Pressable, Text, View, ScrollView } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
+import { MobileSelect } from '@/components/ui/adapters';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
 import { useFieldBinding } from './_useFieldBinding';
@@ -20,7 +19,7 @@ function parseOptions(raw: unknown): IOption[] {
     if (Array.isArray(raw)) {
         return raw.map((entry) => {
             const obj = entry as Record<string, unknown>;
-            return { value: String(obj.value ?? ''), text: String(obj.text ?? obj.value ?? '') };
+            return { value: String(obj.value ?? ''), text: String(obj.text ?? obj.label ?? obj.value ?? '') };
         });
     }
     if (typeof raw === 'string') {
@@ -36,46 +35,36 @@ function parseOptions(raw: unknown): IOption[] {
 
 export function Select({ section, values }: IStyleProps): React.ReactElement {
     const name = readField<string>(section, 'name') ?? '';
-    const label = useInterpolatedField(section, 'alt', values);
+    const label = useInterpolatedField(section, 'label', values);
     const placeholder = useInterpolatedField(section, 'placeholder', values) || 'Select…';
     const required = readBooleanField(section, 'is_required', false);
     const disabled = readBooleanField(section, 'disabled', false);
-    const options = parseOptions(readField(section, 'options'));
+    const multiple = readBooleanField(section, 'is_multiple', false);
+    // The `select` style stores its choices under `options`; the `combobox` style
+    // (which reuses this component on mobile) stores them under `combobox_options`.
+    const options = parseOptions(readField(section, 'options') ?? readField(section, 'combobox_options'));
     const initial = readField<string>(section, 'value') ?? '';
+    // mobile-only: how the option list opens (bottom-sheet | dialog | popover).
+    // Empty falls back to the adapter default (bottom-sheet).
+    const presentation = (readField<string>(section, 'mobile_select_presentation') || undefined) as
+        | 'bottom-sheet' | 'dialog' | 'popover' | undefined;
     const { value, error, setValue } = useFieldBinding(name, initial);
-    const [open, setOpen] = useState(false);
 
-    const selected = options.find((o) => o.value === value);
-
+    // Renders through the swappable HeroUI Native select adapter, which uses
+    // HeroUI's real Select presentations (bottom-sheet / dialog / popover) via
+    // the portal host mounted by HeroUINativeProvider.
     return (
         <FieldShell label={label} required={required} error={error} className={buildSectionClasses(section)}>
-            <Pressable
-                disabled={disabled}
-                onPress={() => setOpen(true)}
-                style={{ borderWidth: 1, borderColor: error ? '#fa5252' : '#dee2e6', borderRadius: 4, padding: 10, backgroundColor: disabled ? '#f8f9fa' : '#fff' }}
-            >
-                <Text style={{ color: selected ? '#212529' : '#adb5bd' }}>{selected?.text ?? placeholder}</Text>
-            </Pressable>
-            <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-                <Pressable onPress={() => setOpen(false)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 24 }}>
-                    <View style={{ backgroundColor: '#fff', borderRadius: 8, maxHeight: '70%' }}>
-                        <ScrollView>
-                            {options.map((opt) => (
-                                <Pressable
-                                    key={opt.value}
-                                    onPress={() => {
-                                        setValue(opt.value);
-                                        setOpen(false);
-                                    }}
-                                    style={{ padding: 14, borderBottomWidth: 1, borderColor: '#f1f3f5' }}
-                                >
-                                    <Text>{opt.text}</Text>
-                                </Pressable>
-                            ))}
-                        </ScrollView>
-                    </View>
-                </Pressable>
-            </Modal>
+            <MobileSelect
+                value={value}
+                onValueChange={setValue}
+                options={options.map((o) => ({ value: o.value, label: o.text }))}
+                placeholder={placeholder}
+                isDisabled={disabled}
+                multiple={multiple}
+                presentation={presentation}
+                accessibilityLabel={label}
+            />
         </FieldShell>
     );
 }

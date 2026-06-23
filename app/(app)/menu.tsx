@@ -19,10 +19,12 @@ import { LoadingScreen } from '@/components/feedback/LoadingScreen';
 import { PageRenderer } from '@/components/renderer/PageRenderer';
 import { PageList } from '@/components/shell/PageList';
 import { usePageContent } from '@/hooks/usePageContent';
+import { useAppColors } from '@/hooks/useAppColors';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function MenuScreen(): React.ReactElement {
     const { t } = useTranslation();
+    const colors = useAppColors();
     const { data, isLoading, error } = usePageContent('menu');
     const accessToken = useAuthStore((s) => s.accessToken);
     const shouldRedirectToLogin = !accessToken && isAuthError(error);
@@ -50,7 +52,7 @@ export default function MenuScreen(): React.ReactElement {
     // auto-generated nav list so the drawer entry is never a dead end.
     if (error || !data) {
         return (
-            <SafeAreaView style={{ flex: 1 }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
                 <ScrollView contentContainerStyle={{ padding: 16 }}>
                     <PageList />
                 </ScrollView>
@@ -59,7 +61,7 @@ export default function MenuScreen(): React.ReactElement {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             <PageRenderer page={data} />
         </SafeAreaView>
     );

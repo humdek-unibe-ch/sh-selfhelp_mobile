@@ -67,7 +67,7 @@ import { FormLog, FormRecord } from './forms/FormUserInput/index';
 import { Input } from './forms/Input';
 import { TextInput } from './forms/TextInput';
 import { Textarea } from './forms/Textarea';
-import { RichTextEditorReadOnly } from './forms/RichTextEditorReadOnly';
+import { RichTextEditor } from './forms/RichTextEditor';
 import { Select } from './forms/Select';
 import { Radio } from './forms/Radio';
 import { Checkbox } from './forms/Checkbox';
@@ -104,6 +104,13 @@ import { Validate } from './auth/Validate';
 import { ResetPassword } from './auth/ResetPassword';
 import { TwoFactorAuth } from './auth/TwoFactorAuth';
 import { Profile } from './auth/Profile';
+import { NoAccess, NotFound, Missing, Version } from './auth/SystemSurfaces';
+
+// established catalog styles that were missing from the mobile registry
+import { RefContainer } from './layout/RefContainer';
+import { DataContainer } from './layout/DataContainer';
+import { TimelineItem } from './composite/TimelineItem';
+import { ShowUserInput } from './forms/ShowUserInput';
 
 export const styleImpls: TStyleImplMap = {
     // layout
@@ -124,6 +131,8 @@ export const styleImpls: TStyleImplMap = {
     'card-segment': CardSegment,
     'aspect-ratio': AspectRatio,
     'background-image': BackgroundImage,
+    'ref-container': RefContainer,
+    'data-container': DataContainer,
     // typography
     title: Title,
     text: TextStyle,
@@ -158,7 +167,7 @@ export const styleImpls: TStyleImplMap = {
     input: Input,
     'text-input': TextInput,
     textarea: Textarea,
-    'rich-text-editor': RichTextEditorReadOnly,
+    'rich-text-editor': RichTextEditor,
     select: Select,
     radio: Radio,
     checkbox: Checkbox,
@@ -176,12 +185,14 @@ export const styleImpls: TStyleImplMap = {
     progress: Progress,
     'progress-root': ProgressRoot,
     'progress-section': ProgressSection,
+    'show-user-input': ShowUserInput,
     // composite
     accordion: Accordion,
     'accordion-item': AccordionItem,
     tabs: Tabs,
     tab: Tab,
     timeline: Timeline,
+    'timeline-item': TimelineItem,
     list: ListStyle,
     'list-item': ListItem,
     'entry-list': EntryList,
@@ -195,4 +206,9 @@ export const styleImpls: TStyleImplMap = {
     'reset-password': ResetPassword,
     'two-factor-auth': TwoFactorAuth,
     profile: Profile,
+    // system / error surfaces
+    'no-access': NoAccess,
+    'not-found': NotFound,
+    missing: Missing,
+    version: Version,
 };

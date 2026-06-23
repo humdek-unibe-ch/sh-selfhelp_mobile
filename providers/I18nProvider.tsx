@@ -31,6 +31,27 @@ const resources = {
             register: 'Register',
             email: 'Email',
             password: 'Password',
+            close: 'Close',
+            theme: {
+                title: 'Appearance',
+                light: 'Light',
+                dark: 'Dark',
+                auto: 'Auto',
+            },
+            language: {
+                title: 'Language',
+            },
+            account: {
+                guest: 'Guest',
+                notSignedIn: 'Not signed in',
+                viewProfile: 'View profile',
+                switchServer: 'Switch server',
+            },
+            profile: {
+                title: 'Profile',
+                username: 'Username',
+                email: 'Email',
+            },
         },
     },
 } as const;

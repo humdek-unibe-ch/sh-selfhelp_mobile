@@ -4,8 +4,9 @@ SPDX-License-Identifier: MPL-2.0
 */
 /**
  * Static visual chunks for the form container — the action row and the
- * result message banner. Field controls inside the form bring their own
- * styles.
+ * result message banner. The action buttons themselves are themed inline from
+ * the shared button knobs (RF-21), so only the row container + result banner
+ * live here. Field controls inside the form bring their own styles.
  */
 
 import { StyleSheet } from 'react-native';
@@ -15,30 +16,6 @@ export const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 8,
         marginTop: 12,
-    },
-    cancelButton: {
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 4,
-        borderWidth: 1,
-        borderColor: '#dee2e6',
-    },
-    cancelText: {
-        color: '#495057',
-        fontWeight: '600',
-    },
-    submitButton: {
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 4,
-        backgroundColor: '#228be6',
-    },
-    submitButtonDisabled: {
-        opacity: 0.6,
-    },
-    submitText: {
-        color: '#fff',
-        fontWeight: '600',
     },
     resultBase: {
         marginTop: 12,

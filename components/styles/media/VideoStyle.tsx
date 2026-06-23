@@ -7,30 +7,37 @@ import { Text, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readField } from '@/components/renderer/useField';
+import { readBooleanField, readField } from '@/components/renderer/useField';
 import { resolveAssetUrl } from '@selfhelp/shared';
 import { useServerStore } from '@/stores/serverStore';
-
-interface ISource {
-    src?: string;
-    type?: string;
-}
+import { useAppColors } from '@/hooks/useAppColors';
 
 export function VideoStyle({ section }: IStyleProps): React.ReactElement | null {
     const baseUrl = useServerStore((s) => s.serverUrl) ?? '';
-    const sources = readField<ISource[]>(section, 'sources') ?? [];
-    const src = sources[0]?.src ? resolveAssetUrl(sources[0].src, baseUrl) : null;
+    const colors = useAppColors();
+    const rawSrc = readField<string>(section, 'video_src');
+    const src = rawSrc ? resolveAssetUrl(rawSrc, baseUrl) : null;
+
+    // Playback toggles (common fields, '0' | '1'); controls default ON.
+    const controls = readBooleanField(section, 'has_controls', true);
+    const loop = readBooleanField(section, 'media_loop', false);
+    const autoplay = readBooleanField(section, 'media_autoplay', false);
+    // Browsers/OS require muted for autoplay, so force it on when autoplay is set.
+    const muted = readBooleanField(section, 'media_muted', false) || autoplay;
 
     const player = useVideoPlayer(src ?? '', (p) => {
-        if (src) p.loop = false;
+        if (!src) return;
+        p.loop = loop;
+        p.muted = muted;
+        if (autoplay) p.play();
     });
     // Touch the status event to keep the player alive across re-renders.
     useEvent(player, 'statusChange', { status: 'idle' });
 
     if (!src) {
         return (
-            <View className={buildSectionClasses(section)} style={{ padding: 12, backgroundColor: '#f8f9fa', borderRadius: 4 }}>
-                <Text style={{ color: '#868e96' }}>No video source</Text>
+            <View className={buildSectionClasses(section)} style={{ padding: 12, backgroundColor: colors.surfaceMuted, borderRadius: 4 }}>
+                <Text style={{ color: colors.textFaint }}>No video source</Text>
             </View>
         );
     }
@@ -40,6 +47,7 @@ export function VideoStyle({ section }: IStyleProps): React.ReactElement | null 
             className={buildSectionClasses(section)}
             style={{ width: '100%', height: 220, borderRadius: 4 }}
             player={player}
+            nativeControls={controls}
             fullscreenOptions={{ enable: true }}
             allowsPictureInPicture
         />

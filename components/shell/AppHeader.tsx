@@ -3,20 +3,23 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 /**
- * Lightweight header rendered above each app screen. Hosts the
- * language switcher, a logout shortcut, and a hamburger button that
- * toggles the drawer in `(app)/_layout.tsx`. Designed to stay slim so it
- * doesn't compete with CMS-rendered content for screen real estate.
+ * Slim header above every app screen: a hamburger that toggles the drawer
+ * and the app name on the left, and a single account button on the right.
+ *
+ * The account button opens `AccountMenu` — a bottom sheet that holds the
+ * theme selector, language picker, profile, server switch and log in/out.
+ * Keeping everything behind one avatar keeps the header uncluttered and
+ * lets it adapt to the active colour scheme.
  */
 
+import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { router, usePathname } from 'expo-router';
+import { router } from 'expo-router';
 import Constants from 'expo-constants';
 
 import { useAuthStore } from '@/stores/authStore';
-import { useServerStore } from '@/stores/serverStore';
-import { logout } from '@/services/authService';
-import { LanguageSwitcher } from './LanguageSwitcher';
+import { useAppColors } from '@/hooks/useAppColors';
+import { AccountMenu } from './AccountMenu';
 
 interface IAppHeaderProps {
     onOpenDrawer: () => void;
@@ -24,17 +27,12 @@ interface IAppHeaderProps {
 
 export function AppHeader({ onOpenDrawer }: IAppHeaderProps): React.ReactElement {
     const user = useAuthStore((s) => s.user);
-    const canSwitchServers = useServerStore((s) => s.canSwitchServers);
+    const colors = useAppColors();
     const appName = Constants.expoConfig?.name ?? 'SelfHelp';
-    const pathname = usePathname();
+    const [menuOpen, setMenuOpen] = useState(false);
 
-    const onLogout = async (): Promise<void> => {
-        await logout();
-        router.replace({
-            pathname: '/(public)/login',
-            params: { redirect: pathname },
-        });
-    };
+    const displayName = user?.name || user?.user_name || user?.email || '';
+    const initial = displayName ? displayName.charAt(0).toUpperCase() : null;
 
     return (
         <View
@@ -45,49 +43,63 @@ export function AppHeader({ onOpenDrawer }: IAppHeaderProps): React.ReactElement
                 paddingHorizontal: 16,
                 paddingVertical: 12,
                 borderBottomWidth: 1,
-                borderColor: '#e9ecef',
-                backgroundColor: '#fff',
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
             }}
         >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <Pressable onPress={onOpenDrawer} accessibilityLabel="Open menu">
-                    <Text style={{ fontSize: 22, fontWeight: '700' }}>{'\u2630'}</Text>
+                <Pressable
+                    onPress={onOpenDrawer}
+                    accessibilityRole="button"
+                    accessibilityLabel="Open menu"
+                    hitSlop={8}
+                >
+                    <Text style={{ fontSize: 22, fontWeight: '700', color: colors.text }}>{'\u2630'}</Text>
                 </Pressable>
-                <Pressable onPress={() => router.push('/')}>
-                    <Text style={{ fontSize: 16, fontWeight: '700' }}>{appName}</Text>
+                <Pressable onPress={() => router.push('/')} accessibilityRole="button" accessibilityLabel={appName}>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{appName}</Text>
                 </Pressable>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <LanguageSwitcher compact />
-                {canSwitchServers ? (
-                    <Pressable
-                        onPress={() =>
-                            router.push({
-                                pathname: '/(dev)/server-picker',
-                                params: { redirect: pathname },
-                            })
-                        }
+
+            <Pressable
+                onPress={() => setMenuOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel={user ? 'Account menu' : 'Settings and sign in'}
+                hitSlop={8}
+                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            >
+                {initial ? (
+                    <View
+                        style={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: 17,
+                            backgroundColor: colors.primary,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
                     >
-                        <Text style={{ color: '#228be6', marginLeft: 12, fontWeight: '600' }}>Server</Text>
-                    </Pressable>
-                ) : null}
-                {user ? (
-                    <Pressable onPress={() => void onLogout()}>
-                        <Text style={{ color: '#fa5252', marginLeft: 12, fontWeight: '600' }}>Logout</Text>
-                    </Pressable>
+                        <Text style={{ color: colors.onPrimary, fontWeight: '700', fontSize: 15 }}>{initial}</Text>
+                    </View>
                 ) : (
-                    <Pressable
-                        onPress={() =>
-                            router.push({
-                                pathname: '/(public)/login',
-                                params: { redirect: pathname },
-                            })
-                        }
+                    <View
+                        style={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: 17,
+                            backgroundColor: colors.surfaceMuted,
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
                     >
-                        <Text style={{ color: '#228be6', marginLeft: 12, fontWeight: '600' }}>Login</Text>
-                    </Pressable>
+                        <Text style={{ fontSize: 16, color: colors.textMuted }}>{'\u2699'}</Text>
+                    </View>
                 )}
-            </View>
+            </Pressable>
+
+            <AccountMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
         </View>
     );
 }

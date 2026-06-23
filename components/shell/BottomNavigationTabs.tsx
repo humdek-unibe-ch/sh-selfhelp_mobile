@@ -14,12 +14,14 @@ import { router, usePathname } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 import { usePages } from '@/hooks/usePages';
+import { useAppColors } from '@/hooks/useAppColors';
 import { getPageHref, getPageLabel, getTopLevelMenuPages, iconForPage, isPageActive } from './navigationUtils';
 
 const MAX_BOTTOM_TABS = 5;
 
 export function BottomNavigationTabs(): React.ReactElement | null {
     const pathname = usePathname();
+    const colors = useAppColors();
     const { data } = usePages();
     const tabs = getTopLevelMenuPages(data ?? []).slice(0, MAX_BOTTOM_TABS);
 
@@ -30,8 +32,8 @@ export function BottomNavigationTabs(): React.ReactElement | null {
             style={{
                 flexDirection: 'row',
                 borderTopWidth: 1,
-                borderColor: '#e9ecef',
-                backgroundColor: '#ffffff',
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
                 paddingBottom: 4,
             }}
         >
@@ -55,13 +57,13 @@ export function BottomNavigationTabs(): React.ReactElement | null {
                                 width: 32,
                                 height: 4,
                                 borderRadius: 2,
-                                backgroundColor: active ? '#1c7ed6' : 'transparent',
+                                backgroundColor: active ? colors.primaryStrong : 'transparent',
                                 marginBottom: 4,
                             }}
                         />
                         <Text
                             style={{
-                                color: active ? '#1c7ed6' : '#868e96',
+                                color: active ? colors.primaryStrong : colors.textFaint,
                                 fontWeight: '700',
                                 fontSize: 16,
                             }}
@@ -71,7 +73,7 @@ export function BottomNavigationTabs(): React.ReactElement | null {
                         <Text
                             numberOfLines={1}
                             style={{
-                                color: active ? '#1c7ed6' : '#495057',
+                                color: active ? colors.primaryStrong : colors.textMuted,
                                 fontSize: 11,
                                 fontWeight: active ? '700' : '500',
                                 marginTop: 2,

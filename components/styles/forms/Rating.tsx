@@ -8,11 +8,18 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField, readNumberField, useInterpolatedField } from '@/components/renderer/useField';
 import { useFieldBinding } from './_useFieldBinding';
 import { FieldShell } from './_FieldShell';
+import { useAppColors } from '@/hooks/useAppColors';
 
+/**
+ * Rating — OSS fallback (tappable React Native stars). HeroUI Native **Pro**
+ * override (RF-27): `Rating`, swapped in by the Pro mobile build via the
+ * `@selfhelp/mobile-pro-ui` adapter seam. Same CMS fields either way.
+ */
 export function Rating({ section, values }: IStyleProps): React.ReactElement {
+    const colors = useAppColors();
     const name = readField<string>(section, 'name') ?? '';
     const label = useInterpolatedField(section, 'label', values);
-    const count = readNumberField(section, 'mantine_rating_count', 5) ?? 5;
+    const count = readNumberField(section, 'web_rating_count', 5) ?? 5;
     const readonly = readBooleanField(section, 'readonly', false);
     const initial = readField<string>(section, 'value') ?? '0';
     const { value, error, setValue } = useFieldBinding(name, initial);
@@ -25,7 +32,7 @@ export function Rating({ section, values }: IStyleProps): React.ReactElement {
                     const filled = i <= numericValue;
                     return (
                         <Pressable key={i} onPress={() => !readonly && setValue(String(i))} style={{ paddingHorizontal: 2 }}>
-                            <Text style={{ fontSize: 24, color: filled ? '#fab005' : '#dee2e6' }}>★</Text>
+                            <Text style={{ fontSize: 24, color: filled ? '#fab005' : colors.textFaint }}>★</Text>
                         </Pressable>
                     );
                 })}

@@ -93,7 +93,7 @@ export default function ServerPicker(): React.ReactElement {
             return;
         }
 
-        await clearAuthSession({ clearQueries: true, reason: 'server-switch' });
+        await clearAuthSession({ clearQueries: true, resetBootstrap: true, reason: 'server-switch' });
         await secureStore.set(SECURE_STORE_KEYS.SERVER_URL, normalized);
         setServerUrl(normalized);
         router.replace(redirect && redirect !== '/server-picker' ? redirect : '/');

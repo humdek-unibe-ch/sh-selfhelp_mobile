@@ -8,11 +8,12 @@ import { Children } from '@/components/renderer/Children';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField } from '@/components/renderer/useField';
 import { ALIGN_TO_CLASS, JUSTIFY_TO_CLASS, gapToClass } from '@/styles/mantineToTailwind';
+import { readSizingStyle } from './_sizing';
 
 export function Stack({ section, values }: IStyleProps): React.ReactElement {
-    const justify = readField<string>(section, 'mantine_justify');
-    const align = readField<string>(section, 'mantine_align') ?? 'stretch';
-    const gap = readField<string>(section, 'mantine_gap') ?? 'md';
+    const justify = readField<string>(section, 'justify');
+    const align = readField<string>(section, 'align') ?? 'stretch';
+    const gap = readField<string>(section, 'gap') ?? 'md';
 
     const extra = [
         'flex',
@@ -23,7 +24,7 @@ export function Stack({ section, values }: IStyleProps): React.ReactElement {
     ];
 
     return (
-        <View className={buildSectionClasses(section, { extra })}>
+        <View className={buildSectionClasses(section, { extra })} style={readSizingStyle(section)}>
             <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );

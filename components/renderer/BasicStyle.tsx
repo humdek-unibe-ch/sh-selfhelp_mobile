@@ -18,8 +18,8 @@ SPDX-License-Identifier: MPL-2.0
 import { useMemo } from 'react';
 
 import { evaluateCondition, buildConditionContext } from '@selfhelp/shared';
-import type { TPlatform } from '@selfhelp/shared';
-import { getStylePluginId, isKnownStyleName } from '@selfhelp/shared/registry';
+import type { TPlatform, TStylePlatform } from '@selfhelp/shared';
+import { getStylePluginId, isKnownStyleName, isStyleSupportedOnPlatform } from '@selfhelp/shared/registry';
 
 import { DebugWrapper } from './DebugWrapper';
 import { styleImpls } from '@/components/styles';
@@ -41,6 +41,18 @@ export function BasicStyle({ section, values }: IStyleProps): React.ReactElement
     if (!conditionOutcome.visible) return null;
 
     const rawName = String(section.style_name ?? '');
+
+    // Platform targeting: silently skip styles that do not target mobile
+    // (e.g. a web-only style placed on a "both" page). This is distinct
+    // from the Open-on-web / UnknownStyle fallbacks below, which handle
+    // styles that *could* run on mobile but have no impl in this build.
+    // Prefer an explicit per-section `platform` from the backend payload;
+    // otherwise fall back to the shared registry default.
+    const explicitPlatform = (section as { platform?: TStylePlatform }).platform;
+    const targetsMobile = explicitPlatform
+        ? explicitPlatform !== 'web'
+        : isStyleSupportedOnPlatform(rawName, 'mobile');
+    if (!targetsMobile) return null;
 
     if (isKnownStyleName(rawName)) {
         const Impl = styleImpls[rawName];

@@ -30,5 +30,12 @@ export const useAuthStore = create<IAuthState>((set) => ({
     setUser: (user) => set({ user }),
     setAccessToken: (accessToken) => set({ accessToken }),
     setBootstrapped: (b) => set({ bootstrapped: b }),
-    clear: () => set({ accessToken: null, user: null, bootstrapped: false }),
+    // Clear the session (access token + user) only. `bootstrapped` is the
+    // one-shot "initial auth resolved for this server" lifecycle flag and is
+    // deliberately preserved: a mid-session 401 / refresh failure must NOT
+    // re-trigger the auth bootstrap, otherwise the gated Stack remounts and the
+    // page query refetches in an infinite loop instead of the screen redirecting
+    // to login. Only an explicit server switch resets it (see AuthProvider /
+    // clearAuthSession({ resetBootstrap: true })).
+    clear: () => set({ accessToken: null, user: null }),
 }));

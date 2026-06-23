@@ -2,45 +2,41 @@
 SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
-import { Image, Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Avatar as HeroAvatar } from 'heroui-native';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readField, useInterpolatedField } from '@/components/renderer/useField';
+import { useInterpolatedField } from '@/components/renderer/useField';
 import { resolveAssetUrl } from '@selfhelp/shared';
-import type { TMantineSize } from '@selfhelp/shared';
+import { mobileStyleProps } from '@/components/ui/mobileStyleProps';
 import { useServerStore } from '@/stores/serverStore';
+import { initialsFromName } from '@/components/styles/interactive/avatarInitials';
 
-const SIZE_PX: Record<TMantineSize, number> = { xs: 24, sm: 32, md: 40, lg: 56, xl: 80 };
-
+/**
+ * Avatar — renders the HeroUI Native `Avatar` (image + initials fallback) on
+ * every platform, including web. Size comes from the shared `size` field
+ * (clamped to HeroUI's sm|md|lg by the shared mapper). When no image and no
+ * explicit initials are authored, initials are derived from the `name` field
+ * (mirrors the web renderer's Mantine `name` auto-initials behaviour).
+ */
 export function Avatar({ section, values }: IStyleProps): React.ReactElement {
     const baseUrl = useServerStore((s) => s.serverUrl) ?? '';
     const src = useInterpolatedField(section, 'img_src', values);
-    const initials = useInterpolatedField(section, 'mantine_avatar_initials', values);
-    const size = (readField<string>(section, 'mantine_size') as TMantineSize | undefined) ?? 'md';
-    const dim = SIZE_PX[size] ?? 40;
+    const initialsShared = useInterpolatedField(section, 'avatar_initials', values);
+    const initialsLegacy = useInterpolatedField(section, 'web_avatar_initials', values);
+    const name = useInterpolatedField(section, 'name', values);
+    const resolved = mobileStyleProps(section);
+    const size = resolved.size ?? 'md';
+    const uri = src ? resolveAssetUrl(src, baseUrl) : undefined;
+    const nameInitials = name ? initialsFromName(name) : '';
+    const text = (initialsShared || nameInitials || initialsLegacy || '?').slice(0, 2).toUpperCase();
 
-    if (src) {
-        return (
-            <Image
-                source={{ uri: resolveAssetUrl(src, baseUrl) }}
-                className={buildSectionClasses(section)}
-                style={{ width: dim, height: dim, borderRadius: dim / 2, backgroundColor: '#e9ecef' }}
-            />
-        );
-    }
     return (
-        <View
-            className={buildSectionClasses(section)}
-            style={{
-                width: dim,
-                height: dim,
-                borderRadius: dim / 2,
-                backgroundColor: '#e9ecef',
-                alignItems: 'center',
-                justifyContent: 'center',
-            }}
-        >
-            <Text style={{ color: '#495057', fontWeight: '600' }}>{(initials || '?').slice(0, 2).toUpperCase()}</Text>
+        <View className={buildSectionClasses(section)}>
+            <HeroAvatar size={size} color={resolved.color ?? 'default'} alt={text}>
+                {uri ? <HeroAvatar.Image source={{ uri }} /> : null}
+                <HeroAvatar.Fallback>{text}</HeroAvatar.Fallback>
+            </HeroAvatar>
         </View>
     );
 }

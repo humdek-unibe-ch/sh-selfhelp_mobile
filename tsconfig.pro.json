@@ -1,0 +1,21 @@
+{
+    "//": "Pro-tier typecheck of the consuming app (mobile rendering plan, section 9.3). Same app sources as tsconfig.json, but the `@selfhelp/mobile-pro-ui` adapter specifier resolves to the private Pro package instead of the in-repo OSS adapters. Running `tsc -p tsconfig.pro.json` proves the app type-checks against the Pro adapter set AND that the Pro contract shape still matches the OSS contract (a missing/extra capability or a prop drift fails here).",
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./*"],
+            "@selfhelp/mobile-pro-ui": ["../sh-selfhelp_mobile_pro_ui/src/index.ts"],
+            "@selfhelp/mobile-pro-ui/*": ["../sh-selfhelp_mobile_pro_ui/src/*"],
+            "@components/*": ["./components/*"],
+            "@hooks/*": ["./hooks/*"],
+            "@providers/*": ["./providers/*"],
+            "@services/*": ["./services/*"],
+            "@stores/*": ["./stores/*"],
+            "@types/*": ["./types/*"],
+            "@styles/*": ["./styles/*"],
+            "@config/*": ["./config/*"],
+            "@constants/*": ["./constants/*"]
+        }
+    }
+}

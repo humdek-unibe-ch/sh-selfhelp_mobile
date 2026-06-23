@@ -39,6 +39,8 @@ import {
 import type { ReactNode } from 'react';
 
 import { cssMobileToUniwind } from '@/styles/cssMobileToUniwind';
+import { useAppColors } from '@/hooks/useAppColors';
+import { JsonTree } from '@/components/dev/JsonTree';
 import type { TSectionLike } from './types';
 
 export interface IConditionOutcome {
@@ -142,6 +144,7 @@ function SectionDebugModal({
     conditionFailed,
 }: ISectionDebugModalProps): React.ReactElement {
     const [search, setSearch] = useState('');
+    const colors = useAppColors();
 
     const cssMobile = section.css_mobile ?? null;
     const cssMobileTransformed = useMemo(() => cssMobileToUniwind(cssMobile), [cssMobile]);
@@ -163,18 +166,17 @@ function SectionDebugModal({
         );
     }, [fieldsSnapshot, search]);
 
-    const sectionJson = useMemo(() => safeStringify(section, 2), [section]);
-
     return (
         <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-            <View style={styles.modalOverlay}>
-                <View style={styles.modalCard}>
-                    <View style={styles.modalHeader}>
+            <View style={[styles.modalOverlay, { backgroundColor: colors.backdrop }]}>
+                <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.modalHeader, { borderColor: colors.border }]}>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.modalTitle}>
-                                {String(section.style_name)} <Text style={styles.modalId}>#{section.id}</Text>
+                            <Text style={[styles.modalTitle, { color: colors.text }]}>
+                                {String(section.style_name)}{' '}
+                                <Text style={[styles.modalId, { color: colors.textFaint }]}>#{section.id}</Text>
                             </Text>
-                            <Text style={styles.modalSubtitle}>
+                            <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
                                 {section.section_name ?? '(unnamed)'} • path: {String(section.path ?? '—')}
                             </Text>
                         </View>
@@ -184,10 +186,11 @@ function SectionDebugModal({
                             hitSlop={10}
                             style={({ pressed }) => [
                                 styles.closeButton,
+                                { backgroundColor: colors.surfaceMuted },
                                 pressed && { opacity: 0.7 },
                             ]}
                         >
-                            <Text style={styles.closeButtonText}>×</Text>
+                            <Text style={[styles.closeButtonText, { color: colors.textMuted }]}>×</Text>
                         </Pressable>
                     </View>
 
@@ -212,7 +215,7 @@ function SectionDebugModal({
                                 <CodeBlock>{condition}</CodeBlock>
                                 {conditionErrors.length > 0 ? (
                                     <View style={{ marginTop: 6 }}>
-                                        <Text style={styles.dim}>Errors:</Text>
+                                        <Text style={[styles.dim, { color: colors.textFaint }]}>Errors:</Text>
                                         {conditionErrors.map((err, idx) => (
                                             <CodeBlock key={idx} tone="warn">
                                                 {String(err)}
@@ -234,7 +237,7 @@ function SectionDebugModal({
                                 <CodeBlock>{cssMobile}</CodeBlock>
                                 {cssMobileTransformed ? (
                                     <View style={{ marginTop: 6 }}>
-                                        <Text style={styles.dim}>Resolved (uniwind):</Text>
+                                        <Text style={[styles.dim, { color: colors.textFaint }]}>Resolved (uniwind):</Text>
                                         <CodeBlock tone="info">{cssMobileTransformed}</CodeBlock>
                                     </View>
                                 ) : null}
@@ -247,30 +250,41 @@ function SectionDebugModal({
                             right={
                                 <TextInput
                                     placeholder="filter…"
+                                    placeholderTextColor={colors.textFaint}
                                     value={search}
                                     onChangeText={setSearch}
                                     autoCapitalize="none"
                                     autoCorrect={false}
-                                    style={styles.search}
+                                    style={[
+                                        styles.search,
+                                        {
+                                            backgroundColor: colors.surface,
+                                            borderColor: colors.border,
+                                            color: colors.text,
+                                        },
+                                    ]}
                                 />
                             }
                         >
                             {filtered.length === 0 ? (
-                                <Text style={styles.dim}>{`No fields match "${search}".`}</Text>
+                                <Text style={[styles.dim, { color: colors.textFaint }]}>{`No fields match "${search}".`}</Text>
                             ) : null}
                             {filtered.map((f) => (
-                                <View key={f.name} style={styles.fieldRow}>
-                                    <Text style={styles.fieldName}>{f.name}</Text>
-                                    <Text style={styles.fieldPreview} numberOfLines={4}>
+                                <View key={f.name} style={[styles.fieldRow, { borderColor: colors.border }]}>
+                                    <Text style={[styles.fieldName, { color: colors.primaryStrong }]}>{f.name}</Text>
+                                    <Text
+                                        style={[styles.fieldPreview, { color: colors.textMuted }]}
+                                        numberOfLines={4}
+                                    >
                                         {f.preview}
                                     </Text>
                                 </View>
                             ))}
                         </DebugSection>
 
-                        {/* Raw section JSON */}
+                        {/* Raw section JSON — collapsible tree */}
                         <DebugSection title="Raw section (JSON)">
-                            <CodeBlock multiline>{sectionJson}</CodeBlock>
+                            <JsonTree data={section} rootLabel={String(section.style_name)} initialExpandDepth={1} />
                         </DebugSection>
                     </ScrollView>
                 </View>
@@ -288,10 +302,11 @@ function DebugSection({
     right?: ReactNode;
     children: ReactNode;
 }): React.ReactElement {
+    const colors = useAppColors();
     return (
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surfaceMuted }]}>
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>{title}</Text>
+                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>{title}</Text>
                 {right ?? null}
             </View>
             <View>{children}</View>
@@ -325,8 +340,23 @@ function CodeBlock({
     tone?: 'info' | 'warn';
     multiline?: boolean;
 }): React.ReactElement {
-    const bg = tone === 'warn' ? '#fff5f5' : tone === 'info' ? '#e7f5ff' : '#f8f9fa';
-    const fg = tone === 'warn' ? '#c92a2a' : tone === 'info' ? '#1864ab' : '#343a40';
+    const colors = useAppColors();
+    const bg =
+        tone === 'warn'
+            ? colors.isDark
+                ? '#3a1f23'
+                : '#fff5f5'
+            : tone === 'info'
+              ? colors.isDark
+                  ? '#1b2a3a'
+                  : '#e7f5ff'
+              : colors.surface;
+    const fg =
+        tone === 'warn'
+            ? colors.danger
+            : tone === 'info'
+              ? colors.primaryStrong
+              : colors.text;
     return (
         <View style={[styles.codeBlock, { backgroundColor: bg }]}>
             <Text

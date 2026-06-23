@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 
 import { updateCommunicationPreferences } from '@/services/userService';
 import { useAuthStore } from '@/stores/authStore';
+import { useAppColors } from '@/hooks/useAppColors';
 
 interface ICommunicationPreferencesProps {
     /** Optional section title override (CMS copy). */
@@ -40,6 +41,7 @@ export function CommunicationPreferences({
     const setUser = useAuthStore((s) => s.setUser);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(false);
+    const colors = useAppColors();
 
     if (!user) {
         return null;
@@ -62,10 +64,10 @@ export function CommunicationPreferences({
 
     return (
         <View style={styles.container} accessible accessibilityLabel={title ?? t('profile.communication.title', 'Communication preferences')}>
-            <Text style={styles.title}>
+            <Text style={[styles.title, { color: colors.text }]}>
                 {title ?? t('profile.communication.title', 'Communication preferences')}
             </Text>
-            <Text style={styles.description}>
+            <Text style={[styles.description, { color: colors.textMuted }]}>
                 {description ??
                     t(
                         'profile.communication.description',
@@ -74,7 +76,7 @@ export function CommunicationPreferences({
             </Text>
 
             <View style={styles.row}>
-                <Text style={styles.label}>
+                <Text style={[styles.label, { color: colors.text }]}>
                     {notificationsLabel ?? t('profile.communication.notifications', 'Receive notifications')}
                 </Text>
                 <Switch
@@ -86,7 +88,7 @@ export function CommunicationPreferences({
             </View>
 
             <View style={styles.row}>
-                <Text style={styles.label}>
+                <Text style={[styles.label, { color: colors.text }]}>
                     {emailsLabel ?? t('profile.communication.emails', 'Receive emails')}
                 </Text>
                 <Switch
@@ -99,7 +101,7 @@ export function CommunicationPreferences({
 
             {saving ? <ActivityIndicator accessibilityLabel={t('saving', 'Saving')} /> : null}
             {error ? (
-                <Text style={styles.error} accessibilityLiveRegion="polite">
+                <Text style={[styles.error, { color: colors.danger }]} accessibilityLiveRegion="polite">
                     {t('profile.communication.error', 'Could not update preferences. Please try again.')}
                 </Text>
             ) : null}
@@ -118,7 +120,6 @@ const styles = StyleSheet.create({
     },
     description: {
         fontSize: 13,
-        opacity: 0.7,
     },
     row: {
         flexDirection: 'row',
@@ -132,7 +133,6 @@ const styles = StyleSheet.create({
         paddingRight: 12,
     },
     error: {
-        color: '#d32f2f',
         fontSize: 13,
     },
 });

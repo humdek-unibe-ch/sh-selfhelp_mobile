@@ -6,12 +6,17 @@ SPDX-License-Identifier: MPL-2.0
  * Fetch a page by keyword via TanStack Query. Cached per
  * (keyword, languageId, preview) so language switches and preview-mode
  * toggles refetch cleanly without poisoning the published-cache entry.
+ *
+ * `preview` is gated on authentication (`resolvePreviewRequest`): the backend
+ * rejects an anonymous draft request with 401, so the public home/login
+ * screens must request published content, not the dev preview draft.
  */
 
 import { useQuery } from '@tanstack/react-query';
 import type { IPageContent } from '@selfhelp/shared';
 
 import { fetchPageByKeyword } from '@/services/pageService';
+import { resolvePreviewRequest } from '@/services/previewPolicy';
 import { useDevModeStore } from '@/stores/devModeStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useLanguageStore } from '@/stores/languageStore';
@@ -39,18 +44,21 @@ export function usePageContent(keyword: string): {
     const accessToken = useAuthStore((s) => s.accessToken);
     const previewMode = useDevModeStore((s) => s.previewMode);
     const authScope = accessToken ? 'auth' : 'anon';
+    // Drafts require authentication: never request preview anonymously, or the
+    // public home/login fetch 401s and the app cannot load / reach login.
+    const preview = resolvePreviewRequest(previewMode, Boolean(accessToken));
 
     const q = useQuery<IPageContent, Error>({
-        queryKey: pageContentQueryKey(serverUrl, keyword, languageId, previewMode, authScope),
+        queryKey: pageContentQueryKey(serverUrl, keyword, languageId, preview, authScope),
         queryFn: () =>
             fetchPageByKeyword(keyword, {
                 languageId: languageId ?? undefined,
-                preview: previewMode,
+                preview,
             }),
         enabled: Boolean(keyword) && Boolean(serverUrl) && serverHydrated && bootstrapped,
         // Preview content is short-lived: never cache it across mode flips.
-        staleTime: previewMode ? 0 : 30 * 1000,
-        gcTime: previewMode ? 0 : 5 * 60 * 1000,
+        staleTime: preview ? 0 : 30 * 1000,
+        gcTime: preview ? 0 : 5 * 60 * 1000,
     });
 
     return { data: q.data, isLoading: q.isLoading, error: q.error ?? null, refetch: q.refetch };

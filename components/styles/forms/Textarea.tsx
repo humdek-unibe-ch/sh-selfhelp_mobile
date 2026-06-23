@@ -2,8 +2,8 @@
 SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
-import { TextInput as RNTextInput } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
+import { MobileTextarea } from '@/components/ui/adapters';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField, readNumberField, useInterpolatedField } from '@/components/renderer/useField';
 import { useFieldBinding } from './_useFieldBinding';
@@ -14,31 +14,36 @@ export function Textarea({ section, values }: IStyleProps): React.ReactElement {
     const label = useInterpolatedField(section, 'label', values);
     const description = useInterpolatedField(section, 'description', values);
     const placeholder = useInterpolatedField(section, 'placeholder', values);
-    const minRows = readNumberField(section, 'mantine_textarea_min_rows', 3) ?? 3;
+    const minRows = readNumberField(section, 'min_rows', 3) ?? 3;
     const initial = readField<string>(section, 'value') ?? '';
     const required = readBooleanField(section, 'is_required', false);
     const disabled = readBooleanField(section, 'disabled', false);
+    const maxLength = readNumberField(section, 'max_length');
+    const autoCapitalize = (readField<string>(section, 'mobile_auto_capitalize') || undefined) as
+        | 'none' | 'sentences' | 'words' | 'characters' | undefined;
+    // mobile-only: HeroUI Native field variant (primary bordered | secondary filled).
+    const variant = (readField<string>(section, 'mobile_textarea_variant') || undefined) as
+        | 'primary' | 'secondary' | undefined;
 
     const { value, error, setValue } = useFieldBinding(name, initial);
 
+    // Renders through the swappable HeroUI Native TextArea adapter (native
+    // invalid/required state) on every platform, including web. `FieldShell`
+    // owns the visible label/description, so the adapter is not given `label`
+    // (avoids a double label).
     return (
         <FieldShell label={label} description={description} required={required} error={error} className={buildSectionClasses(section)}>
-            <RNTextInput
+            <MobileTextarea
                 value={value}
                 onChangeText={setValue}
                 placeholder={placeholder}
-                editable={!disabled}
-                multiline
+                isDisabled={disabled}
+                isInvalid={!!error}
+                isRequired={required}
                 numberOfLines={minRows}
-                textAlignVertical="top"
-                style={{
-                    borderWidth: 1,
-                    borderColor: error ? '#fa5252' : '#dee2e6',
-                    borderRadius: 4,
-                    padding: 10,
-                    minHeight: minRows * 22,
-                    backgroundColor: disabled ? '#f8f9fa' : '#fff',
-                }}
+                maxLength={maxLength}
+                autoCapitalize={autoCapitalize}
+                variant={variant}
             />
         </FieldShell>
     );

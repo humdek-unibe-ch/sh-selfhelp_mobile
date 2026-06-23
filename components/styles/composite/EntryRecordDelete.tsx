@@ -4,6 +4,7 @@ SPDX-License-Identifier: MPL-2.0
 */
 import { useState } from 'react';
 import { Alert, Pressable, Text } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
@@ -23,16 +24,25 @@ export function EntryRecordDelete({ section, values }: IStyleProps): React.React
     const confirmContinue = useInterpolatedField(section, 'confirmation_continue', values) || 'Delete';
     const confirmCancel = useInterpolatedField(section, 'confirmation_cancel', values) || 'Cancel';
     const recordId = readField<number>(section, 'record_id');
+    // The backend delete requires `page_id`; `PageRenderer` seeds it into values.
+    const pageId = typeof values.page_id === 'number' ? values.page_id : Number(values.page_id);
+    const queryClient = useQueryClient();
 
     const [busy, setBusy] = useState(false);
 
     const onConfirmedDelete = async (): Promise<void> => {
+        if (typeof recordId !== 'number') return;
         setBusy(true);
-        await deleteFormRecord({
+        const result = await deleteFormRecord({
             section_id: section.id,
-            record_id: typeof recordId === 'number' ? recordId : undefined,
+            page_id: pageId,
+            record_id: recordId,
         });
         setBusy(false);
+        // Refetch the page so the deleted entry disappears from the list.
+        if (result.kind === 'ok') {
+            void queryClient.invalidateQueries({ queryKey: ['page'] });
+        }
     };
 
     const onPress = (): void => {

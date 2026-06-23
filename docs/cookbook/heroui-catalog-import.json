@@ -1,0 +1,163 @@
+[
+    {
+        "section_name": "smoke-dialog",
+        "style_name": "dialog",
+        "fields": {
+            "label": { "de-CH": { "content": "Open dialog" }, "en-GB": { "content": "Open dialog" } },
+            "title": { "de-CH": { "content": "Hello from the dialog" }, "en-GB": { "content": "Hello from the dialog" } },
+            "content": { "de-CH": { "content": "Dialog body text." }, "en-GB": { "content": "Dialog body text." } }
+        }
+    },
+    {
+        "section_name": "smoke-popover",
+        "style_name": "popover",
+        "fields": {
+            "label": { "de-CH": { "content": "Show popover" }, "en-GB": { "content": "Show popover" } },
+            "web_position": { "all": { "content": "bottom" } }
+        }
+    },
+    {
+        "section_name": "smoke-menu",
+        "style_name": "menu",
+        "fields": {
+            "label": { "de-CH": { "content": "Menu" }, "en-GB": { "content": "Menu" } }
+        },
+        "children": [
+            {
+                "section_name": "smoke-menu-item-profile",
+                "style_name": "menu-item",
+                "fields": {
+                    "label": { "de-CH": { "content": "Profile" }, "en-GB": { "content": "Profile" } }
+                }
+            },
+            {
+                "section_name": "smoke-menu-item-settings",
+                "style_name": "menu-item",
+                "fields": {
+                    "label": { "de-CH": { "content": "Settings" }, "en-GB": { "content": "Settings" } }
+                }
+            }
+        ]
+    },
+    {
+        "section_name": "smoke-tag-group",
+        "style_name": "tag-group",
+        "fields": {
+            "label": { "de-CH": { "content": "Tags" }, "en-GB": { "content": "Tags" } }
+        },
+        "children": [
+            {
+                "section_name": "smoke-tag-new",
+                "style_name": "tag",
+                "fields": {
+                    "label": { "de-CH": { "content": "New" }, "en-GB": { "content": "New" } },
+                    "color": { "all": { "content": "green" } }
+                }
+            },
+            {
+                "section_name": "smoke-tag-hot",
+                "style_name": "tag",
+                "fields": {
+                    "label": { "de-CH": { "content": "Hot" }, "en-GB": { "content": "Hot" } },
+                    "color": { "all": { "content": "red" } }
+                }
+            }
+        ]
+    },
+    {
+        "section_name": "smoke-skeleton-group",
+        "style_name": "skeleton-group",
+        "children": [
+            {
+                "section_name": "smoke-skeleton-line-1",
+                "style_name": "skeleton",
+                "fields": { "web_height": { "all": { "content": "1.5rem" } } }
+            },
+            {
+                "section_name": "smoke-skeleton-line-2",
+                "style_name": "skeleton",
+                "fields": {
+                    "web_height": { "all": { "content": "1.5rem" } },
+                    "web_width": { "all": { "content": "60%" } }
+                }
+            }
+        ]
+    },
+    {
+        "section_name": "smoke-skeleton-avatar",
+        "style_name": "skeleton",
+        "fields": {
+            "web_skeleton_circle": { "all": { "content": "1" } },
+            "web_height": { "all": { "content": "48" } },
+            "web_width": { "all": { "content": "48" } }
+        }
+    },
+    {
+        "section_name": "smoke-spinner",
+        "style_name": "spinner",
+        "fields": {
+            "label": { "de-CH": { "content": "Loading…" }, "en-GB": { "content": "Loading…" } },
+            "size": { "all": { "content": "md" } }
+        }
+    },
+    {
+        "section_name": "smoke-toast",
+        "style_name": "toast",
+        "fields": {
+            "title": { "de-CH": { "content": "Saved" }, "en-GB": { "content": "Saved" } },
+            "content": { "de-CH": { "content": "Your changes were saved." }, "en-GB": { "content": "Your changes were saved." } },
+            "color": { "all": { "content": "green" } }
+        }
+    },
+    {
+        "section_name": "smoke-input-group",
+        "style_name": "input-group",
+        "fields": {
+            "label": { "de-CH": { "content": "Search filters" }, "en-GB": { "content": "Search filters" } },
+            "description": { "de-CH": { "content": "Grouped inputs demo" }, "en-GB": { "content": "Grouped inputs demo" } }
+        },
+        "children": [
+            {
+                "section_name": "smoke-input-group-search",
+                "style_name": "search-field",
+                "fields": {
+                    "label": { "de-CH": { "content": "Name" }, "en-GB": { "content": "Name" } },
+                    "placeholder": { "de-CH": { "content": "Type a name" }, "en-GB": { "content": "Type a name" } }
+                }
+            }
+        ]
+    },
+    {
+        "section_name": "smoke-input-otp",
+        "style_name": "input-otp",
+        "fields": {
+            "label": { "de-CH": { "content": "Verification code" }, "en-GB": { "content": "Verification code" } },
+            "web_otp_length": { "all": { "content": "6" } },
+            "web_otp_type": { "all": { "content": "number" } }
+        }
+    },
+    {
+        "section_name": "smoke-search-field",
+        "style_name": "search-field",
+        "fields": {
+            "label": { "de-CH": { "content": "Search" }, "en-GB": { "content": "Search" } },
+            "placeholder": { "de-CH": { "content": "Search…" }, "en-GB": { "content": "Search…" } }
+        }
+    },
+    {
+        "section_name": "smoke-bottom-sheet",
+        "style_name": "bottom-sheet",
+        "fields": {
+            "label": { "de-CH": { "content": "Open sheet" }, "en-GB": { "content": "Open sheet" } },
+            "title": { "de-CH": { "content": "Mobile bottom sheet" }, "en-GB": { "content": "Mobile bottom sheet" } }
+        }
+    },
+    {
+        "section_name": "smoke-fab-button",
+        "style_name": "fab-button"
+    },
+    {
+        "section_name": "smoke-biometric-login-button",
+        "style_name": "biometric-login-button"
+    }
+]

@@ -2,48 +2,52 @@
 SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
-import { View } from 'react-native';
+import { Image, Text } from 'react-native';
+import { resolveAssetUrl } from '@selfhelp/shared';
 import type { IStyleProps } from '@/components/renderer/types';
 import { Children } from '@/components/renderer/Children';
+import { MobileCard } from '@/components/ui/adapters';
+import { mobileStyleProps } from '@/components/ui/mobileStyleProps';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readField, readBooleanField } from '@/components/renderer/useField';
-import { RADIUS_PX } from '@selfhelp/shared';
-import type { TCanonicalRadius } from '@selfhelp/shared';
+import { useInterpolatedField } from '@/components/renderer/useField';
+import { useAppColors } from '@/hooks/useAppColors';
+import { useServerStore } from '@/stores/serverStore';
 
-const SHADOWS: Record<string, { offset: { width: number; height: number }; opacity: number; radius: number; elevation: number }> = {
-    none: { offset: { width: 0, height: 0 }, opacity: 0, radius: 0, elevation: 0 },
-    xs: { offset: { width: 0, height: 1 }, opacity: 0.06, radius: 2, elevation: 1 },
-    sm: { offset: { width: 0, height: 2 }, opacity: 0.08, radius: 6, elevation: 2 },
-    md: { offset: { width: 0, height: 4 }, opacity: 0.1, radius: 10, elevation: 4 },
-    lg: { offset: { width: 0, height: 8 }, opacity: 0.12, radius: 16, elevation: 8 },
-    xl: { offset: { width: 0, height: 12 }, opacity: 0.16, radius: 24, elevation: 12 },
-};
-
+/**
+ * Card — renders through the swappable HeroUI Native card adapter on every
+ * platform, including web. The adapter owns the themed surface (background,
+ * border, elevation); the CMS radius token overrides the corner radius.
+ *
+ * Optional authoring-convenience content fields: when `img_src` is set the card
+ * draws a cover image, and when `title` is set it draws a themed heading — both
+ * above the child sections, with zero extra authoring. Empty fields render
+ * nothing (a plain card). These never create child sections.
+ */
 export function Card({ section, values }: IStyleProps): React.ReactElement {
-    const radius = readField<string>(section, 'mantine_radius') ?? 'lg';
-    const border = readBooleanField(section, 'mantine_border', false);
-    const shadow = readField<string>(section, 'mantine_card_shadow') ?? 'sm';
+    const resolved = mobileStyleProps(section);
+    const colors = useAppColors();
+    const baseUrl = useServerStore((s) => s.serverUrl) ?? '';
 
-    const s = SHADOWS[shadow] ?? SHADOWS.sm;
+    const title = useInterpolatedField(section, 'title', values);
+    const imgSrc = useInterpolatedField(section, 'img_src', values);
+    const imgUrl = imgSrc ? resolveAssetUrl(imgSrc, baseUrl) : '';
 
     return (
-        <View
-            className={buildSectionClasses(section)}
-            style={{
-                backgroundColor: '#ffffff',
-                borderRadius: RADIUS_PX[radius as TCanonicalRadius] ?? 12,
-                padding: 16,
-                marginVertical: 8,
-                borderWidth: border ? 1 : 0,
-                borderColor: '#e9ecef',
-                shadowColor: '#000',
-                shadowOffset: s.offset,
-                shadowOpacity: s.opacity,
-                shadowRadius: s.radius,
-                elevation: s.elevation,
-            }}
-        >
+        <MobileCard radiusPx={resolved.radiusPx} className={buildSectionClasses(section)}>
+            {imgUrl ? (
+                <Image
+                    source={{ uri: imgUrl }}
+                    style={{ width: '100%', height: 160, borderRadius: 8, marginBottom: 12 }}
+                    resizeMode="cover"
+                    accessibilityIgnoresInvertColors
+                />
+            ) : null}
+            {title ? (
+                <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 8 }}>
+                    {title}
+                </Text>
+            ) : null}
             <Children sections={(section as { children?: never }).children} values={values} />
-        </View>
+        </MobileCard>
     );
 }

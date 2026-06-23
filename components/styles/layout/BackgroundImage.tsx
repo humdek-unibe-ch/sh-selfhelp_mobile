@@ -15,7 +15,7 @@ export function BackgroundImage({ section, values }: IStyleProps): React.ReactEl
     const baseUrl = useServerStore((s) => s.serverUrl) ?? '';
     const src = useInterpolatedField(section, 'img_src', values);
     if (!src) return null;
-    const radius = readField<string>(section, 'mantine_radius') ?? 'sm';
+    const radius = readField<string>(section, 'radius') ?? 'sm';
     const url = resolveAssetUrl(src, baseUrl);
     return (
         <ImageBackground

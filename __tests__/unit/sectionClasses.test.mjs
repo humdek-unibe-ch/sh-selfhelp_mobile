@@ -32,7 +32,7 @@ test('buildSectionClasses appends classified css_mobile classes', () => {
 test('buildSectionClasses parses the unified spacing field into classes', () => {
     const section = {
         id: 2,
-        fields: { mantine_spacing_margin_padding: { content: '{"mt":"md","pb":"sm"}' } },
+        fields: { spacing: { content: '{"mt":"md","pb":"sm"}' } },
     };
     // md → 4, sm → 3 via SPACING_TO_TAILWIND.
     const classes = buildSectionClasses(section).split(' ');
@@ -41,9 +41,10 @@ test('buildSectionClasses parses the unified spacing field into classes', () => 
     assert.ok(classes.includes('pb-3'), `expected pb-3 in ${classes.join(' ')}`);
 });
 
-test('buildSectionClasses falls back to the legacy margin-only spacing field', () => {
-    const section = { id: 3, fields: { mantine_spacing_margin: { content: '{"mt":"lg"}' } } };
-    assert.ok(buildSectionClasses(section).split(' ').includes('mt-5')); // lg → 5
+test('buildSectionClasses ignores the legacy web_spacing_margin field (no fallback)', () => {
+    const section = { id: 3, fields: { web_spacing_margin: { content: '{"mt":"lg"}' } } };
+    // Only the canonical `spacing` field is read; the legacy alias is not.
+    assert.equal(buildSectionClasses(section), 'style-section-3');
 });
 
 test('buildSectionClasses appends extra classes and filters falsy entries', () => {
@@ -72,4 +73,41 @@ test('cssMobileToUniwind allows, remaps, and drops per the shared contract', () 
 
 test('cssMobileToUniwind drops a string of fully-unsupported classes', () => {
     assert.equal(cssMobileToUniwind('cursor-pointer grid-cols-7'), '');
+});
+
+test('cssMobileToUniwind remaps standard Tailwind colour scale to the Mantine hex scale', () => {
+    // The web dropdown offers oklch-based Tailwind classes (bg-blue-500); RN
+    // can only paint the hex-backed Mantine scale (bg-blue-6), so the shared
+    // remap must rewrite the author's pick. 500 -> 6, 100 -> 1.
+    assert.equal(cssMobileToUniwind('bg-blue-500'), 'bg-blue-6');
+    assert.equal(cssMobileToUniwind('bg-green-500'), 'bg-green-6');
+    assert.equal(cssMobileToUniwind('bg-red-500'), 'bg-red-6');
+    assert.equal(cssMobileToUniwind('bg-indigo-500'), 'bg-indigo-6');
+    assert.equal(cssMobileToUniwind('bg-gray-100'), 'bg-gray-1');
+    assert.equal(cssMobileToUniwind('bg-teal-100'), 'bg-teal-1');
+});
+
+test('cssMobileToUniwind aliases Tailwind-only colour names onto Mantine names', () => {
+    // purple/fuchsia have no Mantine scale; alias them to grape so the author's
+    // dropdown pick still renders instead of being dropped.
+    assert.equal(cssMobileToUniwind('bg-purple-500'), 'bg-grape-6');
+});
+
+test('cssMobileToUniwind allows text-white / text-black for on-colour copy', () => {
+    assert.equal(cssMobileToUniwind('text-white'), 'text-white');
+    assert.equal(cssMobileToUniwind('text-black'), 'text-black');
+});
+
+test('cssMobileToUniwind drops web-only interactive (hover/focus) state classes', () => {
+    assert.equal(cssMobileToUniwind('hover:bg-blue-600 focus:ring-2'), '');
+});
+
+test('cssMobileToUniwind keeps a realistic css demo spread renderable on mobile', () => {
+    // The showcase "css / css_mobile demo" sections use exactly this kind of
+    // spread; every token must survive (remapped where needed) so the colour
+    // actually paints on Expo/RN.
+    assert.equal(
+        cssMobileToUniwind('bg-blue-500 text-white rounded-lg shadow-md p-4'),
+        'bg-blue-6 text-white rounded-lg shadow-md p-4',
+    );
 });

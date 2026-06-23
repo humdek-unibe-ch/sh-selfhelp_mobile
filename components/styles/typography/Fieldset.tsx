@@ -9,18 +9,20 @@ import { Children } from '@/components/renderer/Children';
 import { readField, useInterpolatedField } from '@/components/renderer/useField';
 import { RADIUS_PX } from '@selfhelp/shared';
 import type { TCanonicalRadius } from '@selfhelp/shared';
+import { useAppColors } from '@/hooks/useAppColors';
 
 export function Fieldset({ section, values }: IStyleProps): React.ReactElement {
+    const colors = useAppColors();
     const legendField = useInterpolatedField(section, 'legend', values);
     const labelField = useInterpolatedField(section, 'label', values);
     const legend = legendField || labelField;
-    const radius = readField<string>(section, 'mantine_radius') ?? 'sm';
+    const radius = readField<string>(section, 'radius') ?? 'sm';
     return (
         <View
             className={buildSectionClasses(section)}
-            style={{ borderWidth: 1, borderColor: '#dee2e6', borderRadius: RADIUS_PX[radius as TCanonicalRadius] ?? 4, padding: 12, marginVertical: 8 }}
+            style={{ borderWidth: 1, borderColor: colors.border, borderRadius: RADIUS_PX[radius as TCanonicalRadius] ?? 4, padding: 12, marginVertical: 8 }}
         >
-            {legend ? <Text style={{ fontWeight: '600', marginBottom: 8 }}>{legend}</Text> : null}
+            {legend ? <Text style={{ fontWeight: '600', marginBottom: 8, color: colors.text }}>{legend}</Text> : null}
             <Children sections={(section as { children?: never }).children} values={values} />
         </View>
     );

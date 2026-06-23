@@ -6,20 +6,23 @@ import { Text } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readStringField } from '@/components/renderer/useField';
+import { useAppColors } from '@/hooks/useAppColors';
 
 export function Kbd({ section }: IStyleProps): React.ReactElement {
     const label = readStringField(section, 'label');
+    const colors = useAppColors();
     return (
         <Text
             className={buildSectionClasses(section)}
             style={{
                 fontFamily: 'Courier',
-                backgroundColor: '#f8f9fa',
+                color: colors.text,
+                backgroundColor: colors.surfaceMuted,
                 paddingHorizontal: 6,
                 paddingVertical: 2,
                 borderRadius: 3,
                 borderWidth: 1,
-                borderColor: '#dee2e6',
+                borderColor: colors.border,
                 fontSize: 13,
             }}
         >

@@ -9,7 +9,7 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField } from '@/components/renderer/useField';
 
 export function AspectRatio({ section, values }: IStyleProps): React.ReactElement {
-    const ratioStr = readField<string>(section, 'mantine_aspect_ratio') ?? '16/9';
+    const ratioStr = readField<string>(section, 'web_aspect_ratio') ?? '16/9';
     const [w, h] = ratioStr.split('/').map((p) => Number(p.trim()));
     const ratio = Number.isFinite(w) && Number.isFinite(h) && h !== 0 ? w / h : 16 / 9;
     return (

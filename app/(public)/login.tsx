@@ -18,9 +18,11 @@ import { LoadingScreen } from '@/components/feedback/LoadingScreen';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
 import { PageRenderer } from '@/components/renderer/PageRenderer';
 import { usePageContent } from '@/hooks/usePageContent';
+import { useAppColors } from '@/hooks/useAppColors';
 
 export default function LoginScreen(): React.ReactElement {
     const { t } = useTranslation();
+    const colors = useAppColors();
     const { data, isLoading, error, refetch } = usePageContent('login');
 
     if (isLoading) return <LoadingScreen message={t('loading')} />;
@@ -35,9 +37,12 @@ export default function LoginScreen(): React.ReactElement {
             />
         );
 
+    // The public Stack scene defaults to React Navigation's white background, so
+    // without an explicit theme colour the dark-mode login renders light text on
+    // white. Paint the screen with the theme background like the (app) shell does.
     return (
-        <SafeAreaView style={{ flex: 1 }}>
-            <View style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+            <View style={{ flex: 1, backgroundColor: colors.background }}>
                 <PageRenderer page={data} />
             </View>
         </SafeAreaView>

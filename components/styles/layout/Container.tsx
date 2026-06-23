@@ -11,8 +11,8 @@ import { CONTAINER_SIZE_PX } from '@selfhelp/shared';
 import type { TMantineSize } from '@selfhelp/shared';
 
 export function Container({ section, values }: IStyleProps): React.ReactElement {
-    const size = readField<TMantineSize>(section, 'mantine_size') ?? 'md';
-    const fluid = readBooleanField(section, 'mantine_fluid', false);
+    const size = readField<TMantineSize>(section, 'size') ?? 'md';
+    const fluid = readBooleanField(section, 'web_fluid', false);
     const maxWidth = fluid ? undefined : CONTAINER_SIZE_PX[size] ?? CONTAINER_SIZE_PX.md;
 
     return (

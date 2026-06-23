@@ -7,7 +7,7 @@ SPDX-License-Identifier: MPL-2.0
 Audience: Developers and technical operators.
 Status: active.
 Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
-Last verified: 2026-06-03.
+Last verified: 2026-06-19.
 Source of truth: Runtime code, configuration, and tests in this repository.
 
 Day-to-day workflow for working on the mobile app.
@@ -37,15 +37,15 @@ Fast refresh is on by default. If a Reanimated worklet starts behaving oddly, hi
 - React DevTools: `npx react-devtools` after `npm run start`.
 - Network: `npx flipper` (Android) or Safari Web Inspector (iOS, macOS).
 - Sentry-style errors: not wired in v1; see [best-practices.md](./best-practices.md) for what to add when traffic warrants it.
-- `DebugWrapper` (auto, `__DEV__` only) — set `debug=1` on a CMS section and the renderer wraps it with a dashed border and a footer that prints the section's condition outcome and applied `css_mobile` classes. Useful for hunting why a section doesn't show up or why a Tailwind class isn't being honoured.
+- `DebugWrapper` (auto, `__DEV__` only) — set `debug=1` on a CMS section and the renderer adds a bug badge. Tapping it opens a themed modal with the condition outcome, applied `css_mobile` classes, a filterable field list, and the **raw section as a collapsible JSON tree** (`components/dev/JsonTree.tsx` — tap any object/array node to expand, primitives are colour-coded by type). Mirrors the web frontend's section inspector. Useful for hunting why a section doesn't show up or why a Tailwind class isn't being honoured.
 
 ## Web preview parity (HeroUI Native)
 
-Web preview is a development-only target. **HeroUI Native is not mounted on web** — `ThemeProvider` returns its children directly when `Platform.OS === 'web'` because HeroUI Native uses native-only primitives (gesture handler context, reanimated worklets, native StyleSheet runners) that either fail or render incorrectly under React Native Web.
+Web preview is a development-only target. **HeroUI Native is mounted on web too** — `ThemeProvider` wraps every platform in `HeroUINativeProvider` (inside `GestureHandlerRootView`). Everything HeroUI relies on (its animation-settings/text/toast contexts, the `useSyncExternalStore` portal host, `useReducedMotion`) runs under React Native Web, so style components render their real HeroUI presentation in the browser instead of a stripped-down RN fallback. Mounting the provider is also required for correctness: HeroUI reads `useGlobalAnimationSettings()` (created with `strict: false`, so it returns `undefined` without a provider and crashes on destructure) and the portal host that `Dialog`/`Select` render into.
 
 Implications:
-- Layout/typography/forms render via Uniwind classes only on web. Components that rely on HeroUI Native's runtime context (e.g. its `Sheet`, `BottomSheet`) won't behave identically — verify those on a real iOS / Android build before shipping.
-- The "good enough" rule of thumb: if it looks right on web preview, it'll look right on device. If it looks broken on web preview, run `npm run android` / `npm run ios` before assuming the bug is real.
+- Layout/typography/forms/interactive styles render their HeroUI presentation on web. There are currently **no native-only core styles**, so every style renders in web preview today. The `WebPreviewUnsupported` component (`components/feedback/WebPreviewUnsupported.tsx`) is kept ready but **not yet wired** for the future capabilities with no web equivalent (biometrics, camera/media capture, secure hardware): when the first such native-only style ships, its renderer should show that notice on web instead of faking a broken render.
+- The "good enough" rule of thumb: if it looks right on web preview, it'll look right on device. If it looks broken on web preview, run `npm run android` / `npm run ios` before assuming the bug is real. Anything touching native-only hardware must still be verified on a real iOS / Android build before shipping.
 
 ### Device frame controls
 
@@ -60,6 +60,16 @@ Behavior:
 - The frame is injected with CSS only on web; native builds are unaffected.
 - The app root and web portal siblings share the same clipped viewport so dialogs, bottom sheets, and overlays inherit the selected device size.
 - Tablet portrait keeps the tablet aspect ratio but uses a slightly smaller visual width cap on desktop so it stays comfortable to inspect.
+
+## Theme, account sheet, and app chrome
+
+Colour scheme is a three-way choice (`light` / `dark` / `auto`) mirroring the web frontend's `ThemeToggle`, defaulting to `auto` (follow the OS).
+
+- `stores/themeStore.ts` holds the choice and persists it via `secureStore` (`SECURE_STORE_KEYS.THEME_MODE`). Persistence is hand-rolled for the same reason as `devModeStore` (the zustand `persist` middleware ships `import.meta.env` checks Metro can't bundle for the web classic-script runtime).
+- `providers/ThemeProvider.tsx` applies the choice to Uniwind via `Uniwind.setTheme(...)` (`auto` → Uniwind's adaptive `system`). Uniwind is the single source of truth: it flips HeroUI Native tokens and `dark:` classes. The root view is painted with the resolved background so the canvas behind every screen (and the web `<body>`) is dark in dark mode.
+- App chrome painted with **inline styles** (header, drawer, bottom tabs, sheets, debug panels) reads colours from `hooks/useAppColors.ts` — a semantic palette (`background`, `surface`, `text`, `primary`, …) selected reactively from `useUniwind()`, so toggling the theme repaints everything that consumes the hook. Values track HeroUI Native's own light/dark tokens so the chrome blends with CMS-rendered HeroUI content. Reach for `useAppColors()` instead of hard-coding hex values in new chrome.
+
+The header (`components/shell/AppHeader.tsx`) is deliberately slim: a hamburger + app name on the left, and a single account button (avatar, or a gear when signed out) on the right. The account button opens `components/shell/AccountMenu.tsx` — a bottom sheet that consolidates the appearance selector, the compact language picker (`LanguageSwitcher`), "View profile" (opens the CMS `profile` page in `ProfileModal` without navigating away), a dev-only "Switch server", and log in / log out.
 
 ## Working with the shared package
 

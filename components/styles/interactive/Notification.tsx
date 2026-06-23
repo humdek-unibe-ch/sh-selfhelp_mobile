@@ -2,39 +2,76 @@
 SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
-import { Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, CloseButton } from 'heroui-native';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readField, useInterpolatedField } from '@/components/renderer/useField';
-import { colorToHex, RADIUS_PX } from '@selfhelp/shared';
-import type { TCanonicalRadius } from '@selfhelp/shared';
+import { useInterpolatedField, readField, readBooleanField } from '@/components/renderer/useField';
+import { mobileStyleProps } from '@/components/ui/mobileStyleProps';
 
-export function Notification({ section, values }: IStyleProps): React.ReactElement {
+type TAlertStatus = 'default' | 'accent' | 'success' | 'warning' | 'danger';
+
+/**
+ * Map a Mantine palette colour (the portable `color`) to the closest
+ * HeroUI Native Alert status. HeroUI Alert is status-driven (5 semantic colours)
+ * rather than free-palette, so the mobile render is a documented approximation of
+ * the exact web colour.
+ */
+function colorToStatus(color?: string): TAlertStatus {
+    switch ((color ?? '').toLowerCase()) {
+        case 'green':
+        case 'teal':
+        case 'lime':
+            return 'success';
+        case 'red':
+        case 'pink':
+            return 'danger';
+        case 'yellow':
+        case 'orange':
+            return 'warning';
+        case 'gray':
+        case 'grey':
+        case '':
+            return 'default';
+        default:
+            return 'accent';
+    }
+}
+
+/**
+ * notification — rendered HeroUI-Native-first via `Alert` (status icon + theme
+ * colours) with an optional `CloseButton`. Portable fields:
+ *   - `color`   -> Alert `status` (mapped to the nearest semantic colour)
+ *   - `shared_icon`    -> shows the status `Alert.Indicator` when set (mobile has
+ *                         no icon-font, so the exact web glyph is approximated by
+ *                         the status icon — documented platform remap)
+ *   - `with_close_button` -> renders a dismissible `CloseButton`
+ */
+export function Notification({ section, values }: IStyleProps): React.ReactElement | null {
+    const [visible, setVisible] = useState(true);
     const title = useInterpolatedField(section, 'title', values);
     const content = useInterpolatedField(section, 'content', values);
-    const color = readField<string>(section, 'mantine_color') ?? 'blue';
-    const radius = readField<string>(section, 'mantine_radius') ?? 'sm';
-    const accent = colorToHex(color, 6) ?? '#228be6';
+    const status = colorToStatus(readField<string>(section, 'color'));
+    const hasIcon = Boolean(readField<string>(section, 'shared_icon'));
+    const withClose = readBooleanField(section, 'with_close_button', false);
+    const resolved = mobileStyleProps(section);
+
+    if (!visible) {
+        return null;
+    }
 
     return (
-        <View
+        <Alert
+            status={status}
             className={buildSectionClasses(section)}
-            style={{
-                backgroundColor: '#fff',
-                padding: 12,
-                borderRadius: RADIUS_PX[radius as TCanonicalRadius] ?? 4,
-                borderLeftWidth: 4,
-                borderLeftColor: accent,
-                shadowColor: '#000',
-                shadowOpacity: 0.06,
-                shadowOffset: { width: 0, height: 2 },
-                shadowRadius: 4,
-                elevation: 2,
-                marginVertical: 6,
-            }}
+            style={resolved.radiusPx !== undefined ? { borderRadius: resolved.radiusPx } : undefined}
         >
-            {title ? <Text style={{ fontWeight: '600', marginBottom: 4 }}>{title}</Text> : null}
-            {content ? <Text style={{ color: '#495057' }}>{content}</Text> : null}
-        </View>
+            {hasIcon ? <Alert.Indicator /> : null}
+            <Alert.Content>
+                {title ? <Alert.Title>{title}</Alert.Title> : null}
+                {content ? <Alert.Description>{content}</Alert.Description> : null}
+            </Alert.Content>
+            {withClose ? <CloseButton onPress={() => setVisible(false)} /> : null}
+        </Alert>
     );
 }
