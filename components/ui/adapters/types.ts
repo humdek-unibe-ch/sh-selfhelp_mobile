@@ -56,7 +56,7 @@ export type TMobileUiTier = 'oss' | 'pro';
 
 /** Resolve the active UI tier from the build environment (defaults to OSS). */
 export function getMobileUiTier(): TMobileUiTier {
-    const raw =
+    const raw: string =
         process.env.EXPO_PUBLIC_UI_TIER ??
         process.env.SELFHELP_MOBILE_UI_TIER ??
         'oss';
