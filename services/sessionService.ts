@@ -13,6 +13,14 @@ import { useAuthStore } from '@/stores/authStore';
 
 interface IClearAuthSessionOptions {
     clearQueries?: boolean;
+    /**
+     * Reset the auth-bootstrap lifecycle flag so `AuthProvider` re-runs the
+     * full bootstrap. ONLY a deliberate server switch wants this. A mid-session
+     * 401 / refresh failure must leave `bootstrapped` true, otherwise the gated
+     * Stack remounts and the page query refetches in a loop instead of the
+     * screen redirecting to login. Defaults to `false`.
+     */
+    resetBootstrap?: boolean;
     /** Free-form caller tag — shows up in the log so we know who wiped the session. */
     reason?: string;
 }
@@ -34,7 +42,9 @@ export async function clearAuthSession(options: IClearAuthSessionOptions = {}): 
     }
 
     useAuthStore.getState().clear();
-    useAuthStore.getState().setBootstrapped(false);
+    if (options.resetBootstrap) {
+        useAuthStore.getState().setBootstrapped(false);
+    }
 
     if (options.clearQueries) {
         appQueryClient.clear();

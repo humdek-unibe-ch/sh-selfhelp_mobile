@@ -4,6 +4,28 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.10
+
+### Fix anonymous page load: stop the `preview=true` 401 loop, reach login again
+
+Adapts the client to the backend anonymous-access hardening (core >= 0.1.18),
+which now rejects an anonymous `preview=true` request with `401`. Two coupled
+fixes so the app loads cleanly and can always reach the login screen:
+
+- **Preview is gated on authentication** (`services/previewPolicy.ts` +
+  `usePageContent`). The dev-only preview toggle is ignored until the user has a
+  token, so the public `home` / `login` screens fetch published content (200)
+  instead of a draft (401). Previously every launch fired `home?preview=true`
+  (and, after a redirect attempt, `login?preview=true`) and got a 401.
+- **A mid-session 401 no longer resets the auth-bootstrap flag.**
+  `useAuthStore.clear()` and `clearAuthSession()` now preserve `bootstrapped`
+  (only an explicit server switch resets it via
+  `clearAuthSession({ resetBootstrap: true })`). Resetting it on every 401
+  re-ran the bootstrap, remounted the gated Stack, and refetched the page query
+  → 401 → clear → bootstrap → … an infinite loop that never let `CmsPageScreen`
+  settle into its error→login redirect. Now a genuine 401/403 surfaces, the
+  screen redirects to `/(public)/login`, and the loop is gone.
+
 ## 0.1.9
 
 ### Dark-mode parity for the remaining auth + form renderers
