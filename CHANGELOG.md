@@ -4,6 +4,32 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.12
+
+### Off-menu pages open as a modal in the CMS Live Preview
+
+Supports the new full-screen CMS **Live Preview** (frontend `>= 0.1.33`): a page
+that is **not on the navigation menu** has no menu entry to reach it, so the
+preview now presents it as a **modal sliding up over home** — immediately, on
+boot — instead of routing to a bare full-screen page. On-menu pages are routed to
+as before.
+
+- **`modal` embed-contract param.** `config/webPreviewContract.ts` parses a new
+  tri-state `modal` flag: `auto` (default) presents the keyword as a modal **only
+  when it is off-menu** (no `navPosition` / headless); `on` always presents it as
+  a modal (explicit override, e.g. a "preview in modal" button); `off` always
+  routes full-screen. Unknown/blank values fall back to `auto`. The CMS frontend
+  builder emits the matching `modal` param.
+- **Boot presentation decision.** `app/_layout.tsx` resolves the presentation once
+  per preview session; in `auto` it waits for the navigation pages so the
+  on/off-menu decision is correct, then either opens the modal (off-menu) or
+  routes to the keyword (on-menu).
+- **`PreviewModalHost` + `previewModalStore`.** A dependency-light React Native
+  `Modal` host (no third-party sheet) renders the off-menu page via the existing
+  `CmsPageScreen` over home, with a title + close button; closing returns to home.
+- **`isKeywordOnMenu` nav helper** added to `components/shell/navigationUtils.ts`
+  and covered, with the `modal` parsing, by the contract unit tests.
+
 ## 0.1.11
 
 ### Mobile preview web image (`selfhelp-mobile-preview`)

@@ -25,7 +25,7 @@ test('defaults when the query string is empty', () => {
 test('parses a full embed contract', () => {
     const params = parseWebPreviewParams(
         '?embed=1&keyword=home&device=tablet&orientation=landscape&frame=0&preview=true' +
-            '&previewSession=abc123&hideDebugPanel=true&banner=0&language=de&backendUrl=http://localhost:8000',
+            '&previewSession=abc123&hideDebugPanel=true&banner=0&language=de&modal=on&backendUrl=http://localhost:8000',
     );
     assert.equal(params.embed, true);
     assert.equal(params.keyword, 'home');
@@ -37,7 +37,20 @@ test('parses a full embed contract', () => {
     assert.equal(params.hideDebugPanel, true);
     assert.equal(params.banner, false);
     assert.equal(params.language, 'de');
+    assert.equal(params.modal, 'on');
     assert.equal(params.backendUrl, 'http://localhost:8000');
+});
+
+test('modal mode: defaults to auto, honours on/off, tolerates unknown', () => {
+    assert.equal(parseWebPreviewParams('').modal, 'auto');
+    assert.equal(parseWebPreviewParams('modal=auto').modal, 'auto');
+    assert.equal(parseWebPreviewParams('modal=on').modal, 'on');
+    assert.equal(parseWebPreviewParams('modal=1').modal, 'on');
+    assert.equal(parseWebPreviewParams('modal=true').modal, 'on');
+    assert.equal(parseWebPreviewParams('modal=off').modal, 'off');
+    assert.equal(parseWebPreviewParams('modal=0').modal, 'off');
+    // Unknown token → safe default 'auto' (off-menu pages still open as a modal).
+    assert.equal(parseWebPreviewParams('modal=banana').modal, 'auto');
 });
 
 test('accepts a query string without the leading ?', () => {

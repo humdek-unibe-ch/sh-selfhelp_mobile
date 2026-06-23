@@ -13,11 +13,23 @@ SPDX-License-Identifier: MPL-2.0
  *   /mobile-preview/?embed=1&keyword=<kw>&device=phone|tablet
  *     &orientation=portrait|landscape&frame=0|1&preview=true
  *     &previewSession=<one-time-code>&hideDebugPanel=true&banner=0
- *     &language=<locale>&backendUrl=<dev-only>
+ *     &language=<locale>&modal=auto|on|off&backendUrl=<dev-only>
  */
 
 export type TPreviewDevice = 'phone' | 'tablet';
 export type TPreviewOrientation = 'portrait' | 'landscape';
+
+/**
+ * How the previewed `keyword` is presented on boot:
+ *   - `auto` (default) — present it as a MODAL over home when the page is NOT on
+ *     the navigation menu (no `navPosition` / headless), otherwise route to it
+ *     normally. This makes off-menu pages (which have no menu entry to reach
+ *     them) immediately visible in context, exactly as a deep-linked overlay.
+ *   - `on`  — always present the keyword as a modal over home (explicit override,
+ *     e.g. a "preview in modal" button).
+ *   - `off` — never modal; always route to the keyword full-screen.
+ */
+export type TPreviewModalMode = 'auto' | 'on' | 'off';
 
 export interface IWebPreviewParams {
     /** `embed=1` — running inside the CMS iframe (hide dev chrome, slim badge). */
@@ -38,6 +50,8 @@ export interface IWebPreviewParams {
     banner: boolean;
     /** Locale override for the preview render. */
     language: string | null;
+    /** How to present the previewed keyword on boot (off-menu → modal in `auto`). */
+    modal: TPreviewModalMode;
     /** Dev-only backend origin override (ignored in production preview). */
     backendUrl: string | null;
 }
@@ -54,6 +68,7 @@ export const EMPTY_PREVIEW_PARAMS: IWebPreviewParams = {
     hideDebugPanel: false,
     banner: true,
     language: null,
+    modal: 'auto',
     backendUrl: null,
 };
 
@@ -74,6 +89,16 @@ function parseDevice(value: string | null): TPreviewDevice {
 
 function parseOrientation(value: string | null): TPreviewOrientation {
     return value === 'landscape' ? 'landscape' : 'portrait';
+}
+
+/** `on`/truthy → 'on'; `off`/falsy → 'off'; absent/`auto`/unknown → 'auto'. */
+function parseModalMode(value: string | null): TPreviewModalMode {
+    if (value === null) return 'auto';
+    const v = value.trim().toLowerCase();
+    if (v === 'auto') return 'auto';
+    if (TRUE_TOKENS.has(v) || v === 'on') return 'on';
+    if (FALSE_TOKENS.has(v) || v === 'off') return 'off';
+    return 'auto';
 }
 
 function nonEmptyOrNull(value: string | null): string | null {
@@ -103,6 +128,7 @@ export function parseWebPreviewParams(search: string | URLSearchParams): IWebPre
         hideDebugPanel: parseBool(sp.get('hideDebugPanel'), false),
         banner: parseBool(sp.get('banner'), true),
         language: nonEmptyOrNull(sp.get('language')),
+        modal: parseModalMode(sp.get('modal')),
         backendUrl: nonEmptyOrNull(sp.get('backendUrl')),
     };
 }

@@ -35,6 +35,7 @@ export {
     type IWebPreviewParams,
     type TPreviewDevice,
     type TPreviewOrientation,
+    type TPreviewModalMode,
 } from '@/config/webPreviewContract';
 
 export interface IWebPreviewRuntime {
@@ -74,8 +75,19 @@ function currentOrigin(): string | null {
  * Cheap; safe to call from providers / dev components at render time.
  */
 export function getWebPreviewRuntime(): IWebPreviewRuntime {
-    const enabled = runtimeConfig.webPreviewEnabled === true;
-    if (!enabled) {
+    const params = parseWebPreviewParams(currentSearch());
+
+    // Preview mode engages when the build is the dedicated preview image
+    // (APP_WEB_PREVIEW=1) OR — crucially for local `expo start --web` live-reload
+    // — when the hosting iframe passes an embedded one-time session in the URL.
+    // The latter lets a PLAIN dev server act as the CMS Live Preview without the
+    // special build flag; the CMS supplies a dev `backendUrl` so the same-origin
+    // `/mobile-preview/api` proxy (which only exists on the installed image) is
+    // not required.
+    const enabledByBuild = runtimeConfig.webPreviewEnabled === true;
+    const enabledByUrl =
+        params.embed && typeof params.previewSession === 'string' && params.previewSession !== '';
+    if (!enabledByBuild && !enabledByUrl) {
         return {
             enabled: false,
             isEmbedded: false,
@@ -84,8 +96,6 @@ export function getWebPreviewRuntime(): IWebPreviewRuntime {
             webFrontendOrigin: runtimeConfig.webFrontendOrigin,
         };
     }
-
-    const params = parseWebPreviewParams(currentSearch());
 
     // Dev-only backend override (live-reload). Never honoured on a production
     // preview build, where the same-origin proxy is the only allowed path.

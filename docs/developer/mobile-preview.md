@@ -6,9 +6,9 @@ SPDX-License-Identifier: MPL-2.0
 
 Audience: Mobile developers, technical operators, build maintainers.
 Status: active.
-Applies to: SelfHelp2 Expo/React Native mobile app (`sh-selfhelp_mobile`) `>=0.1.11`.
+Applies to: SelfHelp2 Expo/React Native mobile app (`sh-selfhelp_mobile`) `>=0.1.12`.
 Last verified: 2026-06-23.
-Source of truth: `config/webPreviewContract.ts`, `config/webPreview.ts`, `web-preview/server.mjs`, `web-preview/preview-plugins.json`, `web-preview/Dockerfile`, `scripts/plugins-sync.mjs`, `components/renderer/OpenOnWebFallback.tsx`, `.github/workflows/web-preview-release.yml`.
+Source of truth: `config/webPreviewContract.ts`, `config/webPreview.ts`, `app/_layout.tsx`, `components/preview/PreviewModalHost.tsx`, `stores/previewModalStore.ts`, `components/shell/navigationUtils.ts`, `web-preview/server.mjs`, `web-preview/preview-plugins.json`, `web-preview/Dockerfile`, `scripts/plugins-sync.mjs`, `components/renderer/OpenOnWebFallback.tsx`, `.github/workflows/web-preview-release.yml`.
 
 The **mobile preview** is the Expo app built as a **web export** and served as a
 standalone, manager-distributed Docker image (`selfhelp-mobile-preview`). A CMS
@@ -46,7 +46,7 @@ frontend's `mobilePreviewUrl.ts` builder — keep the two in sync byte-for-byte.
 /mobile-preview/?embed=1&keyword=<kw>&device=phone|tablet
   &orientation=portrait|landscape&frame=0|1&preview=true
   &previewSession=<one-time-code>&hideDebugPanel=true&banner=0
-  &language=<locale>&backendUrl=<dev-only>
+  &language=<locale>&modal=auto|on|off&backendUrl=<dev-only>
 ```
 
 | Param            | Type / values                     | Default    | Meaning |
@@ -61,10 +61,12 @@ frontend's `mobilePreviewUrl.ts` builder — keep the two in sync byte-for-byte.
 | `hideDebugPanel` | bool                              | `false`    | Suppress the floating debug FAB. |
 | `banner`         | bool                              | `true`     | Show the slim "preview" badge (`banner=0` hides it). |
 | `language`       | string \| null                    | `null`     | Locale override for the render. |
+| `modal`          | `auto` \| `on` \| `off`           | `auto`     | How to present the keyword on boot — see §3a. `auto` opens **off-menu** pages as a modal over home; `on` always modal; `off` always full-screen. |
 | `backendUrl`     | string \| null                    | `null`     | **Dev-only** backend origin override; ignored in the production preview. |
 
 Booleans accept `1/true/yes/on` and `0/false/no/off` (case-insensitive); anything
-else falls back to the default. Empty strings normalize to `null`.
+else falls back to the default. Empty strings normalize to `null`. `modal` also
+accepts the literal `auto`; unknown/blank values fall back to `auto`.
 
 ## 3. Boot flow
 
@@ -82,8 +84,30 @@ else falls back to the default. Empty strings normalize to `null`.
    `frame` / `banner` are applied to the dev-mode store **without persistence**
    and in a hydration-safe way, so a preview never mutates a real device's saved
    settings.
-5. **Keyword routing.** When `keyword` is set, the app routes to that page on
-   boot (`/[keyword]`).
+5. **Keyword presentation.** When `keyword` is set, the app presents it once per
+   preview session per the `modal` param (see §3a) — either routing full-screen
+   to `/[keyword]` or opening it as a modal over home.
+
+## 3a. Off-menu pages open as a modal
+
+A page that is **not on the navigation menu** (no `navPosition`, or headless) has
+no drawer/tab entry to reach it, so in the default `modal=auto` the preview
+presents it as a **modal sliding up over home** instead of routing to a bare
+full-screen page. This makes off-menu pages — exactly the ones an author wants to
+"just show" — immediately visible in context.
+
+- **Decision (`app/_layout.tsx`).** Once boot completes, the gate resolves the
+  presentation once: `modal=on` → always modal; `modal=off` → always route;
+  `modal=auto` → **wait for the navigation pages** (`usePages`) and then open a
+  modal when `isKeywordOnMenu(pages, keyword)` is false (off-menu / unknown),
+  otherwise route to `/[keyword]`.
+- **Host (`components/preview/PreviewModalHost.tsx`).** Mounted once at the root,
+  it reads the keyword from `stores/previewModalStore.ts` and renders it via the
+  existing `CmsPageScreen` inside a dependency-light React Native `Modal` (no
+  third-party sheet) with a title + close button; closing returns to home.
+- **On-menu pages are unchanged** — they route full-screen as before. Free
+  navigation within the preview is unaffected; only the **launched** keyword is
+  subject to this rule.
 
 ## 4. In-container server (`web-preview/server.mjs`)
 
