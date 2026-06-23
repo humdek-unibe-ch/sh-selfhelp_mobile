@@ -14,7 +14,7 @@ End-to-end recipe for introducing a new style (web + mobile).
 
 One CMS style name renders a Mantine component on web and a HeroUI Native component on mobile. Classify each field into one of three buckets before you start:
 
-- **Shared (unprefixed) semantic fields** (`size`, `spacing`, `radius`, `intent`, state booleans, `full_width`) — resolved per-platform by `@selfhelp/shared/src/theme/semantic.ts`. Read them on mobile through `components/ui/mobileStyleProps.ts` (never re-derive color/size locally).
+- **Portable (unprefixed) semantic fields** (`size`, `spacing`, `radius`, `color`, `variant`, state booleans, `full_width`) — resolved per-platform by `@selfhelp/shared/src/theme/semantic.ts`. Read them on mobile through `components/ui/mobileStyleProps.ts` (never re-derive color/size locally).
 - **`web_*` fields** — Mantine-only extras.
 - **`mobile_*` fields** — HeroUI Native-only extras.
 
@@ -30,7 +30,7 @@ export interface IFancyButtonStyle extends IBaseStyle {
     fields: {
         label: IContentField<string>;
         href: IContentField<string>;
-        web_variant?: IContentField<TMantineVariant>;
+        variant?: IContentField<TMantineVariant>;
     };
 }
 ```
@@ -46,10 +46,10 @@ export type TStyle = ... | IFancyButtonStyle;
 `sh-selfhelp_shared/src/registry/styles.registry.ts`:
 
 ```ts
-'fancy-button': { group: 'interactive', frontendOnly: true },
+'fancy-button': { description: 'Fancy button', category: 'interactive', canHaveChildren: false },
 ```
 
-`TStyleName` updates automatically.
+Cross-platform styles omit `platforms` (defaulting to both web and mobile); set `platforms` only for a genuinely platform-exclusive style. `TStyleName` updates automatically.
 
 ## 3. Build the shared package
 
@@ -83,7 +83,7 @@ For styling driven by the shared semantic fields, resolve them through the mappe
 import { mobileStyleProps, mobileIntentPalette } from '@/components/ui/mobileStyleProps';
 
 const resolved = mobileStyleProps(section); // { size, buttonVariant, color, radiusPx, ... }
-const { palette } = mobileIntentPalette(section); // clean-RN fallback palette from `intent`
+const { palette } = mobileIntentPalette(section); // clean-RN fallback palette from `color`/`variant`
 ```
 
 If a free `heroui-native` component exists for the style, render that. If it is a Pro-tier component HeroUI Native does not ship, render a clean React Native fallback (OSS tier) — the polished version lives in `@selfhelp/mobile-pro-ui` (see [mobile-ui-tiers-and-distribution.md](../developer/mobile-ui-tiers-and-distribution.md)).

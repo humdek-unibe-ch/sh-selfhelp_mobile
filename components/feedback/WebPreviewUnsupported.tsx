@@ -6,12 +6,16 @@ SPDX-License-Identifier: MPL-2.0
  * Honest placeholder for a style that depends on a genuinely native-only
  * capability and cannot run in the Expo Web preview.
  *
- * HeroUI Native itself now renders on web (`HeroUINativeProvider` is mounted on
- * every platform — see `providers/ThemeProvider.tsx`), so most styles work in
- * web preview. This notice is reserved for the few capabilities that have no web
- * equivalent (biometrics, camera/media capture, secure hardware, etc.). Rather
- * than fake a broken render, a native-only renderer shows this notice on web so
- * the author knows the real component only exists on device.
+ * HeroUI Native itself renders on web (`HeroUINativeProvider` is mounted on
+ * every platform — see `providers/ThemeProvider.tsx`), so every current style
+ * works in web preview.
+ *
+ * NOT YET WIRED: there are currently no native-only core styles, so no renderer
+ * references this component today. It is intentionally kept ready for the future
+ * native-only capabilities on the roadmap (e.g. a biometric-auth button,
+ * camera/media capture, secure hardware). When the first such style ships, its
+ * native-only renderer should render this notice on web instead of faking a
+ * broken render, so the author knows the real component only exists on device.
  */
 
 import { Text, View } from 'react-native';

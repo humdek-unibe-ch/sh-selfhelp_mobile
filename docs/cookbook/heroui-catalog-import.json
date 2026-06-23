@@ -51,7 +51,7 @@
                 "style_name": "tag",
                 "fields": {
                     "label": { "de-CH": { "content": "New" }, "en-GB": { "content": "New" } },
-                    "intent": { "all": { "content": "success" } }
+                    "color": { "all": { "content": "green" } }
                 }
             },
             {
@@ -59,7 +59,7 @@
                 "style_name": "tag",
                 "fields": {
                     "label": { "de-CH": { "content": "Hot" }, "en-GB": { "content": "Hot" } },
-                    "intent": { "all": { "content": "danger" } }
+                    "color": { "all": { "content": "red" } }
                 }
             }
         ]
@@ -106,7 +106,7 @@
         "fields": {
             "title": { "de-CH": { "content": "Saved" }, "en-GB": { "content": "Saved" } },
             "content": { "de-CH": { "content": "Your changes were saved." }, "en-GB": { "content": "Your changes were saved." } },
-            "intent": { "all": { "content": "success" } }
+            "color": { "all": { "content": "green" } }
         }
     },
     {
