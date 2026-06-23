@@ -21,29 +21,15 @@ import axios from 'axios';
 import {
     CLIENT_TYPE_MOBILE,
     HEADER_CLIENT_TYPE,
+    MOBILE_PREVIEW_ENDPOINTS,
+    type IMobilePreviewExchangeResponse,
     type IUserData,
 } from '@selfhelp/shared';
-
-/**
- * Mirrors `MOBILE_PREVIEW_ENDPOINTS.EXCHANGE` from `@selfhelp/shared` (added in
- * 1.15.0). Defined locally so the preview build does not depend on an
- * unpublished shared version; switch to the shared constant when the dependency
- * is bumped.
- */
-const EXCHANGE_PATH = '/cms-api/v1/mobile-preview/session/exchange';
 
 export interface IPreviewSessionResult {
     accessToken: string;
     expiresIn: number;
     user: IUserData;
-}
-
-interface IExchangeEnvelope {
-    data?: {
-        access_token?: unknown;
-        expires_in?: unknown;
-        user?: unknown;
-    };
 }
 
 /**
@@ -54,8 +40,8 @@ export async function exchangePreviewSession(
     apiBase: string,
     code: string,
 ): Promise<IPreviewSessionResult | null> {
-    const url = `${apiBase.replace(/\/+$/, '')}${EXCHANGE_PATH}`;
-    const response = await axios.post<IExchangeEnvelope>(
+    const url = `${apiBase.replace(/\/+$/, '')}${MOBILE_PREVIEW_ENDPOINTS.EXCHANGE}`;
+    const response = await axios.post<Partial<IMobilePreviewExchangeResponse>>(
         url,
         { code },
         {

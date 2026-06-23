@@ -4,14 +4,14 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
-## 0.2.0
+## 0.1.11
 
 ### Mobile preview web image (`selfhelp-mobile-preview`)
 
 Adds a dedicated **web-export build mode** so the Expo app can be served as the
 in-browser mobile preview embedded by the CMS page editor. This is the mobile
 half of the cross-repo Mobile Preview Service (core >= 0.1.19, `@selfhelp/shared`
->= 1.15.0, manager >= 1.7.0).
+>= 1.14.25, manager >= 1.6.5).
 
 - **`APP_WEB_PREVIEW` build mode + embed contract.** `config/webPreviewContract.ts`
   is a pure, unit-tested parser for the iframe query string
@@ -38,7 +38,16 @@ half of the cross-repo Mobile Preview Service (core >= 0.1.19, `@selfhelp/shared
   the image, attaches SBOM/Trivy/cosign, emits the signed
   `mobile-preview-release.json` (incl. `bundledPlugins` + `mobileRendererVersion`)
   + `release-manifest.json`, and `repository_dispatch`es the registry to auto-stage
-  the release.
+  the release. The descriptor now also emits **top-level**, range-cleaned
+  `reactNativeVersion` / `expoSdkVersion` (alongside the raw `builtFrom.*`
+  provenance), matching `@selfhelp/shared` `MobilePreviewRelease` (>= 1.14.26) and
+  the registry schema — so the manager's dual-axis plugin gate reads them on both
+  the auto-staging AND the manual `assemble-release --from` publish path.
+- **Preview session exchange uses the shared contract.**
+  `services/mobilePreviewSession.ts` now imports `MOBILE_PREVIEW_ENDPOINTS.EXCHANGE`
+  and `IMobilePreviewExchangeResponse` from `@selfhelp/shared` instead of a local
+  path constant + ad-hoc envelope type, so the one-time-code → scoped-JWT exchange
+  stays in lockstep with the backend contract.
 
 ## 0.1.10
 

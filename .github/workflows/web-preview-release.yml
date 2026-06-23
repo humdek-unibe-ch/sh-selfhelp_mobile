@@ -157,6 +157,10 @@ jobs:
           const shared = pkg.dependencies?.['@selfhelp/shared'];
           const expoSdk = pkg.dependencies?.expo;
           const reactNative = pkg.dependencies?.['react-native'];
+          // Strip a leading range operator (~ ^ >= v) so the descriptor's
+          // top-level versions are clean semver the manager gate compares
+          // directly; the raw dependency strings stay under builtFrom.
+          const clean = (v) => (typeof v === 'string' ? v.replace(/^[~^>=v\s]+/, '').trim() || undefined : undefined);
           const bundledPlugins = (snapshot.plugins ?? []).map((p) => ({
             id: p.pluginId,
             version: p.version,
@@ -176,6 +180,12 @@ jobs:
               requiredApiVersion: manifest.requiredApiVersion,
             },
             mobileRendererVersion: snapshot.mobileRendererVersion,
+            // Top-level canonical RN/Expo (mirrors @selfhelp/shared
+            // MobilePreviewRelease + the manager schema): the registry assemble
+            // step and the manager plugin gate read these directly, so neither
+            // the auto NOR the manual publish path depends on the builtFrom bridge.
+            reactNativeVersion: clean(reactNative),
+            expoSdkVersion: clean(expoSdk),
             bundledPlugins,
           };
           writeFileSync('mobile-preview-release.json', JSON.stringify(out, null, 2) + '\n');

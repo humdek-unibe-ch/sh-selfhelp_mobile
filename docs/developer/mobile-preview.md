@@ -6,7 +6,7 @@ SPDX-License-Identifier: MPL-2.0
 
 Audience: Mobile developers, technical operators, build maintainers.
 Status: active.
-Applies to: SelfHelp2 Expo/React Native mobile app (`sh-selfhelp_mobile`) `>=0.2.0`.
+Applies to: SelfHelp2 Expo/React Native mobile app (`sh-selfhelp_mobile`) `>=0.1.11`.
 Last verified: 2026-06-23.
 Source of truth: `config/webPreviewContract.ts`, `config/webPreview.ts`, `web-preview/server.mjs`, `web-preview/preview-plugins.json`, `web-preview/Dockerfile`, `scripts/plugins-sync.mjs`, `components/renderer/OpenOnWebFallback.tsx`, `.github/workflows/web-preview-release.yml`.
 
@@ -14,8 +14,8 @@ The **mobile preview** is the Expo app built as a **web export** and served as a
 standalone, manager-distributed Docker image (`selfhelp-mobile-preview`). A CMS
 admin embeds it in an iframe inside the page editor to see a page rendered with
 the real mobile renderer. It is the mobile half of the cross-repo **Mobile
-Preview Service** (core `>=0.1.19`, `@selfhelp/shared >=1.15.0`, manager
-`>=1.7.0`, frontend `>=0.1.31`).
+Preview Service** (core `>=0.1.19`, `@selfhelp/shared >=1.14.25`, manager
+`>=1.6.5`, frontend `>=0.1.31`).
 
 > Operator/route view: [`sh-manager` → operator/update.md](../../../sh-manager/docs/operator/update.md)
 > ("Mobile-preview updates") and operator/domains-and-ports.md ("How the address
