@@ -56,9 +56,14 @@ export type TMobileUiTier = 'oss' | 'pro';
 
 /** Resolve the active UI tier from the build environment (defaults to OSS). */
 export function getMobileUiTier(): TMobileUiTier {
-    const raw: string =
+    // `process.env.*` is typed `any` under some toolchains (no `@types/node`
+    // in the type graph), so coerce to a real string to keep the assignment
+    // type-safe for `@typescript-eslint/no-unsafe-assignment`. Env vars are
+    // always strings/undefined at runtime, so this is behaviour-preserving.
+    const raw = String(
         process.env.EXPO_PUBLIC_UI_TIER ??
         process.env.SELFHELP_MOBILE_UI_TIER ??
-        'oss';
+        'oss'
+    );
     return raw === 'pro' ? 'pro' : 'oss';
 }
