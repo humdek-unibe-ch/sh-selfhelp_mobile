@@ -131,7 +131,9 @@ function buildFrameCss(device: TPreviewDevice, orientation: TPreviewOrientation)
 
 export function PhoneFrame(): React.ReactElement | null {
     if (Platform.OS !== 'web') return null;
-    if (!runtimeConfig.isDevInstance) return null;
+    // Available on dev instances AND in the web-preview image (the CMS embeds
+    // it to QA layout inside a fixed device viewport).
+    if (!runtimeConfig.isDevInstance && !runtimeConfig.webPreviewEnabled) return null;
     return <PhoneFrameInner />;
 }
 

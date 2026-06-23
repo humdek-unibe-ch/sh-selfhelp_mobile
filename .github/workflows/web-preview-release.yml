@@ -1,0 +1,223 @@
+# SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+# SPDX-License-Identifier: MPL-2.0
+#
+# Builds + publishes the selfhelp-mobile-preview image (Expo web export served
+# under /mobile-preview with a narrow same-origin backend proxy) on a version
+# tag, with an SBOM, a Trivy vulnerability scan, and an UNSIGNED unified-registry
+# release descriptor (mobile-preview-release.json) carrying the real image ref +
+# digest, the advertised mobileRendererVersion, and the curated bundledPlugins.
+#
+# The registry maintainer signs that descriptor with the official key
+# (sh2-plugin-registry/scripts/sign-release.mjs) and commits it under
+# releases/mobile-preview/ — production never trusts an unsigned/dev-signed
+# release. Image signing (cosign) is wired but only runs when COSIGN_PRIVATE_KEY
+# is set. Mirrors frontend-release.yml.
+name: web-preview-release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+  security-events: write
+
+env:
+  # The unified registry references the image as `selfhelp-mobile-preview` (not
+  # the repo slug), so publish under that canonical name.
+  IMAGE: ghcr.io/${{ github.repository_owner }}/selfhelp-mobile-preview
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies (npm ci)
+        run: npm ci
+
+      # --- BLOCKING: quality gate (headers + types + lint + tests) ---------
+      - name: License headers
+        run: npm run headers:check
+
+      - name: Type-check (tsc --noEmit)
+        run: npm run typecheck
+
+      - name: ESLint
+        run: npm run lint -- --max-warnings=0
+
+      - name: Tests (node --test)
+        run: npm test
+
+      # --- Resolve the registry version (tag without the leading `v`) ------
+      - name: Resolve version
+        id: version
+        run: |
+          set -euo pipefail
+          ref="${GITHUB_REF_NAME}"
+          version="${ref#v}"
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            pkg_version="$(node -p "require('./package.json').version")"
+            if [ "$version" != "$pkg_version" ]; then
+              echo "::error::Tag version ($version) != package.json version ($pkg_version). Bump package.json or retag."
+              exit 1
+            fi
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Release version: $version"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: web-preview/Dockerfile
+          push: true
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ steps.version.outputs.version }}
+          provenance: true
+
+      - name: Generate SBOM (SPDX)
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE }}:${{ steps.version.outputs.version }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      # SHA-pinned to the 0.35.0 immutable release (see frontend-release.yml note
+      # on the March 2026 Trivy supply-chain compromise GHSA-69fq-xp46-6x23).
+      - name: Scan image for vulnerabilities (Trivy)
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        with:
+          image-ref: ${{ env.IMAGE }}:${{ steps.version.outputs.version }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '0'
+
+      - name: Upload Trivy results to code scanning
+        if: ${{ always() && hashFiles('trivy-results.sarif') != '' }}
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-results.sarif
+
+      - name: Sign image (optional)
+        if: ${{ env.COSIGN_PRIVATE_KEY != '' }}
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          curl -sSfL https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64 -o /usr/local/bin/cosign
+          chmod +x /usr/local/bin/cosign
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY "${IMAGE}@${{ steps.build.outputs.digest }}"
+
+      # --- Emit the UNSIGNED unified-registry release descriptor ----------
+      # Merges the in-repo channel/build template with the canonical
+      # compatibility declaration (release-manifest.json), the real version,
+      # image ref + digest, the resolved @selfhelp/shared + expo/react-native
+      # versions, and the advertised mobileRendererVersion + curated
+      # bundledPlugins (from web-preview/preview-plugins.json).
+      - name: Generate registry release descriptor + version.json
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const tmpl = JSON.parse(readFileSync('release/mobile-preview-release.template.json', 'utf8'));
+          const manifest = JSON.parse(readFileSync('release-manifest.json', 'utf8'));
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+          const snapshot = JSON.parse(readFileSync('web-preview/preview-plugins.json', 'utf8'));
+          const version = process.env.VERSION;
+          const image = `${process.env.IMAGE}:${version}`;
+          const digest = process.env.DIGEST || '';
+          const shared = pkg.dependencies?.['@selfhelp/shared'];
+          const expoSdk = pkg.dependencies?.expo;
+          const reactNative = pkg.dependencies?.['react-native'];
+          const bundledPlugins = (snapshot.plugins ?? []).map((p) => ({
+            id: p.pluginId,
+            version: p.version,
+            mobilePackage: p.mobilePackage,
+            mobilePackageVersion: p.mobilePackageVersion,
+          }));
+          const out = {
+            kind: 'selfhelp-mobile-preview-release',
+            id: `selfhelp-mobile-preview-${version}`,
+            version,
+            channel: tmpl.channel ?? 'stable',
+            image,
+            digest,
+            builtFrom: { ...(tmpl.builtFrom ?? {}), sharedPackageVersion: shared, expoSdk, reactNative },
+            backendCompatibility: {
+              requiredCoreRange: manifest.supports.core,
+              requiredApiVersion: manifest.requiredApiVersion,
+            },
+            mobileRendererVersion: snapshot.mobileRendererVersion,
+            bundledPlugins,
+          };
+          writeFileSync('mobile-preview-release.json', JSON.stringify(out, null, 2) + '\n');
+          // Standalone version.json artifact (mirrors what the image serves at
+          // /mobile-preview/version.json) for orchestrator inspection.
+          writeFileSync('version.json', JSON.stringify({
+            version,
+            mobileRendererVersion: snapshot.mobileRendererVersion,
+            bundledPlugins,
+          }, null, 2) + '\n');
+          console.log(JSON.stringify(out, null, 2));
+          NODE
+
+      - name: Attach artifacts to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            sbom.spdx.json
+            trivy-results.sarif
+            mobile-preview-release.json
+            version.json
+
+      # Hand the new version to the unified registry: the resolver checks
+      # compatibility against the latest published core and stages the signed,
+      # human-reviewed mobile-preview release PR. Skipped (with a notice) when
+      # the optional REGISTRY_DISPATCH_TOKEN secret is absent.
+      - name: Dispatch mobile-preview-image-published to the registry
+        if: ${{ github.ref_type == 'tag' }}
+        env:
+          REGISTRY_DISPATCH_TOKEN: ${{ secrets.REGISTRY_DISPATCH_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          if [ -z "$REGISTRY_DISPATCH_TOKEN" ]; then
+            echo "::notice::REGISTRY_DISPATCH_TOKEN is not set — the registry's daily reconcile (or a manual resolve run) will pick up mobile-preview $VERSION."
+            exit 0
+          fi
+          PAYLOAD=$(printf '{"event_type":"mobile-preview-image-published","client_payload":{"kind":"mobile-preview","version":"%s","repo":"%s","digests":{"image":"%s"}}}' "$VERSION" "${{ github.repository }}" "$DIGEST")
+          echo "$PAYLOAD"
+          curl -sf -X POST \
+            -H "Authorization: Bearer $REGISTRY_DISPATCH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository_owner }}/sh2-plugin-registry/dispatches" \
+            -d "$PAYLOAD"
+          echo "::notice::resolve dispatched for mobile-preview $VERSION — review the staged PR in sh2-plugin-registry."

@@ -4,6 +4,42 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.2.0
+
+### Mobile preview web image (`selfhelp-mobile-preview`)
+
+Adds a dedicated **web-export build mode** so the Expo app can be served as the
+in-browser mobile preview embedded by the CMS page editor. This is the mobile
+half of the cross-repo Mobile Preview Service (core >= 0.1.19, `@selfhelp/shared`
+>= 1.15.0, manager >= 1.7.0).
+
+- **`APP_WEB_PREVIEW` build mode + embed contract.** `config/webPreviewContract.ts`
+  is a pure, unit-tested parser for the iframe query string
+  (`embed`, `keyword`, `device`, `orientation`, `frame`, `preview`,
+  `previewSession`, `hideDebugPanel`, `banner`, `language`, dev-only `backendUrl`);
+  `config/webPreview.ts` is the runtime accessor. The CMS builds this URL with the
+  matching builder on the frontend side.
+- **One-time code -> scoped JWT.** On boot the preview exchanges its
+  `previewSession` one-time code via `POST /mobile-preview/session/exchange` for a
+  short-lived, in-memory `purpose: 'mobile_preview'` JWT and talks to the private
+  backend through a same-origin base — the admin token is never exposed.
+- **Session-only dev overrides + keyword routing.** Device / orientation / preview
+  flags from the embed URL are applied to the dev-mode store without persistence
+  (hydration-safe), and the app routes to the requested page `keyword` on boot.
+- **In-container static + proxy server** (`web-preview/server.mjs`) serves the
+  Expo web export, exposes `/version.json` (image version + `mobileRendererVersion`
+  + `bundledPlugins`) and `/healthz`, and proxies a narrow `/cms-api` allowlist to
+  the backend so the backend stays private.
+- **Curated plugin bundling.** `web-preview/preview-plugins.json` snapshots the
+  official plugins baked into the image; `plugins-sync.mjs --snapshot` reads it at
+  build time so listed plugins render natively (RN-on-web). Every other plugin
+  falls back to `OpenOnWebFallback` (deep-link to the web frontend).
+- **Release CI** (`.github/workflows/web-preview-release.yml`): builds + pushes
+  the image, attaches SBOM/Trivy/cosign, emits the signed
+  `mobile-preview-release.json` (incl. `bundledPlugins` + `mobileRendererVersion`)
+  + `release-manifest.json`, and `repository_dispatch`es the registry to auto-stage
+  the release.
+
 ## 0.1.10
 
 ### Fix anonymous page load: stop the `preview=true` 401 loop, reach login again

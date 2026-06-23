@@ -44,6 +44,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { AppProviders } from '@/providers/AppProviders';
 import { installDevWarningFilter } from '@/config/devWarnings';
+import { getWebPreviewRuntime } from '@/config/webPreview';
 import { useAppColors } from '@/hooks/useAppColors';
 import { FloatingDebugPanel } from '@/components/dev/FloatingDebugPanel';
 import { PhoneFrame } from '@/components/dev/PhoneFrame';
@@ -77,10 +78,22 @@ function GateController(): null {
     const serverUrl = useServerStore((s) => s.serverUrl);
     const serverHydrated = useServerStore((s) => s.hydrated);
     const canSwitchServers = useServerStore((s) => s.canSwitchServers);
+    const previewRoutedRef = useRef(false);
 
     useEffect(() => {
         lastRedirectRef.current = null;
     }, [pathname]);
+
+    // Web-preview: once boot completes, route to the keyword the CMS asked to
+    // preview. Runs once per session; the embed contract keyword is the target.
+    useEffect(() => {
+        if (!serverHydrated || !bootstrapped) return;
+        if (previewRoutedRef.current) return;
+        const preview = getWebPreviewRuntime();
+        if (!preview.enabled || !preview.params.keyword) return;
+        previewRoutedRef.current = true;
+        router.replace({ pathname: '/[keyword]', params: { keyword: preview.params.keyword } });
+    }, [bootstrapped, router, serverHydrated]);
 
     useEffect(() => {
         if (!navState?.key) return;

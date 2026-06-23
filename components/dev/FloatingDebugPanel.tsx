@@ -34,6 +34,7 @@ import {
 import { useIsFetching, useQueryClient } from '@tanstack/react-query';
 
 import { runtimeConfig } from '@/config/runtime';
+import { getWebPreviewRuntime } from '@/config/webPreview';
 import { debugLogger, type IDebugLogEntry, type TDebugLevel } from '@/services/debugLogger';
 import { useAuthStore } from '@/stores/authStore';
 import { useDevModeStore } from '@/stores/devModeStore';
@@ -50,7 +51,12 @@ const LEVEL_COLOR: Record<TDebugLevel, string> = {
 };
 
 export function FloatingDebugPanel(): React.ReactElement | null {
-    if (!runtimeConfig.isDevInstance) return null;
+    // Dev instances and the web-preview image both expose the panel — except
+    // when the preview is EMBEDDED in the CMS iframe (or `hideDebugPanel=1`),
+    // where the host chrome owns the controls and the FAB must stay hidden.
+    if (!runtimeConfig.isDevInstance && !runtimeConfig.webPreviewEnabled) return null;
+    const preview = getWebPreviewRuntime();
+    if (preview.enabled && (preview.isEmbedded || preview.params.hideDebugPanel)) return null;
     return <FloatingDebugPanelInner />;
 }
 

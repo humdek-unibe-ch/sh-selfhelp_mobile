@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0",
+  "description": "Curated official-plugin snapshot baked into the selfhelp-mobile-preview image. The web-preview build runs `plugins-sync.mjs --snapshot` against this file (NOT a live instance) so the listed plugins render natively (RN-on-web) in the preview; every other plugin falls back to OpenOnWebFallback. mobileRendererVersion is the mobile renderer contract the image is built against (mirrors @selfhelp/shared MOBILE_RENDERER_VERSION); plugin compatibility.mobile ranges gate against it.",
+  "mobileRendererVersion": "0.1.0",
+  "plugins": [
+    {
+      "pluginId": "sh2-shp-survey-js",
+      "version": "0.2.23",
+      "mobilePackage": "@humdek/sh2-shp-survey-js-mobile",
+      "mobilePackageVersion": "0.2.23"
+    }
+  ]
+}

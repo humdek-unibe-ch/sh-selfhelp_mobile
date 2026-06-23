@@ -31,6 +31,16 @@ import type { ExpoConfig } from 'expo/config';
 const slug = process.env.APP_INSTANCE_SLUG ?? 'dev';
 const isDevInstance = slug === 'dev';
 
+// Web-preview build mode: the `selfhelp-mobile-preview` image (and a local
+// `expo start --web` embedded by the CMS) set APP_WEB_PREVIEW=1. It serves the
+// web export under `/mobile-preview` and talks to the private backend through
+// the same-origin `/mobile-preview/api` proxy. `webFrontendOrigin` is used by
+// the open-on-web plugin fallback; when unset the runtime derives it from
+// `window.location.origin` (preview + frontend share a host behind Traefik).
+const webPreviewEnabled = process.env.APP_WEB_PREVIEW === '1' || process.env.APP_WEB_PREVIEW === 'true';
+const webPreviewBaseUrl = process.env.APP_WEB_PREVIEW_BASE_URL ?? '/mobile-preview';
+const webFrontendOrigin = process.env.APP_WEB_PREVIEW_FRONTEND_ORIGIN ?? null;
+
 const config: ExpoConfig = {
     name: process.env.APP_NAME_OVERRIDE ?? (isDevInstance ? 'SelfHelp Dev' : 'SelfHelp'),
     slug: `selfhelp-${slug}`,
@@ -119,6 +129,9 @@ const config: ExpoConfig = {
     ],
     experiments: {
         typedRoutes: true,
+        // Serve the web export under the preview path so asset URLs resolve
+        // behind the Traefik `/mobile-preview` router. No-op for native builds.
+        ...(webPreviewEnabled ? { baseUrl: webPreviewBaseUrl } : {}),
     },
     runtimeVersion: { policy: 'appVersion' },
     updates: {
@@ -132,6 +145,9 @@ const config: ExpoConfig = {
             process.env.APP_SERVER_SELECTION_URL ??
             'https://tpf-test.humdek.unibe.ch/SelfHelpMobile/mobile_projects',
         isDevInstance,
+        webPreviewEnabled,
+        webPreviewBaseUrl,
+        webFrontendOrigin,
         eas: { projectId: process.env.APP_EAS_PROJECT_ID },
     },
 };

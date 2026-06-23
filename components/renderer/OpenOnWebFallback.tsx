@@ -25,6 +25,7 @@ import { Linking, Pressable, Text, View } from 'react-native';
 import { usePathname } from 'expo-router';
 
 import { runtimeConfig } from '@/config/runtime';
+import { getWebPreviewRuntime } from '@/config/webPreview';
 
 import type { IStyleProps } from './types';
 
@@ -36,7 +37,13 @@ export function OpenOnWebFallback({ section, pluginId }: IOpenOnWebFallbackProps
     const pathname = usePathname();
 
     const href = useMemo(() => {
-        const base = runtimeConfig.bakedBackendUrl;
+        // In a web preview the open-on-web link must target the web FRONTEND
+        // origin (the instance domain), not the (private) backend base. Outside
+        // a preview, fall back to the baked backend URL as before.
+        const previewRuntime = getWebPreviewRuntime();
+        const base = previewRuntime.enabled
+            ? previewRuntime.webFrontendOrigin ?? runtimeConfig.bakedBackendUrl
+            : runtimeConfig.bakedBackendUrl;
         if (!base) return null;
         const normalizedBase = base.replace(/\/+$/, '');
         const normalizedPath = pathname && pathname !== '/' ? pathname.replace(/^\/+/, '/') : '';

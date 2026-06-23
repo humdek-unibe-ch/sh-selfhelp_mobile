@@ -7,10 +7,14 @@ SPDX-License-Identifier: MPL-2.0
  * Sync mobile plugin packages.
  *
  * Reads the live plugin manifest from `/cms-api/v1/plugins/manifest`
- * (or a snapshot lock file pinned to a release) and writes:
+ * (`--backend`) OR a committed curated snapshot file (`--snapshot`, used by the
+ * `selfhelp-mobile-preview` image build so the bundled set is deterministic and
+ * does not depend on a live instance) and writes:
  *
  *   1. `selfhelp.plugins.mobile.lock.json` — pinned mobile plugin
- *      entries (deterministic CI input).
+ *      entries (deterministic CI input). Also carries `bundledPlugins[]` (the
+ *      descriptor-facing coverage view) and, when the source declares it,
+ *      `mobileRendererVersion` (the mobile renderer contract the image targets).
  *   2. `components/styles/registered.ts` — generated TypeScript that
  *      imports every bundled plugin's `registerMobile` and merges the
  *      contributed style impls into the mobile renderer.
@@ -29,11 +33,15 @@ SPDX-License-Identifier: MPL-2.0
  * because the backend manifest does not expose per-profile metadata.
  *
  * Usage:
- *   node scripts/plugins-sync.mjs <profile> [--backend URL] [--dry-run]
+ *   node scripts/plugins-sync.mjs <profile> [--backend URL | --snapshot FILE] [--dry-run]
  *
- * Example:
+ * Example (live instance):
  *   node scripts/plugins-sync.mjs production-default \
  *     --backend https://cms.example.com
+ *
+ * Example (curated preview snapshot):
+ *   node scripts/plugins-sync.mjs web-preview \
+ *     --snapshot web-preview/preview-plugins.json
  *
  * Environment:
  *   SELFHELP_API_TOKEN — optional bearer token for the manifest endpoint
@@ -60,11 +68,17 @@ let dryRun = false;
 let lockPath = 'selfhelp.plugins.mobile.lock.json';
 let registeredPath = 'components/styles/registered.ts';
 let packagePath = 'package.json';
+// Curated snapshot mode (web-preview image build): read a committed
+// official-plugin snapshot file instead of fetching a live instance.
+let snapshotPath = '';
 
 for (let i = 1; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--backend' && args[i + 1]) {
         backendUrl = args[i + 1];
+        i++;
+    } else if (arg === '--snapshot' && args[i + 1]) {
+        snapshotPath = args[i + 1];
         i++;
     } else if (arg === '--dry-run') {
         dryRun = true;
@@ -80,8 +94,8 @@ for (let i = 1; i < args.length; i++) {
     }
 }
 
-if (!backendUrl) {
-    console.error('plugins-sync: --backend <url> is required.');
+if (!backendUrl && !snapshotPath) {
+    console.error('plugins-sync: one of --backend <url> or --snapshot <file> is required.');
     process.exit(1);
 }
 
@@ -101,6 +115,18 @@ async function fetchManifest(url) {
     }
     const payload = body.data ?? body;
     return payload;
+}
+
+async function readSnapshot(file) {
+    const target = resolve(process.cwd(), file);
+    const raw = await readFile(target, 'utf-8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') {
+        throw new Error('snapshot file is not a JSON object');
+    }
+    // The snapshot mirrors the manifest plugin shape, plus a top-level
+    // `mobileRendererVersion` the image advertises.
+    return parsed;
 }
 
 function assertPluginShape(plugin, idx) {
@@ -141,13 +167,28 @@ function buildLock(manifest, requestedProfile) {
     if (skipped.length > 0) {
         console.warn(`plugins-sync: skipping ${skipped.length} plugin(s) without mobilePackage: ${skipped.join(', ')}`);
     }
-    return {
+    // `bundledPlugins` is the descriptor-facing view of the bundled set the
+    // manager reads for coverage (id/version/mobilePackage/mobilePackageVersion).
+    const bundledPlugins = entries.map((e) => ({
+        id: e.id,
+        version: e.version,
+        mobilePackage: e.package,
+        mobilePackageVersion: e.packageVersion,
+    }));
+    const lock = {
         schemaVersion: '1.0',
         generatedBy: `plugins-sync@${requestedProfile}`,
         generatedAt: new Date().toISOString(),
         profile: requestedProfile,
         plugins: entries,
+        bundledPlugins,
     };
+    // Carry the mobile renderer contract version the image is built against,
+    // when the source (snapshot) declares it.
+    if (typeof manifest.mobileRendererVersion === 'string' && manifest.mobileRendererVersion !== '') {
+        lock.mobileRendererVersion = manifest.mobileRendererVersion;
+    }
+    return lock;
 }
 
 function buildRegisteredFile(lock) {
@@ -273,7 +314,7 @@ async function writeFileWithDirs(filePath, contents) {
 
 async function main() {
     try {
-        const manifest = await fetchManifest(backendUrl);
+        const manifest = snapshotPath ? await readSnapshot(snapshotPath) : await fetchManifest(backendUrl);
         if (!Array.isArray(manifest.plugins)) {
             console.error('plugins-sync: manifest.plugins must be an array.');
             process.exit(2);

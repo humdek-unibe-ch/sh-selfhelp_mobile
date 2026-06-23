@@ -16,7 +16,12 @@
         "header.txt",
         "LICENSE",
         "README.md",
-        "global.css"
+        "global.css",
+        "web-preview/preview-plugins.json",
+        "web-preview/Dockerfile",
+        "release-manifest.json",
+        "release/mobile-preview-release.template.json",
+        "version.json"
     ],
     "licenseFormats": {
         "d.ts|md": {
