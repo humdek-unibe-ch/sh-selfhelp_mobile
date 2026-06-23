@@ -41,9 +41,10 @@ test('buildSectionClasses parses the unified spacing field into classes', () => 
     assert.ok(classes.includes('pb-3'), `expected pb-3 in ${classes.join(' ')}`);
 });
 
-test('buildSectionClasses falls back to the legacy margin-only spacing field', () => {
+test('buildSectionClasses ignores the legacy web_spacing_margin field (no fallback)', () => {
     const section = { id: 3, fields: { web_spacing_margin: { content: '{"mt":"lg"}' } } };
-    assert.ok(buildSectionClasses(section).split(' ').includes('mt-5')); // lg → 5
+    // Only the canonical `spacing` field is read; the legacy alias is not.
+    assert.equal(buildSectionClasses(section), 'style-section-3');
 });
 
 test('buildSectionClasses appends extra classes and filters falsy entries', () => {

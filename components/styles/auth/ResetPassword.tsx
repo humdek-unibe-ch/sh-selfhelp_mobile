@@ -3,24 +3,42 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 import { useState } from 'react';
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, View } from 'react-native';
 import axios from 'axios';
 
 import type { IStyleProps } from '@/components/renderer/types';
+import {
+    CLIENT_TYPE_MOBILE,
+    ENDPOINTS,
+    HEADER_CLIENT_TYPE,
+    resolveMantineVariant,
+    type IForgotPasswordRequest,
+} from '@selfhelp/shared';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { useInterpolatedField } from '@/components/renderer/useField';
+import { readField, useInterpolatedField } from '@/components/renderer/useField';
 import { useServerStore } from '@/stores/serverStore';
-import { CLIENT_TYPE_MOBILE, ENDPOINTS, HEADER_CLIENT_TYPE, type IForgotPasswordRequest } from '@selfhelp/shared';
-import { FieldShell } from '@/components/styles/forms/_FieldShell';
+import { MobileButton, MobileInput, MobileText } from '@/components/ui/adapters';
+import { useAppColors } from '@/hooks/useAppColors';
 
 /**
  * `resetPassword` requests a password-reset email. The actual reset
  * flow then lands the user on a `validate`-style screen via deep link.
+ *
+ * Built HeroUI-Native-first like `login`/`register`: title, input and submit
+ * render through the adapter seam (`MobileText`/`MobileInput`/`MobileButton`)
+ * and colours resolve through theme tokens (`useAppColors`) + the shared
+ * variant resolver, so it is correct in dark and light. The submit button
+ * honours the cross-platform `color` field, the same accent the web renderer
+ * feeds into the Mantine button.
  */
 export function ResetPassword({ section, values }: IStyleProps): React.ReactElement {
+    const colors = useAppColors();
     const labelEmail = useInterpolatedField(section, 'label_user', values) || 'Email';
     const labelSubmit = useInterpolatedField(section, 'label_submit', values) || 'Send reset link';
     const labelTitle = useInterpolatedField(section, 'label_title', values);
+
+    const sharedColor = readField<string>(section, 'color');
+    const accent = sharedColor ? resolveMantineVariant('filled', sharedColor).accent : colors.primary;
 
     const [email, setEmail] = useState('');
     const [busy, setBusy] = useState(false);
@@ -43,26 +61,26 @@ export function ResetPassword({ section, values }: IStyleProps): React.ReactElem
     };
 
     return (
-        <View className={buildSectionClasses(section)} style={{ padding: 16 }}>
-            {labelTitle ? <Text style={{ fontSize: 24, fontWeight: '700', marginBottom: 12 }}>{labelTitle}</Text> : null}
-            <FieldShell label={labelEmail}>
-                <TextInput
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    style={{ borderWidth: 1, borderColor: '#dee2e6', borderRadius: 4, padding: 10 }}
-                />
-            </FieldShell>
-            <Pressable
+        <View className={buildSectionClasses(section)} style={{ padding: 16, gap: 12 }}>
+            {labelTitle ? <MobileText emphasis="title">{labelTitle}</MobileText> : null}
+            <MobileInput
+                label={labelEmail}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                accessibilityLabel={labelEmail}
+            />
+            <MobileButton
+                label={busy ? '…' : labelSubmit}
                 onPress={() => {
                     void onSubmit();
                 }}
-                disabled={busy}
-                style={{ backgroundColor: busy ? '#adb5bd' : '#228be6', padding: 12, borderRadius: 4, marginTop: 10, alignItems: 'center' }}
-            >
-                <Text style={{ color: '#fff', fontWeight: '600' }}>{busy ? '…' : labelSubmit}</Text>
-            </Pressable>
+                variant="primary"
+                accentColor={sharedColor ? accent : undefined}
+                isLoading={busy}
+                fullWidth
+            />
         </View>
     );
 }

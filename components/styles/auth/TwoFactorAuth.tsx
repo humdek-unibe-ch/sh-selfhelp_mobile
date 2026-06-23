@@ -3,16 +3,26 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { useInterpolatedField } from '@/components/renderer/useField';
 import { verifyTwoFactor } from '@/services/authService';
-import { FieldShell } from '@/components/styles/forms/_FieldShell';
+import { MobileButton, MobileInput, MobileText } from '@/components/ui/adapters';
+import { useAppColors } from '@/hooks/useAppColors';
 
+/**
+ * `two-factor-auth` verifies the one-time login code after a successful
+ * password step. Built HeroUI-Native-first like `login`/`register`: title,
+ * code input and submit render through the adapter seam
+ * (`MobileText`/`MobileInput`/`MobileButton`) and colours resolve through theme
+ * tokens (`useAppColors`), so it is legible in both dark and light. The style
+ * exposes no authored colour field, so the button keeps the theme primary.
+ */
 export function TwoFactorAuth({ section, values }: IStyleProps): React.ReactElement {
+    const colors = useAppColors();
     const labelCode = useInterpolatedField(section, 'label_code', values) || 'Code';
     const labelSubmit = useInterpolatedField(section, 'label_submit', values) || 'Verify';
     const labelTitle = useInterpolatedField(section, 'title', values);
@@ -36,26 +46,27 @@ export function TwoFactorAuth({ section, values }: IStyleProps): React.ReactElem
     };
 
     return (
-        <View className={buildSectionClasses(section)} style={{ padding: 16 }}>
-            {labelTitle ? <Text style={{ fontSize: 24, fontWeight: '700', marginBottom: 12 }}>{labelTitle}</Text> : null}
-            <FieldShell label={labelCode} error={err ?? undefined}>
-                <TextInput
-                    value={code}
-                    onChangeText={setCode}
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    style={{ borderWidth: 1, borderColor: '#dee2e6', borderRadius: 4, padding: 10, fontSize: 18, letterSpacing: 4, textAlign: 'center' }}
-                />
-            </FieldShell>
-            <Pressable
+        <View className={buildSectionClasses(section)} style={{ padding: 16, gap: 12 }}>
+            {labelTitle ? <MobileText emphasis="title">{labelTitle}</MobileText> : null}
+            <MobileInput
+                label={labelCode}
+                value={code}
+                onChangeText={setCode}
+                keyboardType="numeric"
+                maxLength={6}
+                isInvalid={!!err}
+                accessibilityLabel={labelCode}
+            />
+            {err ? <Text style={{ color: colors.danger, fontSize: 13 }}>{err}</Text> : null}
+            <MobileButton
+                label={busy ? '…' : labelSubmit}
                 onPress={() => {
                     void onSubmit();
                 }}
-                disabled={busy}
-                style={{ backgroundColor: busy ? '#adb5bd' : '#228be6', padding: 12, borderRadius: 4, marginTop: 10, alignItems: 'center' }}
-            >
-                <Text style={{ color: '#fff', fontWeight: '600' }}>{busy ? '…' : labelSubmit}</Text>
-            </Pressable>
+                variant="primary"
+                isLoading={busy}
+                fullWidth
+            />
         </View>
     );
 }

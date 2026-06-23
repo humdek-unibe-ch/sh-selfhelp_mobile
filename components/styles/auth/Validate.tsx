@@ -3,28 +3,40 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 import { useState } from 'react';
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import axios from 'axios';
 
 import type { IStyleProps } from '@/components/renderer/types';
+import { CLIENT_TYPE_MOBILE, ENDPOINTS, HEADER_CLIENT_TYPE, resolveMantineVariant } from '@selfhelp/shared';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { useInterpolatedField } from '@/components/renderer/useField';
+import { readField, useInterpolatedField } from '@/components/renderer/useField';
 import { useServerStore } from '@/stores/serverStore';
-import { CLIENT_TYPE_MOBILE, ENDPOINTS, HEADER_CLIENT_TYPE } from '@selfhelp/shared';
-import { FieldShell } from '@/components/styles/forms/_FieldShell';
+import { MobileButton, MobileInput, MobileText } from '@/components/ui/adapters';
+import { useAppColors } from '@/hooks/useAppColors';
 
 /**
  * `validate` finishes the registration flow: the user receives a
  * one-time link `/validate/{user_id}/{token}` and submits a password.
  * On mobile we expect the link to deep-link us into a screen which
  * mounts a page containing this style.
+ *
+ * Built HeroUI-Native-first like `login`/`register`: title, inputs and submit
+ * render through the adapter seam (`MobileText`/`MobileInput`/`MobileButton`)
+ * and colours resolve through theme tokens (`useAppColors`) + the shared
+ * variant resolver, so it is correct in dark and light. The submit button
+ * honours the cross-platform `btn_save_color` field (shared with the custom
+ * form renderer).
  */
 export function Validate({ section, values }: IStyleProps): React.ReactElement {
+    const colors = useAppColors();
     const labelPassword = useInterpolatedField(section, 'label_pw', values) || 'Password';
     const labelPasswordConfirm = useInterpolatedField(section, 'label_pw_confirm', values) || 'Confirm password';
     const labelSubmit = useInterpolatedField(section, 'label_activate', values) || 'Activate account';
     const labelTitle = useInterpolatedField(section, 'label_title', values);
+
+    const sharedColor = readField<string>(section, 'btn_save_color');
+    const accent = sharedColor ? resolveMantineVariant('filled', sharedColor).accent : colors.primary;
 
     const params = useLocalSearchParams<{ user_id?: string; token?: string }>();
     const [pw, setPw] = useState('');
@@ -56,33 +68,32 @@ export function Validate({ section, values }: IStyleProps): React.ReactElement {
     };
 
     return (
-        <View className={buildSectionClasses(section)} style={{ padding: 16 }}>
-            {labelTitle ? <Text style={{ fontSize: 24, fontWeight: '700', marginBottom: 12 }}>{labelTitle}</Text> : null}
-            <FieldShell label={labelPassword}>
-                <TextInput
-                    value={pw}
-                    onChangeText={setPw}
-                    secureTextEntry
-                    style={{ borderWidth: 1, borderColor: '#dee2e6', borderRadius: 4, padding: 10 }}
-                />
-            </FieldShell>
-            <FieldShell label={labelPasswordConfirm}>
-                <TextInput
-                    value={pw2}
-                    onChangeText={setPw2}
-                    secureTextEntry
-                    style={{ borderWidth: 1, borderColor: '#dee2e6', borderRadius: 4, padding: 10 }}
-                />
-            </FieldShell>
-            <Pressable
+        <View className={buildSectionClasses(section)} style={{ padding: 16, gap: 12 }}>
+            {labelTitle ? <MobileText emphasis="title">{labelTitle}</MobileText> : null}
+            <MobileInput
+                label={labelPassword}
+                value={pw}
+                onChangeText={setPw}
+                secureTextEntry
+                accessibilityLabel={labelPassword}
+            />
+            <MobileInput
+                label={labelPasswordConfirm}
+                value={pw2}
+                onChangeText={setPw2}
+                secureTextEntry
+                accessibilityLabel={labelPasswordConfirm}
+            />
+            <MobileButton
+                label={busy ? '…' : labelSubmit}
                 onPress={() => {
                     void onSubmit();
                 }}
-                disabled={busy}
-                style={{ backgroundColor: busy ? '#adb5bd' : '#228be6', padding: 12, borderRadius: 4, marginTop: 10, alignItems: 'center' }}
-            >
-                <Text style={{ color: '#fff', fontWeight: '600' }}>{busy ? '…' : labelSubmit}</Text>
-            </Pressable>
+                variant="primary"
+                accentColor={sharedColor ? accent : undefined}
+                isLoading={busy}
+                fullWidth
+            />
         </View>
     );
 }

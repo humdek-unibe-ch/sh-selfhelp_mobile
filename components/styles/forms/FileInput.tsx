@@ -11,6 +11,7 @@ import { readField, readBooleanField, readNumberField, useInterpolatedField } fr
 import { useFieldBinding } from './_useFieldBinding';
 import { FieldShell } from './_FieldShell';
 import { validateFile } from './_fileValidation';
+import { useAppColors } from '@/hooks/useAppColors';
 
 /**
  * FileInput — functional media picker built on `expo-image-picker`. It enforces
@@ -21,6 +22,7 @@ import { validateFile } from './_fileValidation';
  * added; the validation contract is shared and already covers them.)
  */
 export function FileInput({ section, values }: IStyleProps): React.ReactElement {
+    const colors = useAppColors();
     const name = readField<string>(section, 'name') ?? '';
     const label = useInterpolatedField(section, 'label', values);
     const description = useInterpolatedField(section, 'description', values);
@@ -76,14 +78,15 @@ export function FileInput({ section, values }: IStyleProps): React.ReactElement 
                 style={{
                     borderWidth: 1,
                     borderStyle: 'dashed',
-                    borderColor: localError ? '#fa5252' : '#adb5bd',
+                    borderColor: localError ? colors.danger : colors.border,
                     borderRadius: 6,
                     padding: 14,
+                    backgroundColor: colors.surface,
                     opacity: disabled ? 0.55 : 1,
                 }}
             >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={{ color: shownName ? '#212529' : '#868e96', flexShrink: 1 }} numberOfLines={1}>
+                    <Text style={{ color: shownName ? colors.text : colors.textFaint, flexShrink: 1 }} numberOfLines={1}>
                         {shownName || placeholder}
                     </Text>
                     {shownName ? (
@@ -96,7 +99,7 @@ export function FileInput({ section, values }: IStyleProps): React.ReactElement 
                             accessibilityLabel="Remove file"
                             hitSlop={8}
                         >
-                            <Text style={{ color: '#868e96', fontSize: 18 }}>{'\u00d7'}</Text>
+                            <Text style={{ color: colors.textFaint, fontSize: 18 }}>{'\u00d7'}</Text>
                         </Pressable>
                     ) : null}
                 </View>

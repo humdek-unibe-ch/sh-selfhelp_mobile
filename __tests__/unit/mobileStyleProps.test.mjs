@@ -6,13 +6,13 @@ SPDX-License-Identifier: MPL-2.0
  * Unit tests for `mobileStyleProps` / `readSharedStyleProps` / `mobileIntentPalette`.
  *
  * These prove the mobile adapter props are produced by the SHARED semantic
- * mapper (the single source of truth) reading the REAL cross-platform CMS
+ * mapper (the single source of truth) reading the canonical cross-platform CMS
  * fields: `color` (Mantine palette), `variant` (Mantine variant),
  * `size`, `radius`, `full_width` — the same fields the web
- * renderer reads. The mobile renderer NEVER reads `web_*` (plan section 6.3),
- * and `shared_intent` is NOT in the live catalog. `mobileStyleProps` routes
- * through `toHeroUiSemanticProps`; the only mobile-local mapping is the
- * documented `mobile_variant` override.
+ * renderer reads. The mobile renderer NEVER reads `web_*` fields (there is no
+ * web->mobile fallback). `mobileStyleProps` routes through
+ * `toHeroUiSemanticProps`; the only mobile-local mapping is the documented
+ * `mobile_variant` override.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,7 +28,7 @@ const sectionWithBag = (fields) => ({
     fields: Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, { content: v }])),
 });
 
-test('readSharedStyleProps extracts the REAL shared_* appearance fields', () => {
+test('readSharedStyleProps extracts the canonical appearance fields', () => {
     const props = readSharedStyleProps(
         sectionWithBag({
             color: 'red',

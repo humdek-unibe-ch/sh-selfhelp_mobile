@@ -4,6 +4,37 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.9
+
+### Dark-mode parity for the remaining auth + form renderers
+
+The cross-repo style audit (2026-06-22) found five renderers that bypassed the
+theme seam and re-inlined hard-coded hex, so they rendered black-on-dark
+(illegible) in dark mode. All now use the adapter seam / `useAppColors`, matching
+`Login`, `Register` and `RichTextEditor`. Re-verify in light + dark.
+
+- **`components/styles/auth/ResetPassword.tsx`, `Validate.tsx`,
+  `TwoFactorAuth.tsx`.** Migrated from raw `TextInput`/`Pressable` to the HeroUI
+  Native adapter seam (`MobileText` + `MobileInput` + `MobileButton`). Titles,
+  inputs (themed text + border + background) and submit buttons are now legible in
+  dark mode; the submit button honours the authored colour (`color` on
+  reset-password, `btn_save_color` on validate) through the shared variant
+  resolver, exactly like `Login`.
+- **`components/styles/auth/CommunicationPreferences.tsx`** (rendered inside
+  `Profile`). Title / description / labels / error text now read `useAppColors`
+  instead of defaulting to black, so the Profile screen is fully legible in dark
+  mode.
+- **`components/styles/forms/FileInput.tsx`.** Filename text, placeholder, dashed
+  border and the remove (×) control are themed via `useAppColors` (were
+  `#212529` / `#868e96` / `#adb5bd`). Still images-only (`expo-image-picker`);
+  generic documents remain a deferred follow-up.
+- **`components/styles/typography/Fieldset.tsx`** (border + legend) and
+  **`components/styles/forms/Rating.tsx`** (empty-star colour) moved off
+  hard-coded `#dee2e6` to theme tokens.
+- **`components/styles/media/ImageStyle.tsx`.** Dropped the dead `width`/`height`
+  field reads (no such DB fields — image sizing is web-only `web_width` /
+  `web_height`), matching the `IImageStyle` cleanup in `@selfhelp/shared` 1.14.23.
+
 ## 0.1.8
 
 ### Select multi-select + bottom-sheet theming, nicer timeline
