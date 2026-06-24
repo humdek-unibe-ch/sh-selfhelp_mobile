@@ -20,6 +20,7 @@ const path = require('path');
 
 const projectRoot = __dirname;
 const sharedRoot = path.resolve(projectRoot, '..', 'sh-selfhelp_shared');
+const fs = require('fs');
 
 const config = getDefaultConfig(projectRoot);
 
@@ -41,14 +42,21 @@ const proAdaptersPath = process.env.SELFHELP_MOBILE_PRO_UI_PATH
     : path.resolve(projectRoot, '..', 'sh-selfhelp_mobile_pro_ui');
 const mobileProUiResolvedPath = uiTier === 'pro' ? proAdaptersPath : ossAdaptersPath;
 
-config.watchFolders = [sharedRoot];
+// Only add shared workspace folder if it exists (local development).
+// In Docker builds, @selfhelp/shared is installed via npm.
+const hasLocalShared = fs.existsSync(sharedRoot);
+if (hasLocalShared) {
+    config.watchFolders = [sharedRoot];
+}
 
 config.resolver = {
     ...config.resolver,
-    nodeModulesPaths: [
-        path.resolve(projectRoot, 'node_modules'),
-        path.resolve(sharedRoot, 'node_modules'),
-    ],
+    nodeModulesPaths: hasLocalShared
+        ? [
+            path.resolve(projectRoot, 'node_modules'),
+            path.resolve(sharedRoot, 'node_modules'),
+        ]
+        : [path.resolve(projectRoot, 'node_modules')],
     extraNodeModules: {
         ...(config.resolver && config.resolver.extraNodeModules),
         '@selfhelp/mobile-pro-ui': mobileProUiResolvedPath,
