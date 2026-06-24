@@ -23,15 +23,15 @@ SPDX-License-Identifier: MPL-2.0
  *     MODAL sheet over the current page (`usePageModalStore`), exactly like the
  *     normal mobile app. A missing keyword lands on the standard page-not-found
  *     state.
- *   - mirrors the shared colour-scheme + language BOTH ways: it applies a
- *     `selfhelp-preview:set-preferences` push from the shell (theme + locale, no
- *     reload) and reports a local change (switched in the mobile profile) back
- *     with `selfhelp-preview:preferences-changed`, so the web pane and the mobile
- *     frame always share the same theme/locale.
+ *   - mirrors the shared colour scheme both ways: it applies a
+ *     `selfhelp-preview:set-preferences` push from the shell and reports local
+ *     theme changes with `selfhelp-preview:preferences-changed`. Language is
+ *     URL-bound and applied by a clean frame remount, never through this live
+ *     bridge.
  *
- * Loop safety: the shell owns the canonical page and ignores the echo of a
- * command it just sent (its per-frame "expected keyword" guard), and this bridge
- * skips a command for the page it is already on — so web↔mobile never ping-pong.
+ * Loop safety: READY is delayed until the initial preview route is committed,
+ * then the shell owns the canonical page and ignores the echo of a command it
+ * just sent. This bridge also skips commands for the page it already shows.
  *
  * Security: messages are only accepted from / sent to the shell origin handed in
  * via `parentOrigin` (the cross-origin dev case), never `'*'`; foreign / malformed
@@ -55,9 +55,14 @@ import {
 import { isKeywordOnMenu } from '@/components/shell/navigationUtils';
 import { getWebPreviewRuntime } from '@/config/webPreview';
 import { usePages } from '@/hooks/usePages';
-import { setLanguage } from '@/services/languageService';
-import { useLanguageStore } from '@/stores/languageStore';
+import {
+    applyPreviewThemePreferences,
+    previewThemePreferences,
+} from '@/services/previewPreferenceSync';
+import { shouldAnnouncePreviewReady } from '@/services/previewBridgeState';
+import { useAuthStore } from '@/stores/authStore';
 import { usePageModalStore } from '@/stores/pageModalStore';
+import { useServerStore } from '@/stores/serverStore';
 import { useThemeStore } from '@/stores/themeStore';
 
 export function PreviewSyncBridge(): null {
@@ -70,12 +75,15 @@ export function PreviewSyncBridge(): null {
     // (see `goToKeyword`); read through a ref so the once-registered listener sees
     // the latest pages without re-subscribing.
     const { data: pages } = usePages();
+    const authBootstrapped = useAuthStore((s) => s.bootstrapped);
+    const serverHydrated = useServerStore((s) => s.hydrated);
 
-    // Shared colour-scheme + language, synced both ways with the shell. Read as
+    // Shared colour-scheme (theme), synced BOTH ways with the shell. Read as
     // reactive store state so a local change (mobile profile) drives the outbound
-    // effect; applied via the stores' setters when the shell pushes a change.
+    // effect; applied via the store setter when the shell pushes a change. Language
+    // is NOT synced here — it is bound to the iframe URL and changes via a clean
+    // remount driven by the shell (see `applyPreferences`).
     const themeMode = useThemeStore((s) => s.mode);
-    const syncLocale = useLanguageStore((s) => s.locale);
 
     // Resolved once on mount; refs so the listener (registered once) always reads
     // the latest without re-subscribing.
@@ -85,7 +93,8 @@ export function PreviewSyncBridge(): null {
     const currentKeywordRef = useRef<string | null>(null);
     const lastSentRef = useRef<string | null>(null);
     const pagesRef = useRef(pages);
-    // Loop guard for prefs sync: the last prefs we SENT to or RECEIVED from the
+    const readySentRef = useRef(false);
+    // Loop guard for theme sync: the last prefs we SENT to or RECEIVED from the
     // shell. Seeded on activation so the initial state is never echoed back.
     const lastSyncedPrefsRef = useRef<IPreviewPreferences | null>(null);
 
@@ -115,28 +124,28 @@ export function PreviewSyncBridge(): null {
         activeRef.current = true;
         parentOriginRef.current = parentOrigin;
         localeRef.current = preview.params.language ?? null;
-        // Seed the prefs guard with the current state so the mount never echoes
+        // Seed the theme guard with the current scheme so the mount never echoes
         // it back; the shell's READY→SET_PREFERENCES then makes the web pane
-        // authoritative for the initial theme/language.
-        lastSyncedPrefsRef.current = {
-            colorScheme: useThemeStore.getState().mode,
-            locale: useLanguageStore.getState().locale,
-        };
+        // authoritative for the initial theme.
+        lastSyncedPrefsRef.current = previewThemePreferences(
+            useThemeStore.getState().mode,
+        );
 
-        // Apply a shared prefs change pushed from the shell (web pane / toolbar):
-        // flip the theme and/or language with no reload. Record it as the last
-        // synced value so the resulting store change isn't echoed back up.
+        // Apply a prefs change pushed from the shell: flip the THEME only, with no
+        // reload. Language is intentionally NOT synced here — it is bound to the
+        // iframe URL and changes via a clean remount driven by the shell. Pushing a
+        // language over postMessage meant calling `setLanguage` (which rotates the
+        // scoped token AND runs a full `invalidateQueries`); under the cross-frame
+        // echo that could loop into a query-invalidation storm that emptied the
+        // menu/tabs and tripped Chromium's navigation throttle. Theme is cheap and
+        // synchronous, so it stays a live two-way sync.
         const applyPreferences = (prefs: IPreviewPreferences): void => {
-            lastSyncedPrefsRef.current = prefs;
-            if (useThemeStore.getState().mode !== prefs.colorScheme) {
-                useThemeStore.getState().setMode(prefs.colorScheme);
-            }
-            if (prefs.locale && useLanguageStore.getState().locale !== prefs.locale) {
-                const match = useLanguageStore
-                    .getState()
-                    .available.find((l) => l.locale === prefs.locale);
-                if (match) void setLanguage(match.id, match.locale);
-            }
+            const themeStore = useThemeStore.getState();
+            lastSyncedPrefsRef.current = applyPreviewThemePreferences(
+                prefs,
+                themeStore.mode,
+                themeStore.setMode,
+            );
         };
 
         const goToKeyword = (keyword: string | null): void => {
@@ -175,8 +184,6 @@ export function PreviewSyncBridge(): null {
         };
         window.addEventListener('message', onMessage);
 
-        postToParent({ type: PREVIEW_BRIDGE_MESSAGE.READY, source: 'mobile' });
-
         return () => window.removeEventListener('message', onMessage);
     }, [postToParent, router]);
 
@@ -196,13 +203,39 @@ export function PreviewSyncBridge(): null {
         });
     }, [pathname, modalKeyword, postToParent]);
 
-    // Report a LOCAL prefs change (theme/language switched in the mobile profile)
-    // up to the shell so the web pane follows. The guard skips the echo of a
-    // value the shell just pushed (and the seeded initial state), so the two
-    // panes never ping-pong.
+    // Announce READY only after GateController has completed the initial preview
+    // route. The shell answers READY with NAVIGATE(canonicalKeyword); if READY is
+    // emitted during bootstrap, that command races GateController's own
+    // router.replace() and can create a navigation flood that strands the frame
+    // on "Starting up…". Once the initial keyword/modal is visible, the returned
+    // command matches currentKeywordRef and is safely ignored as a no-op.
+    useEffect(() => {
+        const preview = getWebPreviewRuntime();
+        const currentKeyword = modalKeyword ?? previewKeywordFromPath(pathname);
+        if (
+            !shouldAnnouncePreviewReady({
+                active: activeRef.current,
+                alreadySent: readySentRef.current,
+                serverHydrated,
+                authBootstrapped,
+                currentKeyword,
+                initialKeyword: preview.params.keyword,
+            })
+        ) {
+            return;
+        }
+
+        readySentRef.current = true;
+        postToParent({ type: PREVIEW_BRIDGE_MESSAGE.READY, source: 'mobile' });
+    }, [authBootstrapped, modalKeyword, pathname, postToParent, serverHydrated]);
+
+    // Report a LOCAL THEME change (dark/light switched in the mobile profile) up
+    // to the shell so the web pane follows. The guard skips the echo of a value
+    // the shell just pushed (and the seeded initial state), so the two panes never
+    // ping-pong. Language is not reported (it is URL-bound, see `applyPreferences`).
     useEffect(() => {
         if (!activeRef.current) return;
-        const prefs: IPreviewPreferences = { colorScheme: themeMode, locale: syncLocale };
+        const prefs = previewThemePreferences(themeMode);
         if (arePreviewPreferencesEqual(lastSyncedPrefsRef.current, prefs)) return;
         lastSyncedPrefsRef.current = prefs;
         postToParent({
@@ -210,7 +243,7 @@ export function PreviewSyncBridge(): null {
             source: 'mobile',
             preferences: prefs,
         });
-    }, [themeMode, syncLocale, postToParent]);
+    }, [themeMode, postToParent]);
 
     return null;
 }
