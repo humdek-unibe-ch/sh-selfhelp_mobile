@@ -34,6 +34,7 @@ import {
 import { useIsFetching, useQueryClient } from '@tanstack/react-query';
 
 import { runtimeConfig } from '@/config/runtime';
+import { getWebPreviewRuntime } from '@/config/webPreview';
 import { debugLogger, type IDebugLogEntry, type TDebugLevel } from '@/services/debugLogger';
 import { useAuthStore } from '@/stores/authStore';
 import { useDevModeStore } from '@/stores/devModeStore';
@@ -50,7 +51,13 @@ const LEVEL_COLOR: Record<TDebugLevel, string> = {
 };
 
 export function FloatingDebugPanel(): React.ReactElement | null {
-    if (!runtimeConfig.isDevInstance) return null;
+    // Dev instances and the web-preview image both expose the panel. The CMS
+    // Live Preview shell embeds the frame with `embed=1` but still wants the
+    // in-frame debug FAB (logs / queries / auth / server / info), so ONLY an
+    // explicit `hideDebugPanel=1` suppresses it — being embedded no longer does.
+    if (!runtimeConfig.isDevInstance && !runtimeConfig.webPreviewEnabled) return null;
+    const preview = getWebPreviewRuntime();
+    if (preview.enabled && preview.params.hideDebugPanel) return null;
     return <FloatingDebugPanelInner />;
 }
 

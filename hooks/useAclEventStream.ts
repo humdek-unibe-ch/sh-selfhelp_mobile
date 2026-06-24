@@ -19,6 +19,7 @@ import RNEventSource, { type ErrorEvent } from 'react-native-sse';
 
 import { ENDPOINTS } from '@selfhelp/shared';
 
+import { getWebPreviewRuntime } from '@/config/webPreview';
 import { getApiClient } from '@/services/apiClient';
 import { debugLogger } from '@/services/debugLogger';
 import { userDataQueryKey } from '@/services/userService';
@@ -80,7 +81,13 @@ export function useAclEventStream(): void {
     const accessToken = useAuthStore((s) => s.accessToken);
     const bootstrapped = useAuthStore((s) => s.bootstrapped);
     const serverUrl = useServerStore((s) => s.serverUrl);
-    const isAuthed = Boolean(accessToken && bootstrapped && serverUrl);
+    // The CMS Live Preview is a READ-ONLY, ephemeral session: there is no live
+    // admin session to keep in sync, and its Bearer-scoped token cannot open the
+    // Mercure auth-events stream (the `auth/events` route is outside the preview
+    // allowlist and the web cookie transport carries no Mercure cookie). Trying
+    // would only 403 in an exponential-backoff reconnect loop, so skip it.
+    const isPreview = getWebPreviewRuntime().enabled;
+    const isAuthed = Boolean(accessToken && bootstrapped && serverUrl) && !isPreview;
 
     const stateRef = useRef<{
         es: IClosableEventSource | null;

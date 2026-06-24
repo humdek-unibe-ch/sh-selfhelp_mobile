@@ -86,6 +86,17 @@ export function findPageByKeyword(pages: IPageItem[], keyword: string): IPageIte
 }
 
 /**
+ * True when `keyword` resolves to a page that appears on the navigation menu
+ * (has a `navPosition`, not headless). Off-menu pages (footer-only, unassigned,
+ * headless, or unknown) return false — the web-preview boot presents those as a
+ * modal over home in `modal=auto` so they are reachable in context.
+ */
+export function isKeywordOnMenu(pages: IPageItem[], keyword: string): boolean {
+    const page = findPageByKeyword(pages, keyword);
+    return page !== null && isMenuPage(page);
+}
+
+/**
  * Lightweight icon hint — a single character per page. We keep the set
  * small intentionally so HeroUI / system fonts can render it crisply
  * on every platform without bundling an icon font.

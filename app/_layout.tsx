@@ -44,9 +44,16 @@ import { useQuery } from '@tanstack/react-query';
 
 import { AppProviders } from '@/providers/AppProviders';
 import { installDevWarningFilter } from '@/config/devWarnings';
+import { getWebPreviewRuntime } from '@/config/webPreview';
 import { useAppColors } from '@/hooks/useAppColors';
+import { usePages } from '@/hooks/usePages';
+import { isKeywordOnMenu } from '@/components/shell/navigationUtils';
+import { PageModalHost } from '@/components/shell/PageModalHost';
+import { usePageModalStore } from '@/stores/pageModalStore';
 import { FloatingDebugPanel } from '@/components/dev/FloatingDebugPanel';
 import { PhoneFrame } from '@/components/dev/PhoneFrame';
+import { PreviewDraftBanner } from '@/components/preview/PreviewDraftBanner';
+import { PreviewSyncBridge } from '@/components/preview/PreviewSyncBridge';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
 import { LoadingScreen } from '@/components/feedback/LoadingScreen';
 import { PluginVersionMismatchBanner } from '@/components/plugin-runtime/PluginVersionMismatchBanner';
@@ -77,10 +84,61 @@ function GateController(): null {
     const serverUrl = useServerStore((s) => s.serverUrl);
     const serverHydrated = useServerStore((s) => s.hydrated);
     const canSwitchServers = useServerStore((s) => s.canSwitchServers);
+    const previewRoutedRef = useRef(false);
+    const { data: pages } = usePages();
 
     useEffect(() => {
         lastRedirectRef.current = null;
     }, [pathname]);
+
+    // Web-preview: once boot completes, present the keyword the CMS asked to
+    // preview. Runs once per session. `modal` decides the presentation:
+    //   - on  → always as a modal over home;
+    //   - off → always route full-screen to the keyword;
+    //   - auto (default) → modal when the page is OFF the navigation menu (so an
+    //     off-menu page, which has no menu entry, is reachable in context),
+    //     otherwise route to it. `auto` waits for the nav pages to load so the
+    //     on/off-menu decision is correct.
+    useEffect(() => {
+        if (!serverHydrated || !bootstrapped) return undefined;
+        if (previewRoutedRef.current) return undefined;
+        const preview = getWebPreviewRuntime();
+        const keyword = preview.params.keyword;
+        if (!preview.enabled || !keyword) return undefined;
+
+        const present = (asModal: boolean): void => {
+            if (previewRoutedRef.current) return;
+            previewRoutedRef.current = true;
+            if (asModal) {
+                usePageModalStore.getState().open(keyword);
+                router.replace('/(app)/');
+            } else {
+                router.replace({ pathname: '/[keyword]', params: { keyword } });
+            }
+        };
+
+        const mode = preview.params.modal;
+        if (mode === 'on') {
+            present(true);
+            return undefined;
+        }
+        if (mode === 'off') {
+            present(false);
+            return undefined;
+        }
+
+        // auto: decide from the nav menu. The CMS normally passes an explicit
+        // on/off (it knows the page's nav position), so this is a standalone
+        // fallback. The GET-only preview token can fail to read the nav list
+        // (scope-bound to the session language) — so NEVER strand on home: if the
+        // nav list isn't available shortly, route full-screen to the keyword.
+        if (pages) {
+            present(!isKeywordOnMenu(pages, keyword));
+            return undefined;
+        }
+        const timer = setTimeout(() => present(false), 2500);
+        return () => clearTimeout(timer);
+    }, [bootstrapped, pages, router, serverHydrated]);
 
     useEffect(() => {
         if (!navState?.key) return;
@@ -237,7 +295,10 @@ export default function RootLayout(): React.ReactElement {
         <AppProviders>
             <PhoneFrame />
             <GateController />
+            <PreviewSyncBridge />
+            <PreviewDraftBanner />
             <RootStackInner />
+            <PageModalHost />
             <FloatingDebugPanel />
         </AppProviders>
     );

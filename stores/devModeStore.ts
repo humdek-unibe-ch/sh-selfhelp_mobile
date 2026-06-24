@@ -55,7 +55,17 @@ interface IDevModeState {
 
 let writeDebounce: ReturnType<typeof setTimeout> | null = null;
 
+/**
+ * When the web-preview embed contract drives the dev flags, the values are
+ * SESSION-ONLY: they must never be written back to secure-store/localStorage
+ * (so a one-off preview can't corrupt a developer's persisted dev settings).
+ * While active, persistence is a no-op and the late async hydration below is
+ * skipped so it cannot clobber the override.
+ */
+let sessionOverrideActive = false;
+
 function schedulePersist(state: IDevModeState): void {
+    if (sessionOverrideActive) return;
     if (writeDebounce) clearTimeout(writeDebounce);
     writeDebounce = setTimeout(() => {
         const payload: IPersistedShape = {
@@ -95,6 +105,8 @@ void (async () => {
     try {
         const raw = await secureStore.get(STORAGE_KEY);
         if (!raw) return;
+        // A session override (web preview) wins over persisted dev settings.
+        if (sessionOverrideActive) return;
         const parsed = JSON.parse(raw) as IPersistedShape;
         useDevModeStore.setState({
             previewMode: parsed.previewMode ?? false,
@@ -106,3 +118,28 @@ void (async () => {
         /* corrupt payload — fall back to defaults */
     }
 })();
+
+/**
+ * Apply web-preview embed-contract flags as a SESSION-ONLY override (never
+ * persisted). Once called, `schedulePersist` becomes a no-op for the rest of
+ * the session and the async hydration above is skipped. Only the provided
+ * fields are overridden; the rest keep their current value.
+ */
+export function applyWebPreviewSessionOverrides(overrides: {
+    previewMode?: boolean;
+    deviceFrameEnabled?: boolean;
+    previewDevice?: TPreviewDevice;
+    previewOrientation?: TPreviewOrientation;
+}): void {
+    sessionOverrideActive = true;
+    if (writeDebounce) {
+        clearTimeout(writeDebounce);
+        writeDebounce = null;
+    }
+    useDevModeStore.setState((state) => ({
+        previewMode: overrides.previewMode ?? state.previewMode,
+        deviceFrameEnabled: overrides.deviceFrameEnabled ?? state.deviceFrameEnabled,
+        previewDevice: overrides.previewDevice ?? state.previewDevice,
+        previewOrientation: overrides.previewOrientation ?? state.previewOrientation,
+    }));
+}

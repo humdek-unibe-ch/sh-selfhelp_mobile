@@ -1,0 +1,8 @@
+{
+  "$comment": "Channel/build metadata only for the selfhelp-mobile-preview image. Compatibility ranges live in /release-manifest.json (single source for the registry resolver AND the descriptor step); mobileRendererVersion + bundledPlugins are emitted from web-preview/preview-plugins.json at release time by web-preview-release.yml.",
+  "kind": "selfhelp-mobile-preview-release",
+  "channel": "stable",
+  "builtFrom": {
+    "expoWebExport": true
+  }
+}

@@ -34,6 +34,7 @@ Navigation entrypoint for the mobile documentation, organized by audience and pu
 | [developer/development.md](developer/development.md) | Day-to-day workflow, scripts, debug tools, and conventions. |
 | [developer/best-practices.md](developer/best-practices.md) | Do/don't list and performance/accessibility notes. |
 | [developer/plugins.md](developer/plugins.md) | How the mobile app consumes SelfHelp plugins. |
+| [developer/mobile-preview.md](developer/mobile-preview.md) | The `selfhelp-mobile-preview` web image: build mode, embed contract, boot flow, in-container proxy, curated plugin bundling, and live-reload dev. |
 | [developer/styling/cms-classes.md](developer/styling/cms-classes.md) | The `css_mobile` allow-list and remap pipeline. |
 | [developer/styling/mantine-tokens.md](developer/styling/mantine-tokens.md) | Mapping Mantine semantic props to HeroUI/Uniwind. |
 | [developer/styling/component-pattern.md](developer/styling/component-pattern.md) | The four-file split and when single-file is fine. |

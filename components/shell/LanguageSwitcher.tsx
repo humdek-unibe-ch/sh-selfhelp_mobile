@@ -17,29 +17,57 @@ import { useLanguageStore } from '@/stores/languageStore';
 import { useLanguages } from '@/hooks/useLanguages';
 import { setLanguage } from '@/services/languageService';
 import { useAppColors } from '@/hooks/useAppColors';
+import { getWebPreviewRuntime } from '@/config/webPreview';
+import { isPreviewLanguageControlLocked } from '@/services/previewPreferenceSync';
 
 export function LanguageSwitcher(): React.ReactElement | null {
     useLanguages();
     const available = useLanguageStore((s) => s.available);
     const current = useLanguageStore((s) => s.locale);
     const colors = useAppColors();
+    const preview = getWebPreviewRuntime();
+    const previewLocked = isPreviewLanguageControlLocked(
+        preview.enabled,
+        preview.params.previewShell,
+    );
 
     if (!available.length) return null;
 
     return (
         <View style={{ gap: 2 }}>
+            {previewLocked ? (
+                <Text
+                    style={{
+                        paddingHorizontal: 12,
+                        paddingBottom: 6,
+                        color: colors.textFaint,
+                        fontSize: 12,
+                    }}
+                >
+                    Controlled by the web preview
+                </Text>
+            ) : null}
             {available.map((lang) => {
                 const active = current === lang.locale;
                 const code = lang.locale.split('-')[0]?.toUpperCase() ?? lang.locale;
                 return (
                     <Pressable
                         key={lang.id}
-                        onPress={() => {
-                            void setLanguage(lang.id, lang.locale);
-                        }}
+                        disabled={previewLocked}
+                        onPress={
+                            previewLocked
+                                ? undefined
+                                : () => {
+                                      void setLanguage(lang.id, lang.locale);
+                                  }
+                        }
                         accessibilityRole="button"
-                        accessibilityState={{ selected: active }}
-                        accessibilityLabel={lang.language}
+                        accessibilityState={{ selected: active, disabled: previewLocked }}
+                        accessibilityLabel={
+                            previewLocked
+                                ? `${lang.language}, controlled by the web preview`
+                                : lang.language
+                        }
                         style={({ pressed }) => ({
                             flexDirection: 'row',
                             alignItems: 'center',
@@ -49,9 +77,10 @@ export function LanguageSwitcher(): React.ReactElement | null {
                             borderRadius: 10,
                             backgroundColor: active
                                 ? colors.activeSurface
-                                : pressed
+                                : pressed && !previewLocked
                                   ? colors.pressed
                                   : 'transparent',
+                            opacity: previewLocked && !active ? 0.55 : 1,
                         })}
                     >
                         <View

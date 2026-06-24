@@ -18,6 +18,8 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { secureStore } from '@/services/secureStore';
 import { SECURE_STORE_KEYS } from '@/constants/secureStore';
+import { getWebPreviewRuntime } from '@/config/webPreview';
+import { resolveInitialLocale } from '@/services/previewPreferenceSync';
 import { useLanguageStore } from '@/stores/languageStore';
 
 const resources = {
@@ -81,9 +83,18 @@ export function I18nProvider({ children }: II18nProviderProps): ReactNode {
         let cancelled = false;
 
         const initialise = async (): Promise<void> => {
+            // In the CMS Live Preview the hosting shell pins the language through the
+            // embed URL (`language=<locale>`). Booting straight into that locale means
+            // the mobile frame already matches the web pane, so the shell's initial
+            // SET_PREFERENCES push is a no-op: no post-boot `setLanguage` (which rotates
+            // the token AND invalidates every query) and no locale mismatch to reconcile.
+            // That mismatch — mobile on the device locale, shell on a CMS locale — was
+            // what made the two panes thrash with a query-invalidation storm.
+            const preview = getWebPreviewRuntime();
+            const previewLocale = preview.enabled ? (preview.params.language ?? null) : null;
             const stored = await secureStore.get(SECURE_STORE_KEYS.LANGUAGE_LOCALE);
             const detected = Localization.getLocales()[0]?.languageTag ?? 'en';
-            const locale = stored ?? detected;
+            const locale = resolveInitialLocale(previewLocale, stored, detected);
             if (cancelled) return;
             (globalThis as { __sh_locale?: string }).__sh_locale = locale;
             await i18n.changeLanguage(locale);

@@ -24,6 +24,14 @@ the current build.
 > Audience: mobile build operators (EAS) and plugin authors who ship a
 > mobile package.
 
+> **Mobile preview image.** The `selfhelp-mobile-preview` web image reuses this
+> exact bundling machinery, but runs `scripts/plugins-sync.mjs --snapshot
+> web-preview/preview-plugins.json` against a **committed curated snapshot**
+> (NOT a live backend), so the image always bakes the same official plugin set.
+> Everything below about `registered.ts`, `registeredPluginStyleImpls`, and the
+> `OpenOnWebFallback` runtime path applies identically. See
+> [mobile-preview.md](mobile-preview.md).
+
 ---
 
 ## 1. Lifecycle Overview

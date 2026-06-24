@@ -17,6 +17,7 @@ Engineering documentation for the mobile app. See [../README.md](../README.md) f
 - [development.md](development.md) - Day-to-day workflow, scripts, debug tools, and conventions.
 - [best-practices.md](best-practices.md) - Do/don't list and performance/accessibility notes.
 - [plugins.md](plugins.md) - How the mobile app consumes SelfHelp plugins.
+- [mobile-preview.md](mobile-preview.md) - The `selfhelp-mobile-preview` web image: build mode, embed contract, boot flow, in-container proxy, curated plugin bundling, and live-reload dev.
 - [mobile-ui-tiers-and-distribution.md](mobile-ui-tiers-and-distribution.md) - OSS vs Pro UI adapter tiers, build-time tier selection, and the future per-instance distribution design.
 
 ## Styling

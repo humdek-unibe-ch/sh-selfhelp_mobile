@@ -4,6 +4,324 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.20
+
+### Live Preview: bottom tab bar no longer disappears with the device frame off
+
+Fixes the CMS **Live Preview** symptom where the mobile pane rendered the page
+content and the drawer menu worked, but the **bottom tab bar was missing** —
+even though the same tabs render in the standalone mobile web image.
+
+Root cause: the standalone image runs with the device frame **on**, which binds
+the web root to a fixed device viewport (`components/dev/PhoneFrame.tsx`). The
+Live Preview embeds the app with the frame **off** (`frame=0`), and Expo's
+default web shell does not bind the root to the viewport height — so the app
+grew to its content height inside the iframe and the tab bar was pushed below
+the visible (scrolled) area.
+
+The frame-off path now injects a small base stylesheet that binds
+`html`/`body`/`#root` to `100%` height and clips overflow, mirroring how the
+framed mode bounds the root. The app scrolls internally and the tab bar stays
+pinned to the bottom, with or without the device frame. No contract change.
+
+### Live Preview: hide the desktop scrollbar so the preview looks like a device
+
+The web preview showed a permanent desktop scrollbar track down the right edge,
+which made the embedded mobile pane read like a web page rather than a phone —
+native iOS/Android auto-hide their scroll indicators and only flash them while
+scrolling. `components/dev/PhoneFrame.tsx` now appends a scrollbar-hiding rule
+(`::-webkit-scrollbar { display: none }` + `scrollbar-width: none`) to its
+injected `<style>` tag in **both** frame modes. Scrolling still works via wheel,
+trackpad, touch, and keyboard; only the visible track is removed. The rule is
+scoped to that injected tag, so it only affects the dev / web-preview builds,
+never production native. No contract change.
+
+## 0.1.19
+
+### Live Preview: theme syncs live, language is URL-bound (no more loop)
+
+Fixes the CMS **Live Preview** symptom where the embedded mobile frame stayed on
+"Starting up…" with the console looping endlessly, the network log flooding with
+proxied `/cms-api` requests, the drawer/tab menu rendering empty, and Chromium
+logging *"Throttling navigation to prevent the browser from hanging"*
+(`crbug 1038223`).
+
+Root cause: the shell pushed its **language** to the frame over the cross-frame
+bridge, which made the frame call `setLanguage` — that rotates the scoped preview
+token **and** runs a full `invalidateQueries`. Under the two-way echo it looped
+into a query-invalidation storm that (a) flooded the bridge + network and (b)
+kept `usePages` from ever completing its first fetch, so `getMenuTree()` stayed
+empty and the drawer/tabs showed *"No menu pages"*.
+
+The fix splits the two preferences by cost:
+
+- **Theme (light / dark / auto) still syncs live, both ways
+  (`components/preview/PreviewSyncBridge.tsx`).** Applying a colour scheme is
+  synchronous and free (no token, no refetch), so the bridge keeps the two-way
+  `postMessage` sync — guarded by `lastSyncedPrefsRef` so a value the shell just
+  pushed is never echoed back.
+- **Language is no longer synced over the bridge.** The frame already boots into
+  the preview's pinned language from the embed URL (`language=<locale>`, see
+  `providers/I18nProvider.tsx`), and the shell now changes the preview language by
+  **remounting the iframe** at the new `language` param — never by pushing a
+  locale the frame would have to `setLanguage` into. `applyPreferences` and the
+  outbound report now carry the colour scheme only (`locale: null`). This removes
+  the `setLanguage` call — and therefore the invalidation storm — from the live
+  sync path entirely.
+- **The mobile account language list is read-only inside the paired Live
+  Preview.** Its token is intentionally GET-only and language-scoped, so trying
+  to call the normal `/auth/set-language` flow could only fail and then refetch
+  menu/page data outside the token scope. The list now shows "Controlled by the
+  web preview"; the web pane's language selector is the single authority.
+- **The bridge no longer announces READY before the mobile route exists.**
+  Previously the shell immediately answered READY with `NAVIGATE(test)` while
+  `GateController` was issuing its own initial `router.replace(test)`. Those
+  competing startup replaces flooded Expo Router and triggered Chromium's
+  navigation-throttling protection, leaving the frame permanently on "Starting
+  up…". READY is now sent once, only after bootstrap and the requested initial
+  page/modal are committed; the shell's reply is then a same-page no-op.
+- The standalone (non-preview) app is unchanged: theme + language still come from
+  stored choice → device locale, and the in-app language switcher still calls
+  `setLanguage`.
+
+### Off-menu pages open as a modal on direct navigation too
+
+- **`app/(app)/[keyword].tsx`** now applies the same app-wide rule as in-app
+  navigation (`usePageNavigation`): visiting an OFF-MENU page directly (typed URL,
+  refresh, or deep link) presents it as a **modal sheet over home** instead of a
+  full-screen dead end, so closing returns to the app. ON-MENU pages still route
+  full-screen, and the Live Preview embed is exempt (its own router already owns
+  the modal decision).
+
+## 0.1.18
+
+### Live Preview: the embedded frame can no longer hang on "Starting up…"
+
+Fixes the long-standing CMS **Live Preview** symptom where clicking *reload*
+(or toggling the mobile pane) left the embedded mobile frame stuck on the
+"Starting up…" splash forever, while opening the same iframe URL in a fresh tab
+loaded fine.
+
+- **Server hydration now has a hard failsafe
+  (`services/serverHydrationFailsafe.ts`, `providers/ServerProvider.tsx`).** The
+  splash gate is `ready = serverHydrated && (!serverUrl || bootstrapped)`.
+  `AuthProvider` already guaranteed `bootstrapped` flips within a ceiling, but
+  nothing guaranteed `serverHydrated`: if `hydrateServerStore()` rejected (an
+  exception before `setHydrated(true)`) or silently hung — a wedged dev
+  preview-session exchange, or a background-tab `setTimeout` / Metro HMR hiccup
+  on a rapid in-iframe reload — `serverHydrated` stayed `false` forever. The
+  hydration promise is now wrapped with a `catch`/`finally` and an idempotent
+  ceiling timer that always releases the splash. Internal-only; no API, schema,
+  or bridge-contract change.
+
+## 0.1.17
+
+### Live Preview: shared theme + language with the web pane
+
+The embedded mobile frame now mirrors the colour scheme and language of the CMS
+**Live Preview** web pane, both ways.
+
+- **Theme + language sync (`components/preview/PreviewSyncBridge.tsx`).** The
+  bridge applies a `selfhelp-preview:set-preferences` push from the shell (flips
+  `useThemeStore` and switches language via `setLanguage`, no reload) and reports
+  a local change made in the mobile profile back with
+  `selfhelp-preview:preferences-changed`, so changing dark/light or the language
+  in either pane updates the other. A per-frame guard stops the two panes from
+  ping-ponging. Requires `@selfhelp/shared >= 1.15.3`; pairs with frontend
+  `>= 0.1.39`.
+
+## 0.1.16
+
+### Live Preview: off-menu pages open as a modal during synced navigation
+
+Closes the gap where navigating the synced **Live Preview** to an off-menu page
+showed it full-screen instead of as a modal.
+
+- **Off-menu navigate commands open a modal (`components/preview/PreviewSyncBridge.tsx`).**
+  An inbound `selfhelp-preview:navigate` from the shell now applies the **same
+  app-wide rule as in-app navigation** (`components/shell/usePageNavigation.ts`):
+  an **off-menu** keyword (footer-only / unassigned / headless / unknown, e.g.
+  `impressum`) opens as a **modal sheet** over the current page instead of routing
+  full-screen, while **on-menu** keywords still route full-screen. So clicking an
+  off-menu page in the web pane now shows it as a modal in the mobile frame, exactly
+  like the normal mobile app. The bridge reads the menu tree (`usePages`) to make
+  the decision. Floor-neutral for the shell — the bridge message contract is
+  unchanged (pairs with frontend `>= 0.1.38`).
+- **No more web-only push-notification warnings (`providers/NativeBootstrap.tsx`).**
+  Push registration and the notification-response listener are now skipped when the
+  app runs on web (the CMS live preview), where `expo-notifications` only logs
+  "not supported on web" noise and the listener is a no-op. Native iOS/Android push
+  behaviour is unchanged.
+
+## 0.1.15
+
+### App-wide off-menu page modals, status-aware page errors, in-frame debug FAB
+
+Generalises the preview-only "off-menu page opens as a modal" behaviour into
+**core app navigation**, gives CMS pages the same not-found / no-access /
+sign-in surfaces the web frontend shows, and restores the floating debug FAB
+inside the embedded CMS **Live Preview** frame (pairs with frontend `>= 0.1.36`).
+
+- **Off-menu pages open as a modal app-wide (`components/shell/usePageNavigation.ts`).**
+  Every in-app navigation to a page **not on the navigation menu** (a `Button`
+  or `Link` to a footer-only / unassigned / headless / unknown keyword) now opens
+  it as a **modal sheet over the current page** instead of routing full-screen, so
+  it is reachable in context and **closing returns to the previous page**. On-menu
+  pages route full-screen exactly as before; external URLs / "open in new tab"
+  still open in the OS. The preview-only store/host were renamed and generalised
+  (`stores/previewModalStore.ts` → `stores/pageModalStore.ts`;
+  `components/preview/PreviewModalHost.tsx` → `components/shell/PageModalHost.tsx`),
+  and the Live Preview boot + sync bridge reuse the same mechanism.
+- **Status-aware page errors (`components/renderer/CmsPageScreen.tsx`).** A failed
+  page fetch now maps the backend HTTP status to the same states the web frontend
+  shows — **404 → "Page not found"**, **403 → "Access denied"**, **401 → "Sign in
+  required"** (anonymous 401/403 still bounce to login), and network / 5xx →
+  retryable error. Because this screen also backs the modal host, a missing or
+  forbidden page reads identically in the app and in both Live Preview panes.
+- **In-frame debug FAB in the Live Preview (`components/dev/FloatingDebugPanel.tsx`).**
+  The floating "D" debug button is shown again inside the embedded preview frame;
+  only an explicit `hideDebugPanel=1` suppresses it — being embedded (`embed=1`)
+  no longer hides it, so logs / queries / auth / server / info stay reachable
+  while previewing.
+- **Dark mode reads correctly on the page-state screens
+  (`components/feedback/ErrorScreen.tsx`, `components/feedback/LoadingScreen.tsx`).**
+  The not-found / no-access / sign-in / error and loading surfaces are now
+  **theme-aware** (background, title, body, buttons, spinner follow the active
+  scheme) instead of a black-on-dark title + grey button that looked broken in the
+  dark device frame.
+- **Language picker shown in the profile during embedded preview
+  (`components/shell/LanguageSwitcher.tsx`).** The account sheet's language list is
+  now visible inside the CMS **Live Preview** too — matching the normal app — so an
+  editor can switch language from the mobile profile; the CMS toolbar's language
+  control still works (both drive the same `setLanguage`, last action wins).
+
+## 0.1.14
+
+### CMS Live Preview sync bridge + draft banner
+
+Adopts the `@selfhelp/shared >= 1.15.2` Live Preview bridge contract so the
+embedded mobile preview stays on the **same page** as the web frame, and makes
+draft mode unmistakable inside the device frame (supports the redesigned CMS
+**Live Preview**, frontend `>= 0.1.35`).
+
+- **Sync bridge (`components/preview/PreviewSyncBridge.tsx`).** When the frame is
+  embedded with `previewShell=1`, it reports every in-app navigation up to the
+  Live Preview shell (`selfhelp-preview:navigated`, with the page keyword) and
+  accepts a `selfhelp-preview:navigate` command down from the shell — performing a
+  **soft** Expo Router `replace` (no reload) so the mobile frame follows the web
+  one and vice-versa. The shell owns the canonical page and ignores the echo of a
+  command it just sent, so web↔mobile never ping-pong. Messages are only
+  exchanged with the shell origin from `parentOrigin` (never `'*'`); web-only,
+  native is a no-op.
+- **`previewShell` / `parentOrigin` embed-contract params.** Parsed by
+  `config/webPreviewContract.ts` (names sourced from the shared bridge contract);
+  default off, so a non-synced embed is unchanged.
+- **Draft banner (`components/preview/PreviewDraftBanner.tsx`).** A prominent
+  orange **"PREVIEW MODE - This page shows draft content"** banner now renders at
+  the top of the framed viewport whenever the preview is rendering draft content
+  (`preview=true`), mirroring the web frame's banner so an editor can always trust
+  which mode the rendered page is in.
+- **Reload-safe embed runtime.** The initial validated iframe query is retained
+  in versioned `sessionStorage`. After Expo Router removes the query from the
+  visible route, a document reload or Fast Refresh module reset restores the
+  preview session, backend override, draft/language settings, and bridge origin
+  instead of dropping into the development server picker.
+
+## 0.1.13
+
+### Reload-resilient CMS Live Preview session + dark-mode login fix
+
+Makes the in-browser mobile preview survive reloads and HMR (so the redesigned
+CMS **Live Preview**, frontend `>= 0.1.34`, no longer bricks or freezes when a
+frame reloads), and fixes the login accent in dark mode.
+
+- **Preview session cached in `sessionStorage`.** The one-time `previewSession`
+  code is single-use, so a live-reload / HMR refresh of the preview iframe used to
+  re-exchange an **already-consumed** code and fail (a blank, dead pane). The
+  exchanged short-lived scoped token is now cached in `sessionStorage` **keyed by
+  the one-time code** (`services/mobilePreviewSession.ts`); a reload within the
+  session reuses the cached token instead of re-exchanging, and only mints afresh
+  when the CMS hands over a new code. `providers/ServerProvider.tsx` reads the
+  cache before exchanging and writes it after. In-memory only for the browser
+  preview tab; no token is persisted to disk and nothing changes for the native
+  app.
+- **Login submit button & links readable in dark mode.** The seeded neutral
+  `dark`/`black` login accent (near-black) blended into a dark-mode background.
+  `components/styles/auth/Login.tsx` now treats that accent **adaptively**,
+  falling back to the theme primary in dark mode so the button and the
+  reset/register links stay legible; light mode is unchanged.
+
+## 0.1.12
+
+### Off-menu pages open as a modal in the CMS Live Preview
+
+Supports the new full-screen CMS **Live Preview** (frontend `>= 0.1.33`): a page
+that is **not on the navigation menu** has no menu entry to reach it, so the
+preview now presents it as a **modal sliding up over home** — immediately, on
+boot — instead of routing to a bare full-screen page. On-menu pages are routed to
+as before.
+
+- **`modal` embed-contract param.** `config/webPreviewContract.ts` parses a new
+  tri-state `modal` flag: `auto` (default) presents the keyword as a modal **only
+  when it is off-menu** (no `navPosition` / headless); `on` always presents it as
+  a modal (explicit override, e.g. a "preview in modal" button); `off` always
+  routes full-screen. Unknown/blank values fall back to `auto`. The CMS frontend
+  builder emits the matching `modal` param.
+- **Boot presentation decision.** `app/_layout.tsx` resolves the presentation once
+  per preview session; in `auto` it waits for the navigation pages so the
+  on/off-menu decision is correct, then either opens the modal (off-menu) or
+  routes to the keyword (on-menu).
+- **`PreviewModalHost` + `previewModalStore`.** A dependency-light React Native
+  `Modal` host (no third-party sheet) renders the off-menu page via the existing
+  `CmsPageScreen` over home, with a title + close button; closing returns to home.
+- **`isKeywordOnMenu` nav helper** added to `components/shell/navigationUtils.ts`
+  and covered, with the `modal` parsing, by the contract unit tests.
+
+## 0.1.11
+
+### Mobile preview web image (`selfhelp-mobile-preview`)
+
+Adds a dedicated **web-export build mode** so the Expo app can be served as the
+in-browser mobile preview embedded by the CMS page editor. This is the mobile
+half of the cross-repo Mobile Preview Service (core >= 0.1.19, `@selfhelp/shared`
+>= 1.14.25, manager >= 1.6.5).
+
+- **`APP_WEB_PREVIEW` build mode + embed contract.** `config/webPreviewContract.ts`
+  is a pure, unit-tested parser for the iframe query string
+  (`embed`, `keyword`, `device`, `orientation`, `frame`, `preview`,
+  `previewSession`, `hideDebugPanel`, `banner`, `language`, dev-only `backendUrl`);
+  `config/webPreview.ts` is the runtime accessor. The CMS builds this URL with the
+  matching builder on the frontend side.
+- **One-time code -> scoped JWT.** On boot the preview exchanges its
+  `previewSession` one-time code via `POST /mobile-preview/session/exchange` for a
+  short-lived, in-memory `purpose: 'mobile_preview'` JWT and talks to the private
+  backend through a same-origin base — the admin token is never exposed.
+- **Session-only dev overrides + keyword routing.** Device / orientation / preview
+  flags from the embed URL are applied to the dev-mode store without persistence
+  (hydration-safe), and the app routes to the requested page `keyword` on boot.
+- **In-container static + proxy server** (`web-preview/server.mjs`) serves the
+  Expo web export, exposes `/version.json` (image version + `mobileRendererVersion`
+  + `bundledPlugins`) and `/healthz`, and proxies a narrow `/cms-api` allowlist to
+  the backend so the backend stays private.
+- **Curated plugin bundling.** `web-preview/preview-plugins.json` snapshots the
+  official plugins baked into the image; `plugins-sync.mjs --snapshot` reads it at
+  build time so listed plugins render natively (RN-on-web). Every other plugin
+  falls back to `OpenOnWebFallback` (deep-link to the web frontend).
+- **Release CI** (`.github/workflows/web-preview-release.yml`): builds + pushes
+  the image, attaches SBOM/Trivy/cosign, emits the signed
+  `mobile-preview-release.json` (incl. `bundledPlugins` + `mobileRendererVersion`)
+  + `release-manifest.json`, and `repository_dispatch`es the registry to auto-stage
+  the release. The descriptor now also emits **top-level**, range-cleaned
+  `reactNativeVersion` / `expoSdkVersion` (alongside the raw `builtFrom.*`
+  provenance), matching `@selfhelp/shared` `MobilePreviewRelease` (>= 1.14.26) and
+  the registry schema — so the manager's dual-axis plugin gate reads them on both
+  the auto-staging AND the manual `assemble-release --from` publish path.
+- **Preview session exchange uses the shared contract.**
+  `services/mobilePreviewSession.ts` now imports `MOBILE_PREVIEW_ENDPOINTS.EXCHANGE`
+  and `IMobilePreviewExchangeResponse` from `@selfhelp/shared` instead of a local
+  path constant + ad-hoc envelope type, so the one-time-code → scoped-JWT exchange
+  stays in lockstep with the backend contract.
+
 ## 0.1.10
 
 ### Fix anonymous page load: stop the `preview=true` 401 loop, reach login again

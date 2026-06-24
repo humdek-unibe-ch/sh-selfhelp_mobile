@@ -3,15 +3,15 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 import { Linking, Pressable, Text } from 'react-native';
-import { useRouter } from 'expo-router';
 import type { IStyleProps } from '@/components/renderer/types';
+import { usePageNavigation } from '@/components/shell/usePageNavigation';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readBooleanField, readField, useInterpolatedField } from '@/components/renderer/useField';
 import { colorToHex } from '@selfhelp/shared';
 import { useAppColors } from '@/hooks/useAppColors';
 
 export function Link({ section, values }: IStyleProps): React.ReactElement {
-    const router = useRouter();
+    const navigateToPage = usePageNavigation();
     const label = useInterpolatedField(section, 'label', values);
     const url = useInterpolatedField(section, 'url', values);
     const openInNewTab = readBooleanField(section, 'open_in_new_tab', false);
@@ -27,8 +27,10 @@ export function Link({ section, values }: IStyleProps): React.ReactElement {
             className={buildSectionClasses(section)}
             onPress={() => {
                 if (!url) return;
+                // External URLs open in the OS; internal targets go through the
+                // shared navigator so OFF-MENU pages open as a modal sheet.
                 if (openInNewTab || /^https?:\/\//.test(url)) void Linking.openURL(url);
-                else router.push(url);
+                else navigateToPage(url);
             }}
             accessibilityRole="link"
         >

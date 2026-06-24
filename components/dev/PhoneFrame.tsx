@@ -12,8 +12,11 @@ SPDX-License-Identifier: MPL-2.0
  * page on first mount. So instead we inject a `<style>` tag that
  * constrains `<body>` and the root container via CSS, and render no
  * JSX at all. The React tree is untouched; only the visible chrome is
- * tweaked. Toggling the frame on/off is just inserting/removing the
- * tag.
+ * tweaked. Toggling the frame on/off swaps the tag content: device
+ * chrome when on, and a plain full-viewport binding when off — so the
+ * embedded CMS preview (which runs with the frame off) still pins the
+ * bottom tab bar instead of letting an unbounded root push it below
+ * the fold.
  *
  * Geometry:
  *
@@ -35,6 +38,51 @@ import { useDevModeStore, type TPreviewDevice, type TPreviewOrientation } from '
 const STYLE_TAG_ID = 'sh-phone-frame-style';
 const ROOT_SELECTOR = 'body > #root, body > #__next';
 const PORTAL_SELECTOR = 'body > div:not(#root):not(#__next)';
+
+/**
+ * Applied when the device frame is OFF. Expo's default web shell does not
+ * bind the root container to the viewport height, so without this the app
+ * grows to its content height and the bottom tab bar is pushed past the
+ * visible area (notably inside the CMS live-preview iframe, which embeds the
+ * app with `frame=0`). Binding html/body/#root to 100% height makes the app
+ * scroll internally and keeps the tab bar pinned, mirroring how the framed
+ * mode bounds the root.
+ */
+const BASE_VIEWPORT_CSS = `
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: 100% !important;
+        min-height: 100% !important;
+    }
+    body {
+        overflow: hidden !important;
+    }
+    ${ROOT_SELECTOR} {
+        height: 100% !important;
+        min-height: 100% !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
+    }
+`;
+
+/**
+ * Hide the desktop browser scrollbar in the device preview so it reads like a
+ * real device: native iOS/Android auto-hide their scroll indicators (they only
+ * flash while scrolling), whereas desktop browsers — notably on Windows — render
+ * a permanent track that makes the preview look like a web page, not a phone.
+ * Scrolling still works via wheel / trackpad / touch / keyboard; only the
+ * visible track is removed. Appended in BOTH frame modes and scoped to this
+ * injected tag, which only exists on dev / web-preview builds.
+ */
+const HIDE_SCROLLBAR_CSS = `
+    *::-webkit-scrollbar {
+        display: none !important;
+    }
+    * {
+        scrollbar-width: none !important;
+    }
+`;
 
 interface IDeviceSize {
     width: number;
@@ -131,7 +179,9 @@ function buildFrameCss(device: TPreviewDevice, orientation: TPreviewOrientation)
 
 export function PhoneFrame(): React.ReactElement | null {
     if (Platform.OS !== 'web') return null;
-    if (!runtimeConfig.isDevInstance) return null;
+    // Available on dev instances AND in the web-preview image (the CMS embeds
+    // it to QA layout inside a fixed device viewport).
+    if (!runtimeConfig.isDevInstance && !runtimeConfig.webPreviewEnabled) return null;
     return <PhoneFrameInner />;
 }
 
@@ -143,13 +193,13 @@ function PhoneFrameInner(): React.ReactElement | null {
     useEffect(() => {
         if (typeof document === 'undefined') return undefined;
         const existing = document.getElementById(STYLE_TAG_ID);
-        if (!enabled) {
-            if (existing) existing.remove();
-            return undefined;
-        }
         const tag = existing ?? document.createElement('style');
         tag.id = STYLE_TAG_ID;
-        tag.innerHTML = buildFrameCss(device, orientation);
+        // Frame on: device chrome. Frame off: still bind the root to the viewport
+        // so the bottom tab bar stays pinned (the CMS preview embeds with frame=0).
+        // Either way, hide the desktop scrollbar so the preview reads like a device.
+        tag.innerHTML =
+            (enabled ? buildFrameCss(device, orientation) : BASE_VIEWPORT_CSS) + HIDE_SCROLLBAR_CSS;
         if (!existing) document.head.appendChild(tag);
         return () => {
             tag.remove();
