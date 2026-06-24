@@ -4,6 +4,38 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.20
+
+### Live Preview: bottom tab bar no longer disappears with the device frame off
+
+Fixes the CMS **Live Preview** symptom where the mobile pane rendered the page
+content and the drawer menu worked, but the **bottom tab bar was missing** —
+even though the same tabs render in the standalone mobile web image.
+
+Root cause: the standalone image runs with the device frame **on**, which binds
+the web root to a fixed device viewport (`components/dev/PhoneFrame.tsx`). The
+Live Preview embeds the app with the frame **off** (`frame=0`), and Expo's
+default web shell does not bind the root to the viewport height — so the app
+grew to its content height inside the iframe and the tab bar was pushed below
+the visible (scrolled) area.
+
+The frame-off path now injects a small base stylesheet that binds
+`html`/`body`/`#root` to `100%` height and clips overflow, mirroring how the
+framed mode bounds the root. The app scrolls internally and the tab bar stays
+pinned to the bottom, with or without the device frame. No contract change.
+
+### Live Preview: hide the desktop scrollbar so the preview looks like a device
+
+The web preview showed a permanent desktop scrollbar track down the right edge,
+which made the embedded mobile pane read like a web page rather than a phone —
+native iOS/Android auto-hide their scroll indicators and only flash them while
+scrolling. `components/dev/PhoneFrame.tsx` now appends a scrollbar-hiding rule
+(`::-webkit-scrollbar { display: none }` + `scrollbar-width: none`) to its
+injected `<style>` tag in **both** frame modes. Scrolling still works via wheel,
+trackpad, touch, and keyboard; only the visible track is removed. The rule is
+scoped to that injected tag, so it only affects the dev / web-preview builds,
+never production native. No contract change.
+
 ## 0.1.19
 
 ### Live Preview: theme syncs live, language is URL-bound (no more loop)

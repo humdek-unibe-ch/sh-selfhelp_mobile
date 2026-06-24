@@ -6,9 +6,9 @@ SPDX-License-Identifier: MPL-2.0
 
 Audience: Mobile developers, technical operators, build maintainers.
 Status: active.
-Applies to: SelfHelp2 Expo/React Native mobile app (`sh-selfhelp_mobile`) `>=0.1.19`.
+Applies to: SelfHelp2 Expo/React Native mobile app (`sh-selfhelp_mobile`) `>=0.1.20`.
 Last verified: 2026-06-24.
-Source of truth: `config/webPreviewContract.ts`, `config/webPreviewSession.ts`, `config/webPreview.ts`, `app/_layout.tsx`, `providers/I18nProvider.tsx`, `components/shell/LanguageSwitcher.tsx`, `components/shell/PageModalHost.tsx`, `components/shell/usePageNavigation.ts`, `components/preview/PreviewSyncBridge.tsx`, `components/preview/PreviewDraftBanner.tsx`, `services/previewBridgeState.ts`, `services/previewPreferenceSync.ts`, `stores/pageModalStore.ts`, `components/shell/navigationUtils.ts`, `web-preview/server.mjs`, `web-preview/preview-plugins.json`, `web-preview/Dockerfile`, `scripts/plugins-sync.mjs`, `components/renderer/OpenOnWebFallback.tsx`, `.github/workflows/web-preview-release.yml`.
+Source of truth: `config/webPreviewContract.ts`, `config/webPreviewSession.ts`, `config/webPreview.ts`, `app/_layout.tsx`, `providers/I18nProvider.tsx`, `components/shell/LanguageSwitcher.tsx`, `components/shell/PageModalHost.tsx`, `components/shell/usePageNavigation.ts`, `components/preview/PreviewSyncBridge.tsx`, `components/preview/PreviewDraftBanner.tsx`, `components/dev/PhoneFrame.tsx`, `services/previewBridgeState.ts`, `services/previewPreferenceSync.ts`, `stores/pageModalStore.ts`, `components/shell/navigationUtils.ts`, `web-preview/server.mjs`, `web-preview/preview-plugins.json`, `web-preview/Dockerfile`, `scripts/plugins-sync.mjs`, `components/renderer/OpenOnWebFallback.tsx`, `.github/workflows/web-preview-release.yml`.
 
 The **mobile preview** is the Expo app built as a **web export** and served as a
 standalone, manager-distributed Docker image (`selfhelp-mobile-preview`). A CMS
@@ -62,7 +62,7 @@ frontend's `mobilePreviewUrl.ts` builder — keep the two in sync byte-for-byte.
 | `keyword`        | string \| null                    | `null`     | CMS page keyword to route to on boot. |
 | `device`         | `phone` \| `tablet`               | `phone`    | Simulated device class. |
 | `orientation`    | `portrait` \| `landscape`         | `portrait` | Simulated orientation. |
-| `frame`          | bool                              | `true`     | Draw the device frame (`frame=0` disables it even when embedded). |
+| `frame`          | bool                              | `true`     | Draw the device frame. `frame=0` disables the in-app bezel even when embedded (the Live Preview uses `frame=0` and draws its own bezel); the web root stays viewport-bound so the bottom tab bar still pins — see §2a. |
 | `preview`        | bool                              | `false`    | Fetch draft/unpublished CMS content. |
 | `previewSession` | string \| null                    | `null`     | One-time preview-session code to exchange for a scoped JWT. |
 | `hideDebugPanel` | bool                              | `false`    | Suppress the floating debug FAB. |
@@ -79,6 +79,27 @@ accepts the literal `auto`; unknown/blank values fall back to `auto`. The
 `previewShell` / `parentOrigin` param **names** come from the shared bridge
 contract (`@selfhelp/shared`), the single source of truth shared with the web
 frame and the Live Preview shell.
+
+### 2a. Device frame and viewport binding (`components/dev/PhoneFrame.tsx`)
+
+`PhoneFrame` renders no JSX — it injects a `<style>` tag. With `frame=1` it sizes
+`html`/`body`/`#root` to a fixed device viewport and draws the rounded bezel.
+With `frame=0` (the mode the CMS Live Preview embeds in — the shell draws its own
+bezel) it still injects a **base** stylesheet that binds `html`/`body`/`#root` to
+`100%` height and clips overflow. This matters because Expo's default web shell
+does **not** bind the root to the viewport height: without it the app grows to
+its content height inside the iframe and the **bottom tab bar is pushed below the
+fold** (the drawer menu still works, which is why only the tabs went missing).
+Binding the root makes the app scroll internally and keeps the tab bar pinned,
+with or without the frame.
+
+In **both** modes the injected tag also hides the desktop browser scrollbar
+(`::-webkit-scrollbar { display: none }` + `scrollbar-width: none`) so the
+preview reads like a real device — native iOS/Android auto-hide their scroll
+indicators, whereas desktop browsers (notably Windows) render a permanent track.
+Scrolling still works via wheel / trackpad / touch / keyboard; only the visible
+track is removed. The rule lives in this injected tag, so it only affects the
+dev / web-preview builds, never production native.
 
 ## 3. Boot flow
 
