@@ -6,9 +6,9 @@ SPDX-License-Identifier: MPL-2.0
 
 Audience: Mobile developers, technical operators, build maintainers.
 Status: active.
-Applies to: SelfHelp2 Expo/React Native mobile app (`sh-selfhelp_mobile`) `>=0.1.16`.
+Applies to: SelfHelp2 Expo/React Native mobile app (`sh-selfhelp_mobile`) `>=0.1.19`.
 Last verified: 2026-06-24.
-Source of truth: `config/webPreviewContract.ts`, `config/webPreviewSession.ts`, `config/webPreview.ts`, `app/_layout.tsx`, `components/shell/PageModalHost.tsx`, `components/shell/usePageNavigation.ts`, `components/preview/PreviewSyncBridge.tsx`, `components/preview/PreviewDraftBanner.tsx`, `stores/pageModalStore.ts`, `components/shell/navigationUtils.ts`, `web-preview/server.mjs`, `web-preview/preview-plugins.json`, `web-preview/Dockerfile`, `scripts/plugins-sync.mjs`, `components/renderer/OpenOnWebFallback.tsx`, `.github/workflows/web-preview-release.yml`.
+Source of truth: `config/webPreviewContract.ts`, `config/webPreviewSession.ts`, `config/webPreview.ts`, `app/_layout.tsx`, `providers/I18nProvider.tsx`, `components/shell/LanguageSwitcher.tsx`, `components/shell/PageModalHost.tsx`, `components/shell/usePageNavigation.ts`, `components/preview/PreviewSyncBridge.tsx`, `components/preview/PreviewDraftBanner.tsx`, `services/previewBridgeState.ts`, `services/previewPreferenceSync.ts`, `stores/pageModalStore.ts`, `components/shell/navigationUtils.ts`, `web-preview/server.mjs`, `web-preview/preview-plugins.json`, `web-preview/Dockerfile`, `scripts/plugins-sync.mjs`, `components/renderer/OpenOnWebFallback.tsx`, `.github/workflows/web-preview-release.yml`.
 
 The **mobile preview** is the Expo app built as a **web export** and served as a
 standalone, manager-distributed Docker image (`selfhelp-mobile-preview`). A CMS
@@ -96,7 +96,10 @@ frame and the Live Preview shell.
    `frame` / `banner` are applied to the dev-mode store **without persistence**
    and in a hydration-safe way, so a preview never mutates a real device's saved
    settings.
-5. **Keyword presentation.** When `keyword` is set, the app presents it once per
+5. **Pinned preview locale.** `I18nProvider` applies `language=<locale>` from the
+   embed URL before the preview's page/menu queries settle. It does not call the
+   normal token-rotating `setLanguage()` mutation during preview bootstrap.
+6. **Keyword presentation.** When `keyword` is set, the app presents it once per
    preview session per the `modal` param (see §3a) — either routing full-screen
    to `/[keyword]` or opening it as a modal over home.
 
@@ -156,15 +159,31 @@ When active it implements the shared bridge contract (`@selfhelp/shared`):
 - **Loop-safe.** The shell owns the canonical page and ignores the echo of a
   command it just sent (its per-frame "expected keyword" guard); this bridge also
   skips a command for the page it is already on. So web↔mobile never ping-pong.
+- **READY waits for the initial route.** The listener is installed during
+  bootstrap, but `selfhelp-preview:ready` is emitted only after server/auth
+  bootstrap and after the requested initial page or modal is visible. This keeps
+  the shell's immediate `NAVIGATE` reply from racing `GateController`'s initial
+  `router.replace()`.
+- **Theme-only preference sync.** The bridge accepts/reports the shared
+  preference messages for light/dark/auto, but normalizes every live payload to
+  `{ colorScheme, locale: null }`. Theme remains smooth and two-way without
+  touching auth or page queries.
+- **Language is URL-bound.** The shell changes language by minting/remounting the
+  frame with a new `language=<locale>` URL and language-scoped preview session.
+  The live bridge never calls `setLanguage()`: that operation rotates the token
+  and invalidates all queries, and a two-way locale echo previously created a
+  request loop that left startup spinning and the drawer/tabs empty.
 - **Origin-scoped.** Messages are only sent to / accepted from the shell origin
   handed in via `parentOrigin` (the cross-origin dev case), never `'*'`; foreign
   / malformed messages are dropped by the shared `isPreviewBridgeMessage` guard.
 
-In the embedded Live Preview the **in-app language picker is shown** in the
-account sheet (`components/shell/LanguageSwitcher.tsx`), matching the normal app,
-so an editor can switch language from the mobile profile too. The shell toolbar's
-language control still works (it re-mints the scoped preview session per
-language); both drive the same `setLanguage`, so the last action wins.
+In the embedded Live Preview the language list remains visible in the account
+sheet (`components/shell/LanguageSwitcher.tsx`) but is **read-only** and labeled
+"Controlled by the web preview". The scoped preview token is GET-only and bound
+to the minted language, so the normal `/auth/set-language` mutation is not valid
+there. The web pane's language control is the single authority and re-mints the
+mobile session. Outside the paired preview, the mobile language picker remains
+fully interactive.
 
 The page-state surfaces (`components/feedback/ErrorScreen.tsx`,
 `components/feedback/LoadingScreen.tsx`) are **theme-aware** via `useAppColors`, so

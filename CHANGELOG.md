@@ -4,6 +4,84 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.19
+
+### Live Preview: theme syncs live, language is URL-bound (no more loop)
+
+Fixes the CMS **Live Preview** symptom where the embedded mobile frame stayed on
+"Starting up…" with the console looping endlessly, the network log flooding with
+proxied `/cms-api` requests, the drawer/tab menu rendering empty, and Chromium
+logging *"Throttling navigation to prevent the browser from hanging"*
+(`crbug 1038223`).
+
+Root cause: the shell pushed its **language** to the frame over the cross-frame
+bridge, which made the frame call `setLanguage` — that rotates the scoped preview
+token **and** runs a full `invalidateQueries`. Under the two-way echo it looped
+into a query-invalidation storm that (a) flooded the bridge + network and (b)
+kept `usePages` from ever completing its first fetch, so `getMenuTree()` stayed
+empty and the drawer/tabs showed *"No menu pages"*.
+
+The fix splits the two preferences by cost:
+
+- **Theme (light / dark / auto) still syncs live, both ways
+  (`components/preview/PreviewSyncBridge.tsx`).** Applying a colour scheme is
+  synchronous and free (no token, no refetch), so the bridge keeps the two-way
+  `postMessage` sync — guarded by `lastSyncedPrefsRef` so a value the shell just
+  pushed is never echoed back.
+- **Language is no longer synced over the bridge.** The frame already boots into
+  the preview's pinned language from the embed URL (`language=<locale>`, see
+  `providers/I18nProvider.tsx`), and the shell now changes the preview language by
+  **remounting the iframe** at the new `language` param — never by pushing a
+  locale the frame would have to `setLanguage` into. `applyPreferences` and the
+  outbound report now carry the colour scheme only (`locale: null`). This removes
+  the `setLanguage` call — and therefore the invalidation storm — from the live
+  sync path entirely.
+- **The mobile account language list is read-only inside the paired Live
+  Preview.** Its token is intentionally GET-only and language-scoped, so trying
+  to call the normal `/auth/set-language` flow could only fail and then refetch
+  menu/page data outside the token scope. The list now shows "Controlled by the
+  web preview"; the web pane's language selector is the single authority.
+- **The bridge no longer announces READY before the mobile route exists.**
+  Previously the shell immediately answered READY with `NAVIGATE(test)` while
+  `GateController` was issuing its own initial `router.replace(test)`. Those
+  competing startup replaces flooded Expo Router and triggered Chromium's
+  navigation-throttling protection, leaving the frame permanently on "Starting
+  up…". READY is now sent once, only after bootstrap and the requested initial
+  page/modal are committed; the shell's reply is then a same-page no-op.
+- The standalone (non-preview) app is unchanged: theme + language still come from
+  stored choice → device locale, and the in-app language switcher still calls
+  `setLanguage`.
+
+### Off-menu pages open as a modal on direct navigation too
+
+- **`app/(app)/[keyword].tsx`** now applies the same app-wide rule as in-app
+  navigation (`usePageNavigation`): visiting an OFF-MENU page directly (typed URL,
+  refresh, or deep link) presents it as a **modal sheet over home** instead of a
+  full-screen dead end, so closing returns to the app. ON-MENU pages still route
+  full-screen, and the Live Preview embed is exempt (its own router already owns
+  the modal decision).
+
+## 0.1.18
+
+### Live Preview: the embedded frame can no longer hang on "Starting up…"
+
+Fixes the long-standing CMS **Live Preview** symptom where clicking *reload*
+(or toggling the mobile pane) left the embedded mobile frame stuck on the
+"Starting up…" splash forever, while opening the same iframe URL in a fresh tab
+loaded fine.
+
+- **Server hydration now has a hard failsafe
+  (`services/serverHydrationFailsafe.ts`, `providers/ServerProvider.tsx`).** The
+  splash gate is `ready = serverHydrated && (!serverUrl || bootstrapped)`.
+  `AuthProvider` already guaranteed `bootstrapped` flips within a ceiling, but
+  nothing guaranteed `serverHydrated`: if `hydrateServerStore()` rejected (an
+  exception before `setHydrated(true)`) or silently hung — a wedged dev
+  preview-session exchange, or a background-tab `setTimeout` / Metro HMR hiccup
+  on a rapid in-iframe reload — `serverHydrated` stayed `false` forever. The
+  hydration promise is now wrapped with a `catch`/`finally` and an idempotent
+  ceiling timer that always releases the splash. Internal-only; no API, schema,
+  or bridge-contract change.
+
 ## 0.1.17
 
 ### Live Preview: shared theme + language with the web pane
