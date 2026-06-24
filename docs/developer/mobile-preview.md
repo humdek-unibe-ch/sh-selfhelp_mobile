@@ -6,9 +6,9 @@ SPDX-License-Identifier: MPL-2.0
 
 Audience: Mobile developers, technical operators, build maintainers.
 Status: active.
-Applies to: SelfHelp2 Expo/React Native mobile app (`sh-selfhelp_mobile`) `>=0.1.12`.
-Last verified: 2026-06-23.
-Source of truth: `config/webPreviewContract.ts`, `config/webPreview.ts`, `app/_layout.tsx`, `components/preview/PreviewModalHost.tsx`, `stores/previewModalStore.ts`, `components/shell/navigationUtils.ts`, `web-preview/server.mjs`, `web-preview/preview-plugins.json`, `web-preview/Dockerfile`, `scripts/plugins-sync.mjs`, `components/renderer/OpenOnWebFallback.tsx`, `.github/workflows/web-preview-release.yml`.
+Applies to: SelfHelp2 Expo/React Native mobile app (`sh-selfhelp_mobile`) `>=0.1.16`.
+Last verified: 2026-06-24.
+Source of truth: `config/webPreviewContract.ts`, `config/webPreviewSession.ts`, `config/webPreview.ts`, `app/_layout.tsx`, `components/shell/PageModalHost.tsx`, `components/shell/usePageNavigation.ts`, `components/preview/PreviewSyncBridge.tsx`, `components/preview/PreviewDraftBanner.tsx`, `stores/pageModalStore.ts`, `components/shell/navigationUtils.ts`, `web-preview/server.mjs`, `web-preview/preview-plugins.json`, `web-preview/Dockerfile`, `scripts/plugins-sync.mjs`, `components/renderer/OpenOnWebFallback.tsx`, `.github/workflows/web-preview-release.yml`.
 
 The **mobile preview** is the Expo app built as a **web export** and served as a
 standalone, manager-distributed Docker image (`selfhelp-mobile-preview`). A CMS
@@ -16,6 +16,12 @@ admin embeds it in an iframe inside the page editor to see a page rendered with
 the real mobile renderer. It is the mobile half of the cross-repo **Mobile
 Preview Service** (core `>=0.1.19`, `@selfhelp/shared >=1.14.25`, manager
 `>=1.6.5`, frontend `>=0.1.31`).
+
+The initial validated embed query is retained in versioned `sessionStorage`.
+Expo Router removes the query while navigating to CMS routes, so this snapshot
+lets a document reload or Fast Refresh module reset recover the preview session,
+backend override, language/draft flags, and bridge origin. It is restored only
+inside an iframe and is cleared automatically with the browser tab.
 
 > Operator/route view: [`sh-manager` → operator/update.md](../../../sh-manager/docs/operator/update.md)
 > ("Mobile-preview updates") and operator/domains-and-ports.md ("How the address
@@ -47,6 +53,7 @@ frontend's `mobilePreviewUrl.ts` builder — keep the two in sync byte-for-byte.
   &orientation=portrait|landscape&frame=0|1&preview=true
   &previewSession=<one-time-code>&hideDebugPanel=true&banner=0
   &language=<locale>&modal=auto|on|off&backendUrl=<dev-only>
+  &previewShell=1&parentOrigin=<shell-origin>
 ```
 
 | Param            | Type / values                     | Default    | Meaning |
@@ -63,10 +70,15 @@ frontend's `mobilePreviewUrl.ts` builder — keep the two in sync byte-for-byte.
 | `language`       | string \| null                    | `null`     | Locale override for the render. |
 | `modal`          | `auto` \| `on` \| `off`           | `auto`     | How to present the keyword on boot — see §3a. `auto` opens **off-menu** pages as a modal over home; `on` always modal; `off` always full-screen. |
 | `backendUrl`     | string \| null                    | `null`     | **Dev-only** backend origin override; ignored in the production preview. |
+| `previewShell`   | bool                              | `false`    | Embedded in the CMS **Live Preview** shell — activate the sync bridge (see §3b). |
+| `parentOrigin`   | string \| null                    | `null`     | Shell origin the sync bridge `postMessage`s to (never `'*'`). Inert without `previewShell`. |
 
 Booleans accept `1/true/yes/on` and `0/false/no/off` (case-insensitive); anything
 else falls back to the default. Empty strings normalize to `null`. `modal` also
-accepts the literal `auto`; unknown/blank values fall back to `auto`.
+accepts the literal `auto`; unknown/blank values fall back to `auto`. The
+`previewShell` / `parentOrigin` param **names** come from the shared bridge
+contract (`@selfhelp/shared`), the single source of truth shared with the web
+frame and the Live Preview shell.
 
 ## 3. Boot flow
 
@@ -91,23 +103,82 @@ accepts the literal `auto`; unknown/blank values fall back to `auto`.
 ## 3a. Off-menu pages open as a modal
 
 A page that is **not on the navigation menu** (no `navPosition`, or headless) has
-no drawer/tab entry to reach it, so in the default `modal=auto` the preview
-presents it as a **modal sliding up over home** instead of routing to a bare
-full-screen page. This makes off-menu pages — exactly the ones an author wants to
-"just show" — immediately visible in context.
+no drawer/tab entry to reach it, so it is presented as a **modal sliding up over
+the current page** instead of routing to a bare full-screen page. This makes
+off-menu pages — exactly the ones an author wants to "just show" — immediately
+visible in context. This is **app-wide core behaviour**, not preview-only: it
+applies to every in-app navigation (a `Button`/`Link` to an off-menu keyword) and
+the preview boot reuses the same mechanism.
 
-- **Decision (`app/_layout.tsx`).** Once boot completes, the gate resolves the
-  presentation once: `modal=on` → always modal; `modal=off` → always route;
-  `modal=auto` → **wait for the navigation pages** (`usePages`) and then open a
-  modal when `isKeywordOnMenu(pages, keyword)` is false (off-menu / unknown),
-  otherwise route to `/[keyword]`.
-- **Host (`components/preview/PreviewModalHost.tsx`).** Mounted once at the root,
-  it reads the keyword from `stores/previewModalStore.ts` and renders it via the
+- **Central navigator (`components/shell/usePageNavigation.ts`).** Every in-app
+  "go to this page" affordance (`Button`, `Link`) calls `navigateToPage(target)`,
+  which opens a modal when `isKeywordOnMenu(pages, keyword)` is false (off-menu /
+  unknown) and otherwise `router.push`es `/[keyword]` full-screen. External URLs
+  and "open in new tab" are handled by the caller (OS link), not here.
+- **Preview boot decision (`app/_layout.tsx`).** For the launched preview keyword
+  the gate resolves the presentation once per session: `modal=on` → always modal;
+  `modal=off` → always route; `modal=auto` → **wait for the navigation pages**
+  (`usePages`) and then open a modal when the page is off-menu, otherwise route to
+  `/[keyword]`.
+- **Host (`components/shell/PageModalHost.tsx`).** Mounted once at the root, it
+  reads the keyword from `stores/pageModalStore.ts` and renders it via the
   existing `CmsPageScreen` inside a dependency-light React Native `Modal` (no
-  third-party sheet) with a title + close button; closing returns to home.
-- **On-menu pages are unchanged** — they route full-screen as before. Free
-  navigation within the preview is unaffected; only the **launched** keyword is
-  subject to this rule.
+  third-party sheet) with a title + close button. The underlying route is never
+  changed when the modal opens, so **closing returns to the previous page**.
+- **On-menu pages are unchanged** — they route full-screen as before. Only
+  off-menu targets are subject to the modal rule.
+
+## 3b. Synchronized navigation (Live Preview sync bridge)
+
+The full-screen CMS **Live Preview** shell can show the web frame and this mobile
+frame side-by-side and keep them on the **same page**: click a link in one frame
+and the other follows. The mobile half is `components/preview/PreviewSyncBridge.tsx`
+(web-only; native is a no-op), mounted once at the root and **dormant** unless the
+shell embeds the frame with `previewShell=1` (the activation is read from the
+cached web-preview runtime, so it survives the in-app navigations that drop the
+query string).
+
+When active it implements the shared bridge contract (`@selfhelp/shared`):
+
+- **Reports navigations up.** On every Expo Router path change (and when the boot
+  modal opens an off-menu page) it `postMessage`s `selfhelp-preview:navigated` to
+  the shell with the current page **keyword** (and the preview locale), so the
+  shell can drive the **web** frame to the same page.
+- **Accepts navigate commands down.** On `selfhelp-preview:navigate` from the
+  shell it follows with **no reload** (the scoped preview session and app state are
+  preserved), applying the **same off-menu rule as in-app navigation** (§3a /
+  `usePageNavigation`): an **on-menu** keyword routes full-screen (soft
+  `router.replace` to `/[keyword]` or home), while an **off-menu** keyword
+  (footer-only / unassigned / headless / unknown — e.g. `impressum`) opens as a
+  **modal sheet** over the current page via `usePageModalStore`, exactly like the
+  normal app. A keyword that does not exist lands on the standard not-found state
+  (inside the sheet for an off-menu target).
+- **Loop-safe.** The shell owns the canonical page and ignores the echo of a
+  command it just sent (its per-frame "expected keyword" guard); this bridge also
+  skips a command for the page it is already on. So web↔mobile never ping-pong.
+- **Origin-scoped.** Messages are only sent to / accepted from the shell origin
+  handed in via `parentOrigin` (the cross-origin dev case), never `'*'`; foreign
+  / malformed messages are dropped by the shared `isPreviewBridgeMessage` guard.
+
+In the embedded Live Preview the **in-app language picker is shown** in the
+account sheet (`components/shell/LanguageSwitcher.tsx`), matching the normal app,
+so an editor can switch language from the mobile profile too. The shell toolbar's
+language control still works (it re-mints the scoped preview session per
+language); both drive the same `setLanguage`, so the last action wins.
+
+The page-state surfaces (`components/feedback/ErrorScreen.tsx`,
+`components/feedback/LoadingScreen.tsx`) are **theme-aware** via `useAppColors`, so
+the not-found / no-access / sign-in / error and loading screens read correctly in
+the dark device frame.
+
+## 3c. Draft banner
+
+When the preview renders **draft** content (`preview=true`, mirrored into
+`devModeStore.previewMode`), `components/preview/PreviewDraftBanner.tsx` shows a
+prominent orange **"PREVIEW MODE - This page shows draft content"** banner at the
+top of the framed viewport — the mobile twin of the web frame's
+`PreviewModeIndicator`, so an editor can always trust which mode the rendered page
+is in. Hidden for published previews and the normal app.
 
 ## 4. In-container server (`web-preview/server.mjs`)
 
