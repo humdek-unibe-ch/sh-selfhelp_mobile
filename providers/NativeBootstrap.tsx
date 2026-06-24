@@ -12,6 +12,7 @@ SPDX-License-Identifier: MPL-2.0
  */
 
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 
 import { useAuthStore } from '@/stores/authStore';
 import { consumeInitialLink, subscribeToLinks } from '@/native/deepLinks';
@@ -30,6 +31,11 @@ export function NativeBootstrap(): null {
     const accessToken = useAuthStore((s) => s.accessToken);
 
     useEffect(() => {
+        // Push notifications are a native-only concern. On web (the CMS live
+        // preview runs the app in an iframe) expo-notifications logs noisy
+        // "not supported on web" warnings and the listener is a no-op, so skip
+        // the whole block there.
+        if (Platform.OS === 'web') return undefined;
         if (!accessToken) return undefined;
         let cancelled = false;
         void (async () => {
