@@ -25,6 +25,10 @@ import {
 } from '@/services/mobilePreviewSession';
 import { canonicalizeLoopbackHost } from '@/services/serverSelectionService';
 import { secureStore } from '@/services/secureStore';
+import {
+    ensureServerHydrationCeiling,
+    markServerHydratedFailsafe,
+} from '@/services/serverHydrationFailsafe';
 import { useAuthStore } from '@/stores/authStore';
 import { applyWebPreviewSessionOverrides } from '@/stores/devModeStore';
 import { useServerStore } from '@/stores/serverStore';
@@ -153,8 +157,22 @@ async function hydrateServerStore(): Promise<void> {
 
 export function ServerProvider({ children }: IServerProviderProps): ReactNode {
     useEffect(() => {
+        // Arm the failsafe BEFORE hydration starts so even a synchronous throw or
+        // a silent hang in `hydrateServerStore()` can never strand the splash.
+        ensureServerHydrationCeiling();
         if (!hydrationPromise) {
-            hydrationPromise = hydrateServerStore();
+            hydrationPromise = hydrateServerStore()
+                .catch((e) => {
+                    debugLogger.error(
+                        `server hydration failed: ${(e as Error).message}`,
+                        'ServerProvider',
+                    );
+                })
+                .finally(() => {
+                    // Hydration is meant to always end by marking hydrated; this is
+                    // the belt-and-suspenders for the rejected/early-return paths.
+                    markServerHydratedFailsafe('post-hydrate');
+                });
         }
 
         const unsubscribe = useServerStore.subscribe((state, prev) => {
