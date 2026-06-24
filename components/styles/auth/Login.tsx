@@ -49,6 +49,12 @@ export function Login({ section, values }: IStyleProps): React.ReactElement {
     // so the colour is consistent and `color` works on mobile just like web.
     const sharedColor = readField<string>(section, 'color');
     const accent = sharedColor ? resolveMantineVariant('filled', sharedColor).accent : colors.primary;
+    // A neutral `dark`/`black` accent (the seeded login default) is invisible on
+    // the dark app background — both the filled button and the aux links collapse
+    // to dark-on-dark. In dark mode fall back to the readable brand accent; light
+    // mode keeps the original near-black look.
+    const isNeutralAccent = sharedColor === 'dark' || sharedColor === 'black';
+    const adaptiveAccent = isNeutralAccent && colors.isDark ? colors.primary : accent;
     const buttonVariant = mobileStyleProps(section).buttonVariant ?? 'primary';
 
     const [email, setEmail] = useState('');
@@ -100,7 +106,7 @@ export function Login({ section, values }: IStyleProps): React.ReactElement {
                     void onSubmit();
                 }}
                 variant={buttonVariant}
-                accentColor={sharedColor ? accent : undefined}
+                accentColor={sharedColor ? adaptiveAccent : undefined}
                 isLoading={busy}
                 fullWidth
             />
@@ -111,7 +117,7 @@ export function Login({ section, values }: IStyleProps): React.ReactElement {
                         onPress={() => setAux({ keyword: RESET_PASSWORD_KEYWORD, title: labelPwReset })}
                         hitSlop={8}
                     >
-                        <Text style={{ color: accent, fontSize: 14 }}>{labelPwReset}</Text>
+                        <Text style={{ color: adaptiveAccent, fontSize: 14 }}>{labelPwReset}</Text>
                     </Pressable>
                 ) : null}
                 {labelRegister ? (
@@ -120,7 +126,7 @@ export function Login({ section, values }: IStyleProps): React.ReactElement {
                         onPress={() => setAux({ keyword: REGISTER_KEYWORD, title: labelRegister })}
                         hitSlop={8}
                     >
-                        <Text style={{ color: accent, fontSize: 14 }}>{labelRegister}</Text>
+                        <Text style={{ color: adaptiveAccent, fontSize: 14 }}>{labelRegister}</Text>
                     </Pressable>
                 ) : null}
             </View>
