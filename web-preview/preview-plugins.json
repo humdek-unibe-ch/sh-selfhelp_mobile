@@ -5,9 +5,9 @@
   "plugins": [
     {
       "pluginId": "sh2-shp-survey-js",
-      "version": "0.2.23",
+      "version": "0.2.24",
       "mobilePackage": "@humdek/sh2-shp-survey-js-mobile",
-      "mobilePackageVersion": "0.2.23"
+      "mobilePackageVersion": "0.2.24"
     }
   ]
 }
