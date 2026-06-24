@@ -23,6 +23,11 @@ SPDX-License-Identifier: MPL-2.0
  *     MODAL sheet over the current page (`usePageModalStore`), exactly like the
  *     normal mobile app. A missing keyword lands on the standard page-not-found
  *     state.
+ *   - mirrors the shared colour-scheme + language BOTH ways: it applies a
+ *     `selfhelp-preview:set-preferences` push from the shell (theme + locale, no
+ *     reload) and reports a local change (switched in the mobile profile) back
+ *     with `selfhelp-preview:preferences-changed`, so the web pane and the mobile
+ *     frame always share the same theme/locale.
  *
  * Loop safety: the shell owns the canonical page and ignores the echo of a
  * command it just sent (its per-frame "expected keyword" guard), and this bridge
@@ -40,15 +45,20 @@ import { Platform } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import {
     PREVIEW_BRIDGE_MESSAGE,
+    arePreviewPreferencesEqual,
     isPreviewBridgeMessage,
     previewKeywordFromPath,
+    type IPreviewPreferences,
     type TPreviewBridgeMessage,
 } from '@selfhelp/shared';
 
 import { isKeywordOnMenu } from '@/components/shell/navigationUtils';
 import { getWebPreviewRuntime } from '@/config/webPreview';
 import { usePages } from '@/hooks/usePages';
+import { setLanguage } from '@/services/languageService';
+import { useLanguageStore } from '@/stores/languageStore';
 import { usePageModalStore } from '@/stores/pageModalStore';
+import { useThemeStore } from '@/stores/themeStore';
 
 export function PreviewSyncBridge(): null {
     const pathname = usePathname();
@@ -61,6 +71,12 @@ export function PreviewSyncBridge(): null {
     // the latest pages without re-subscribing.
     const { data: pages } = usePages();
 
+    // Shared colour-scheme + language, synced both ways with the shell. Read as
+    // reactive store state so a local change (mobile profile) drives the outbound
+    // effect; applied via the stores' setters when the shell pushes a change.
+    const themeMode = useThemeStore((s) => s.mode);
+    const syncLocale = useLanguageStore((s) => s.locale);
+
     // Resolved once on mount; refs so the listener (registered once) always reads
     // the latest without re-subscribing.
     const activeRef = useRef(false);
@@ -69,6 +85,9 @@ export function PreviewSyncBridge(): null {
     const currentKeywordRef = useRef<string | null>(null);
     const lastSentRef = useRef<string | null>(null);
     const pagesRef = useRef(pages);
+    // Loop guard for prefs sync: the last prefs we SENT to or RECEIVED from the
+    // shell. Seeded on activation so the initial state is never echoed back.
+    const lastSyncedPrefsRef = useRef<IPreviewPreferences | null>(null);
 
     useEffect(() => {
         pagesRef.current = pages;
@@ -96,6 +115,29 @@ export function PreviewSyncBridge(): null {
         activeRef.current = true;
         parentOriginRef.current = parentOrigin;
         localeRef.current = preview.params.language ?? null;
+        // Seed the prefs guard with the current state so the mount never echoes
+        // it back; the shell's READY→SET_PREFERENCES then makes the web pane
+        // authoritative for the initial theme/language.
+        lastSyncedPrefsRef.current = {
+            colorScheme: useThemeStore.getState().mode,
+            locale: useLanguageStore.getState().locale,
+        };
+
+        // Apply a shared prefs change pushed from the shell (web pane / toolbar):
+        // flip the theme and/or language with no reload. Record it as the last
+        // synced value so the resulting store change isn't echoed back up.
+        const applyPreferences = (prefs: IPreviewPreferences): void => {
+            lastSyncedPrefsRef.current = prefs;
+            if (useThemeStore.getState().mode !== prefs.colorScheme) {
+                useThemeStore.getState().setMode(prefs.colorScheme);
+            }
+            if (prefs.locale && useLanguageStore.getState().locale !== prefs.locale) {
+                const match = useLanguageStore
+                    .getState()
+                    .available.find((l) => l.locale === prefs.locale);
+                if (match) void setLanguage(match.id, match.locale);
+            }
+        };
 
         const goToKeyword = (keyword: string | null): void => {
             if (!keyword) {
@@ -121,6 +163,10 @@ export function PreviewSyncBridge(): null {
         const onMessage = (event: MessageEvent): void => {
             if (event.origin !== parentOriginRef.current) return;
             if (!isPreviewBridgeMessage(event.data)) return;
+            if (event.data.type === PREVIEW_BRIDGE_MESSAGE.SET_PREFERENCES) {
+                applyPreferences(event.data.preferences);
+                return;
+            }
             if (event.data.type !== PREVIEW_BRIDGE_MESSAGE.NAVIGATE) return;
             const next = event.data.keyword;
             // Already there → ignore (defends against a redundant command).
@@ -149,6 +195,22 @@ export function PreviewSyncBridge(): null {
             locale: localeRef.current,
         });
     }, [pathname, modalKeyword, postToParent]);
+
+    // Report a LOCAL prefs change (theme/language switched in the mobile profile)
+    // up to the shell so the web pane follows. The guard skips the echo of a
+    // value the shell just pushed (and the seeded initial state), so the two
+    // panes never ping-pong.
+    useEffect(() => {
+        if (!activeRef.current) return;
+        const prefs: IPreviewPreferences = { colorScheme: themeMode, locale: syncLocale };
+        if (arePreviewPreferencesEqual(lastSyncedPrefsRef.current, prefs)) return;
+        lastSyncedPrefsRef.current = prefs;
+        postToParent({
+            type: PREVIEW_BRIDGE_MESSAGE.PREFERENCES_CHANGED,
+            source: 'mobile',
+            preferences: prefs,
+        });
+    }, [themeMode, syncLocale, postToParent]);
 
     return null;
 }

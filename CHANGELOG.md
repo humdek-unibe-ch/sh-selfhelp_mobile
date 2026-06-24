@@ -4,6 +4,22 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.17
+
+### Live Preview: shared theme + language with the web pane
+
+The embedded mobile frame now mirrors the colour scheme and language of the CMS
+**Live Preview** web pane, both ways.
+
+- **Theme + language sync (`components/preview/PreviewSyncBridge.tsx`).** The
+  bridge applies a `selfhelp-preview:set-preferences` push from the shell (flips
+  `useThemeStore` and switches language via `setLanguage`, no reload) and reports
+  a local change made in the mobile profile back with
+  `selfhelp-preview:preferences-changed`, so changing dark/light or the language
+  in either pane updates the other. A per-frame guard stops the two panes from
+  ping-ponging. Requires `@selfhelp/shared >= 1.15.3`; pairs with frontend
+  `>= 0.1.39`.
+
 ## 0.1.16
 
 ### Live Preview: off-menu pages open as a modal during synced navigation
