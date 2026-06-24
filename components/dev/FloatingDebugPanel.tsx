@@ -51,12 +51,13 @@ const LEVEL_COLOR: Record<TDebugLevel, string> = {
 };
 
 export function FloatingDebugPanel(): React.ReactElement | null {
-    // Dev instances and the web-preview image both expose the panel — except
-    // when the preview is EMBEDDED in the CMS iframe (or `hideDebugPanel=1`),
-    // where the host chrome owns the controls and the FAB must stay hidden.
+    // Dev instances and the web-preview image both expose the panel. The CMS
+    // Live Preview shell embeds the frame with `embed=1` but still wants the
+    // in-frame debug FAB (logs / queries / auth / server / info), so ONLY an
+    // explicit `hideDebugPanel=1` suppresses it — being embedded no longer does.
     if (!runtimeConfig.isDevInstance && !runtimeConfig.webPreviewEnabled) return null;
     const preview = getWebPreviewRuntime();
-    if (preview.enabled && (preview.isEmbedded || preview.params.hideDebugPanel)) return null;
+    if (preview.enabled && preview.params.hideDebugPanel) return null;
     return <FloatingDebugPanelInner />;
 }
 

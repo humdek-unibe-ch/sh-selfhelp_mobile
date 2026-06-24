@@ -48,10 +48,12 @@ import { getWebPreviewRuntime } from '@/config/webPreview';
 import { useAppColors } from '@/hooks/useAppColors';
 import { usePages } from '@/hooks/usePages';
 import { isKeywordOnMenu } from '@/components/shell/navigationUtils';
-import { usePreviewModalStore } from '@/stores/previewModalStore';
+import { PageModalHost } from '@/components/shell/PageModalHost';
+import { usePageModalStore } from '@/stores/pageModalStore';
 import { FloatingDebugPanel } from '@/components/dev/FloatingDebugPanel';
 import { PhoneFrame } from '@/components/dev/PhoneFrame';
-import { PreviewModalHost } from '@/components/preview/PreviewModalHost';
+import { PreviewDraftBanner } from '@/components/preview/PreviewDraftBanner';
+import { PreviewSyncBridge } from '@/components/preview/PreviewSyncBridge';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
 import { LoadingScreen } from '@/components/feedback/LoadingScreen';
 import { PluginVersionMismatchBanner } from '@/components/plugin-runtime/PluginVersionMismatchBanner';
@@ -98,17 +100,17 @@ function GateController(): null {
     //     otherwise route to it. `auto` waits for the nav pages to load so the
     //     on/off-menu decision is correct.
     useEffect(() => {
-        if (!serverHydrated || !bootstrapped) return;
-        if (previewRoutedRef.current) return;
+        if (!serverHydrated || !bootstrapped) return undefined;
+        if (previewRoutedRef.current) return undefined;
         const preview = getWebPreviewRuntime();
         const keyword = preview.params.keyword;
-        if (!preview.enabled || !keyword) return;
+        if (!preview.enabled || !keyword) return undefined;
 
         const present = (asModal: boolean): void => {
             if (previewRoutedRef.current) return;
             previewRoutedRef.current = true;
             if (asModal) {
-                usePreviewModalStore.getState().open(keyword);
+                usePageModalStore.getState().open(keyword);
                 router.replace('/(app)/');
             } else {
                 router.replace({ pathname: '/[keyword]', params: { keyword } });
@@ -118,11 +120,11 @@ function GateController(): null {
         const mode = preview.params.modal;
         if (mode === 'on') {
             present(true);
-            return;
+            return undefined;
         }
         if (mode === 'off') {
             present(false);
-            return;
+            return undefined;
         }
 
         // auto: decide from the nav menu. The CMS normally passes an explicit
@@ -132,7 +134,7 @@ function GateController(): null {
         // nav list isn't available shortly, route full-screen to the keyword.
         if (pages) {
             present(!isKeywordOnMenu(pages, keyword));
-            return;
+            return undefined;
         }
         const timer = setTimeout(() => present(false), 2500);
         return () => clearTimeout(timer);
@@ -293,8 +295,10 @@ export default function RootLayout(): React.ReactElement {
         <AppProviders>
             <PhoneFrame />
             <GateController />
+            <PreviewSyncBridge />
+            <PreviewDraftBanner />
             <RootStackInner />
-            <PreviewModalHost />
+            <PageModalHost />
             <FloatingDebugPanel />
         </AppProviders>
     );

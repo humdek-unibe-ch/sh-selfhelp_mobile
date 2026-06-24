@@ -25,6 +25,10 @@ export function LanguageSwitcher(): React.ReactElement | null {
     const colors = useAppColors();
 
     if (!available.length) return null;
+    // Shown everywhere, INCLUDING the embedded CMS Live Preview — the in-app
+    // picker mirrors the normal app so an editor can switch language from the
+    // mobile profile too (the CMS toolbar's language control still works; last
+    // action wins, both drive the same `setLanguage`).
 
     return (
         <View style={{ gap: 2 }}>

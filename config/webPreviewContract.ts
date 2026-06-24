@@ -3,10 +3,12 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 /**
- * Pure web-preview embed contract: types + parser, with NO runtime/expo
- * imports, so it can be unit-tested directly under `node --test`. The
- * runtime accessor that reads build config + `window.location` lives in
- * `config/webPreview.ts` (which re-exports everything here).
+ * Pure web-preview embed contract: types + parser. The only import is the
+ * Live Preview bridge param NAMES from `@selfhelp/shared` (the single source of
+ * truth for the bridge contract; a pure JS package the `node --test` loader
+ * resolves) — no runtime/expo imports — so it stays unit-testable directly under
+ * `node --test`. The runtime accessor that reads build config + `window.location`
+ * lives in `config/webPreview.ts` (which re-exports everything here).
  *
  * The hosting CMS iframe passes the preview intent through the URL query string:
  *
@@ -14,7 +16,14 @@ SPDX-License-Identifier: MPL-2.0
  *     &orientation=portrait|landscape&frame=0|1&preview=true
  *     &previewSession=<one-time-code>&hideDebugPanel=true&banner=0
  *     &language=<locale>&modal=auto|on|off&backendUrl=<dev-only>
+ *     &previewShell=1&parentOrigin=<shell-origin>
+ *
+ * The last two activate the Live Preview sync bridge (`PreviewSyncBridge`):
+ * `previewShell=1` turns the frame into a synced preview target and
+ * `parentOrigin` is the shell origin the bridge `postMessage`s to.
  */
+
+import { PREVIEW_PARENT_ORIGIN_PARAM, PREVIEW_SHELL_PARAM } from '@selfhelp/shared';
 
 export type TPreviewDevice = 'phone' | 'tablet';
 export type TPreviewOrientation = 'portrait' | 'landscape';
@@ -54,6 +63,14 @@ export interface IWebPreviewParams {
     modal: TPreviewModalMode;
     /** Dev-only backend origin override (ignored in production preview). */
     backendUrl: string | null;
+    /**
+     * `previewShell=1` — the frame is embedded in the CMS Live Preview shell and
+     * should run its sync bridge (report navigations up, accept navigate-to-keyword
+     * commands down). Absent for a plain (non-synced) embed.
+     */
+    previewShell: boolean;
+    /** Shell origin the sync bridge targets its `postMessage` to (never `'*'`). */
+    parentOrigin: string | null;
 }
 
 /** Defaults applied when a param is absent or when not running on web. */
@@ -70,6 +87,8 @@ export const EMPTY_PREVIEW_PARAMS: IWebPreviewParams = {
     language: null,
     modal: 'auto',
     backendUrl: null,
+    previewShell: false,
+    parentOrigin: null,
 };
 
 const TRUE_TOKENS = new Set(['1', 'true', 'yes', 'on']);
@@ -130,5 +149,7 @@ export function parseWebPreviewParams(search: string | URLSearchParams): IWebPre
         language: nonEmptyOrNull(sp.get('language')),
         modal: parseModalMode(sp.get('modal')),
         backendUrl: nonEmptyOrNull(sp.get('backendUrl')),
+        previewShell: parseBool(sp.get(PREVIEW_SHELL_PARAM), false),
+        parentOrigin: nonEmptyOrNull(sp.get(PREVIEW_PARENT_ORIGIN_PARAM)),
     };
 }

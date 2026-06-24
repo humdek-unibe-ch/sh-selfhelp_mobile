@@ -3,18 +3,22 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 /**
- * PreviewModalHost — renders an off-menu CMS page as a MODAL over home during a
- * web-preview session.
+ * PageModalHost — renders an OFF-MENU CMS page as a MODAL sheet over the current
+ * route. APP-WIDE core behaviour, not preview-only.
  *
- * The boot router (`app/_layout.tsx`) decides, per the `modal` embed param, that
- * the previewed keyword should be shown as a modal (off-menu page in `auto`, or
- * an explicit `modal=on`) and stores it in `usePreviewModalStore`. This host —
- * mounted once at the root — renders that page inside a React Native `Modal`
- * sliding up over the home screen, so a page with no menu entry is still
- * reachable in context. Closing returns to home (the underlying route).
+ * Any in-app navigation to a page that has no menu entry routes through
+ * `usePageNavigation()`, which stores the keyword in `usePageModalStore` instead
+ * of pushing a full-screen route. This host — mounted once at the root — renders
+ * that page inside a dependency-light React Native `Modal` sliding up over the
+ * page underneath, so a page with no drawer/tab entry is still reachable in
+ * context. Closing returns to the PREVIOUS page (the underlying route is never
+ * changed when the modal opens).
+ *
+ * The CMS Live Preview boot router reuses the same store to present an off-menu
+ * previewed keyword as a modal over home.
  *
  * Kept dependency-light (RN `Modal`, not a third-party sheet) so it works in the
- * preview web build without extra native modules.
+ * web export (and the preview web build) without extra native modules.
  */
 import { Modal, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,11 +27,11 @@ import { CmsPageScreen } from '@/components/renderer/CmsPageScreen';
 import { findPageByKeyword, getPageLabel } from '@/components/shell/navigationUtils';
 import { useAppColors } from '@/hooks/useAppColors';
 import { usePages } from '@/hooks/usePages';
-import { usePreviewModalStore } from '@/stores/previewModalStore';
+import { usePageModalStore } from '@/stores/pageModalStore';
 
-export function PreviewModalHost(): React.ReactElement | null {
-    const keyword = usePreviewModalStore((s) => s.keyword);
-    const close = usePreviewModalStore((s) => s.close);
+export function PageModalHost(): React.ReactElement | null {
+    const keyword = usePageModalStore((s) => s.keyword);
+    const close = usePageModalStore((s) => s.close);
     const colors = useAppColors();
     const { data: pages } = usePages();
 
@@ -71,7 +75,7 @@ export function PreviewModalHost(): React.ReactElement | null {
                         <Pressable
                             onPress={close}
                             accessibilityRole="button"
-                            accessibilityLabel="Close preview"
+                            accessibilityLabel="Close page"
                             hitSlop={8}
                             style={{
                                 width: 32,

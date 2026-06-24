@@ -3,15 +3,15 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 import { Linking } from 'react-native';
-import { useRouter } from 'expo-router';
 import type { IStyleProps } from '@/components/renderer/types';
 import { MobileButton } from '@/components/ui/adapters';
 import { mobileStyleProps } from '@/components/ui/mobileStyleProps';
+import { usePageNavigation } from '@/components/shell/usePageNavigation';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readBooleanField, readField, useInterpolatedField } from '@/components/renderer/useField';
 
 export function Button({ section, values }: IStyleProps): React.ReactElement {
-    const router = useRouter();
+    const navigateToPage = usePageNavigation();
     const resolved = mobileStyleProps(section);
     const label = useInterpolatedField(section, 'label', values);
     const disabled = resolved.isDisabled ?? readBooleanField(section, 'disabled', false);
@@ -25,13 +25,15 @@ export function Button({ section, values }: IStyleProps): React.ReactElement {
 
     const onPress = (): void => {
         if (!isLink || disabled) return;
+        // Internal page targets go through the shared navigator so OFF-MENU pages
+        // open as a modal sheet (app-wide rule); external URLs open in the OS.
         if (pageKeyword) {
-            router.push(`/${pageKeyword}`);
+            navigateToPage(pageKeyword);
             return;
         }
         if (url) {
-            if (openInNewTab) void Linking.openURL(url);
-            else router.push(url);
+            if (openInNewTab || /^https?:\/\//.test(url)) void Linking.openURL(url);
+            else navigateToPage(url);
         }
     };
 

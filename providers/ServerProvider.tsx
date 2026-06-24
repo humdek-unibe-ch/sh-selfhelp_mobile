@@ -18,7 +18,11 @@ import { runtimeConfig } from '@/config/runtime';
 import { getWebPreviewRuntime } from '@/config/webPreview';
 import { SECURE_STORE_KEYS } from '@/constants/secureStore';
 import { debugLogger } from '@/services/debugLogger';
-import { exchangePreviewSession } from '@/services/mobilePreviewSession';
+import {
+    exchangePreviewSession,
+    readCachedPreviewSession,
+    writeCachedPreviewSession,
+} from '@/services/mobilePreviewSession';
 import { canonicalizeLoopbackHost } from '@/services/serverSelectionService';
 import { secureStore } from '@/services/secureStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -69,21 +73,34 @@ async function hydrateWebPreview(): Promise<boolean> {
     });
 
     if (base && preview.params.previewSession) {
-        try {
-            const session = await exchangePreviewSession(base, preview.params.previewSession);
-            if (session && session.user) {
-                useAuthStore.getState().setSession(session.accessToken, session.user);
-                debugLogger.info('preview session exchanged', 'ServerProvider', {
-                    userId: session.user.id,
-                });
-            } else {
-                debugLogger.warn('preview session exchange returned no token', 'ServerProvider');
+        const code = preview.params.previewSession;
+        // Reuse a still-valid token cached from a prior load of THIS code so a
+        // reload (Expo Web HMR, manual refresh, in-app re-auth) does not try to
+        // re-exchange the already-consumed one-time code and 401 to a blank pane.
+        const cached = readCachedPreviewSession(code);
+        if (cached && cached.user) {
+            useAuthStore.getState().setSession(cached.accessToken, cached.user);
+            debugLogger.info('preview session reused from cache', 'ServerProvider', {
+                userId: cached.user.id,
+            });
+        } else {
+            try {
+                const session = await exchangePreviewSession(base, code);
+                if (session && session.user) {
+                    useAuthStore.getState().setSession(session.accessToken, session.user);
+                    writeCachedPreviewSession(code, session);
+                    debugLogger.info('preview session exchanged', 'ServerProvider', {
+                        userId: session.user.id,
+                    });
+                } else {
+                    debugLogger.warn('preview session exchange returned no token', 'ServerProvider');
+                }
+            } catch (e) {
+                debugLogger.warn(
+                    `preview session exchange failed: ${(e as Error).message}`,
+                    'ServerProvider',
+                );
             }
-        } catch (e) {
-            debugLogger.warn(
-                `preview session exchange failed: ${(e as Error).message}`,
-                'ServerProvider',
-            );
         }
     }
 

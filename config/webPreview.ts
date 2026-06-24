@@ -14,7 +14,9 @@ SPDX-License-Identifier: MPL-2.0
  *
  * Security / behaviour rules baked in here:
  *   - `previewSession` is a one-time code, safe in the URL (short-lived,
- *     single-use, invalid after exchange) — it is NOT persisted.
+ *     single-use, invalid after exchange). The initial embed query is retained
+ *     in `sessionStorage` so a reload can find the scoped-token cache; it is
+ *     never written to durable storage.
  *   - Every parsed value is SESSION-ONLY: callers must apply it without writing
  *     to secure-store/localStorage (see `stores/devModeStore` session overrides).
  *   - `backendUrl` is honoured ONLY in dev live-reload; production preview
@@ -28,6 +30,7 @@ import {
     parseWebPreviewParams,
     type IWebPreviewParams,
 } from '@/config/webPreviewContract';
+import { resolveWebPreviewSearch } from '@/config/webPreviewSession';
 
 export {
     parseWebPreviewParams,
@@ -70,12 +73,46 @@ function currentOrigin(): string | null {
     return window.location.origin ?? null;
 }
 
+function previewSessionStorage(): Storage | null {
+    try {
+        if (typeof window === 'undefined') return null;
+        return window.sessionStorage ?? null;
+    } catch {
+        return null;
+    }
+}
+
+function isEmbeddedWindow(): boolean {
+    try {
+        return typeof window !== 'undefined' && window.parent !== window;
+    } catch {
+        return true;
+    }
+}
+
 /**
  * Resolve the runtime web-preview state from build config + the current URL.
  * Cheap; safe to call from providers / dev components at render time.
  */
+// Once preview engages this session it STAYS engaged, even after the app
+// navigates and the embed query params drop off the URL. Without this latch,
+// chrome suppression / SSE gating / device-frame state would flip back to the
+// normal-app defaults the moment GateController routes to the first keyword (the
+// dev `expo start --web` path has no build flag to fall back on). Preview-vs-not
+// is a whole-session property, so caching the first ENABLED result is correct
+// (and SSR-safe: the disabled branch never caches, so a later embedded load on
+// the same JS context can still engage).
+let cachedRuntime: IWebPreviewRuntime | null = null;
+
 export function getWebPreviewRuntime(): IWebPreviewRuntime {
-    const params = parseWebPreviewParams(currentSearch());
+    if (cachedRuntime) return cachedRuntime;
+
+    const search = resolveWebPreviewSearch(
+        currentSearch(),
+        previewSessionStorage(),
+        isEmbeddedWindow(),
+    );
+    const params = parseWebPreviewParams(search);
 
     // Preview mode engages when the build is the dedicated preview image
     // (APP_WEB_PREVIEW=1) OR — crucially for local `expo start --web` live-reload
@@ -105,11 +142,12 @@ export function getWebPreviewRuntime(): IWebPreviewRuntime {
 
     const webFrontendOrigin = runtimeConfig.webFrontendOrigin ?? currentOrigin();
 
-    return {
+    cachedRuntime = {
         enabled: true,
         isEmbedded: params.embed,
         params,
         apiBase,
         webFrontendOrigin,
     };
+    return cachedRuntime;
 }

@@ -30,7 +30,11 @@ export function CmsPageScreen({ keyword }: ICmsPageScreenProps): React.ReactElem
     const hasChildren = Boolean(navPage?.children?.length);
     const { data, isLoading, error, refetch } = usePageContent(keyword);
     const accessToken = useAuthStore((s) => s.accessToken);
-    const shouldRedirectToLogin = !accessToken && isAuthError(error);
+    const status = httpErrorStatus(error);
+    // Anonymous 401/403 → bounce to login (the page needs a session). An
+    // AUTHENTICATED 401/403/404 falls through to the matching in-place surface
+    // below instead of redirecting.
+    const shouldRedirectToLogin = !accessToken && (status === 401 || status === 403);
     const pathname = usePathname();
     const redirectedRef = useRef(false);
 
@@ -62,6 +66,51 @@ export function CmsPageScreen({ keyword }: ICmsPageScreenProps): React.ReactElem
 
     if (isLoading) return <LoadingScreen message={t('loading')} />;
     if (error || !data) {
+        // Map the backend status to the same states the web frontend shows, so a
+        // missing / forbidden / unauthenticated page reads identically in the app
+        // AND in both Live Preview panes (this screen also backs the modal host).
+        if (status === 404) {
+            return (
+                <ErrorScreen
+                    title={t('page.notFound.title', 'Page not found')}
+                    message={t(
+                        'page.notFound.message',
+                        'The page you are looking for does not exist or has been moved.',
+                    )}
+                    actionLabel={t('page.backHome', 'Back to home')}
+                    onAction={() => router.replace('/(app)/')}
+                />
+            );
+        }
+        if (status === 403) {
+            return (
+                <ErrorScreen
+                    title={t('page.noAccess.title', 'Access denied')}
+                    message={t(
+                        'page.noAccess.message',
+                        "You don't have permission to view this page.",
+                    )}
+                    actionLabel={t('page.backHome', 'Back to home')}
+                    onAction={() => router.replace('/(app)/')}
+                />
+            );
+        }
+        if (status === 401) {
+            return (
+                <ErrorScreen
+                    title={t('page.signInRequired.title', 'Sign in required')}
+                    message={t('page.signInRequired.message', 'Please sign in to view this page.')}
+                    actionLabel={t('auth.login', 'Login')}
+                    onAction={() =>
+                        router.replace({
+                            pathname: '/(public)/login',
+                            params: { redirect: `/${keyword}` },
+                        })
+                    }
+                />
+            );
+        }
+        // Network / 5xx / unknown → retryable generic error.
         return (
             <ErrorScreen
                 title={t('error')}
@@ -69,8 +118,6 @@ export function CmsPageScreen({ keyword }: ICmsPageScreenProps): React.ReactElem
                 onRetry={() => {
                     void refetch();
                 }}
-                actionLabel={t('auth.login', 'Login')}
-                onAction={() => router.push('/login')}
             />
         );
     }
@@ -82,8 +129,8 @@ export function CmsPageScreen({ keyword }: ICmsPageScreenProps): React.ReactElem
     );
 }
 
-function isAuthError(error: Error | null): boolean {
-    if (!(error instanceof AxiosError)) return false;
-    const status = error.response?.status;
-    return status === 401 || status === 403;
+/** HTTP status of a failed page fetch, or `null` for a non-HTTP (network) error. */
+function httpErrorStatus(error: Error | null): number | null {
+    if (!(error instanceof AxiosError)) return null;
+    return error.response?.status ?? null;
 }
