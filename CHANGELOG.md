@@ -4,6 +4,32 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.22
+
+### Host-owned navigation for plugin in-content redirects (live preview parity)
+
+Adds `IMobileHostServices.navigate(target, external?)` to the mobile host-services
+bridge (`services/pluginHostServices.ts`), implemented with Expo Router
+(`router.push`) for internal CMS targets and `Linking.openURL` for external URLs —
+mirroring the app's own post-submit redirect (`FormUserInput`) and link handling
+(`Link`). A plugin (e.g. SurveyJS "redirect on completion") now routes its
+redirect through the host instead of touching `window.location`.
+
+This fixes the **live preview** symptom where a survey redirect behaved
+"weirdly" while it worked in the standalone app: the plugin's web fallback did a
+same-window `location.assign`, which navigated (and broke) the embedded preview
+iframe instead of the app. With host navigation the redirect routes through the
+app router in BOTH surfaces. Requires `@selfhelp/shared` `^1.17.0`
+(`MOBILE_RENDERER_VERSION` `0.3.0`), which the preview image now advertises.
+
+### Re-adds SurveyJS to the curated preview bundle (at 0.3.3)
+
+`web-preview/preview-plugins.json` bundles `sh2-shp-survey-js@0.3.3` again (it was
+dropped in 0.1.21 while the mobile package's npm publish was unblocked). The
+0.3.3 survey renderer ships the self-contained-font fix (no `fonts.gstatic.com`)
+and the host-navigation redirect fix, so the live preview renders the survey with
+no blocked font requests and correct redirects.
+
 ## 0.1.20
 
 ### Live Preview: bottom tab bar no longer disappears with the device frame off
