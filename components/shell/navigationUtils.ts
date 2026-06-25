@@ -96,6 +96,38 @@ export function isKeywordOnMenu(pages: IPageItem[], keyword: string): boolean {
     return page !== null && isMenuPage(page);
 }
 
+/** Normalise an internal target ("/impressum", "impressum", "/") to a keyword. */
+export function toKeyword(target: string): string {
+    const trimmed = target.replace(/^\/+/, '').trim();
+    return trimmed === '' ? 'home' : trimmed;
+}
+
+export type TPageNavigation =
+    | { kind: 'modal'; keyword: string }
+    | { kind: 'route'; keyword: string };
+
+/**
+ * The GLOBAL "load a CMS page" decision, kept pure (no router/store/React deps)
+ * so it can run from anywhere — links, buttons, action icons, form redirects,
+ * plugin host redirects — and be unit-tested in isolation.
+ *
+ *   - OFF-MENU pages (no drawer/tab entry) → `modal` (open as a sheet over the
+ *     current page so they are reachable in context; closing returns).
+ *   - ON-MENU pages → `route` (full-screen).
+ *   - Unknown until `pages` load (undefined) → `route`, so a real menu link is
+ *     never trapped behind a modal (matches the `[keyword]` route guard).
+ */
+export function resolvePageNavigation(
+    target: string,
+    pages: IPageItem[] | undefined,
+): TPageNavigation {
+    const keyword = toKeyword(target);
+    if (pages && !isKeywordOnMenu(pages, keyword)) {
+        return { kind: 'modal', keyword };
+    }
+    return { kind: 'route', keyword };
+}
+
 /**
  * Lightweight icon hint — a single character per page. We keep the set
  * small intentionally so HeroUI / system fonts can render it crisply

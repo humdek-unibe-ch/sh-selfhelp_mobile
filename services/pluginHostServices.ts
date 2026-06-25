@@ -24,7 +24,6 @@ SPDX-License-Identifier: MPL-2.0
 
 import { type AxiosError } from 'axios';
 import { Linking } from 'react-native';
-import { router } from 'expo-router';
 import {
     setMobileHostServices,
     type IMobileHostRequest,
@@ -32,27 +31,24 @@ import {
     type IMobileHostServices,
 } from '@selfhelp/shared/plugin-sdk';
 
+import { navigateToPage } from '@/components/shell/usePageNavigation';
 import { getApiClient } from '@/services/apiClient';
 import { debugLogger } from '@/services/debugLogger';
 import { useAuthStore } from '@/stores/authStore';
 import { useServerStore } from '@/stores/serverStore';
 
-/** Normalise an internal target ("/impressum", "impressum", "/") to a keyword. */
-function toKeyword(target: string): string {
-    const trimmed = target.replace(/^\/+/, '').trim();
-    return trimmed === '' ? 'home' : trimmed;
-}
-
 /**
  * Host-owned navigation for a plugin's in-content redirect (e.g. a survey's
  * "redirect on completion"). The host owns the router, so an internal CMS target
- * routes through Expo Router's history-backed navigation — correct in the native
- * app AND in the web-export live preview, where the plugin doing its own
- * `location.assign` would navigate (and break) the embedded iframe instead of the
- * app. An explicit external URL leaves the app (system browser / new tab).
+ * routes through the app-wide page navigation (`navigateToPage`) — applying the
+ * GLOBAL modal rule (off-menu pages open as a modal over the current page) and
+ * working in the native app AND in the web-export live preview, where the plugin
+ * doing its own `location.assign` would navigate (and break) the embedded iframe
+ * instead of the app. An explicit external URL leaves the app (system browser /
+ * new tab).
  *
- * Mirrors the app's own post-submit redirect (`FormUserInput` -> `router.push`)
- * and link handling (`Link` -> `Linking.openURL` for external).
+ * Mirrors the app's own link handling (`Link` -> `Linking.openURL` for external)
+ * and post-submit redirect (`FormUserInput` -> `navigateToPage`).
  */
 function performHostNavigate(target: string, external = false): void {
     const isAbsolute = /^[a-z][a-z0-9+.-]*:\/\//i.test(target);
@@ -60,7 +56,7 @@ function performHostNavigate(target: string, external = false): void {
         void Linking.openURL(target);
         return;
     }
-    router.push(`/${toKeyword(target)}`);
+    navigateToPage(target);
 }
 
 function extractReason(body: unknown): string | undefined {

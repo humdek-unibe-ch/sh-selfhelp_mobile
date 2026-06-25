@@ -4,6 +4,30 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.23
+
+### Off-menu pages open as a modal — now a GLOBAL rule
+
+The "an OFF-MENU page (no drawer/tab entry) opens as a MODAL sheet over the
+current page, an ON-MENU page routes full-screen" rule used to live only in
+`usePageNavigation` (links/buttons) and the `[keyword]` route guard. It is now a
+single imperative chokepoint, `navigateToPage()`
+(`components/shell/usePageNavigation.ts`), backed by the pure decision
+`resolvePageNavigation()` (`components/shell/navigationUtils.ts`), that **every**
+"load a page" entry point calls:
+
+- plugin host redirects (`services/pluginHostServices.ts` → a survey's "redirect
+  on completion"),
+- form post-submit redirect + cancel (`FormUserInput.hooks.ts`),
+- `ActionIcon` page links,
+- and `usePageNavigation` (links/buttons), which now delegates to it.
+
+Because the rule is applied **directly** against the cached menu (it opens the
+page-modal store itself rather than deferring to the `[keyword]` route guard), it
+now behaves identically in the native app **and** inside the web-export live
+preview, where the route guard intentionally defers to the preview boot router —
+previously letting an off-menu survey redirect render full-screen in the preview.
+
 ## 0.1.22
 
 ### Host-owned navigation for plugin in-content redirects (live preview parity)

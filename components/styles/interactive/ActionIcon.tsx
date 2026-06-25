@@ -3,8 +3,8 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 import { Linking, Pressable, Text } from 'react-native';
-import { useRouter } from 'expo-router';
 import type { IStyleProps } from '@/components/renderer/types';
+import { navigateToPage } from '@/components/shell/usePageNavigation';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
 import type { TMantineSize } from '@selfhelp/shared';
@@ -19,7 +19,6 @@ const SIZE_PX: Record<TMantineSize, { box: number; icon: number }> = {
 };
 
 export function ActionIcon({ section, values }: IStyleProps): React.ReactElement {
-    const router = useRouter();
     const resolved = mobileStyleProps(section);
     const { palette: v } = mobileIntentPalette(section, 'subtle');
     const size = (readField<string>(section, 'size') as TMantineSize | undefined) ?? 'md';
@@ -38,7 +37,7 @@ export function ActionIcon({ section, values }: IStyleProps): React.ReactElement
             onPress={() => {
                 if (!isLink || disabled) return;
                 if (pageKeyword) {
-                    router.push(`/${pageKeyword}`);
+                    navigateToPage(pageKeyword);
                     return;
                 }
                 if (openInNewTab && pageKeyword) void Linking.openURL(pageKeyword);

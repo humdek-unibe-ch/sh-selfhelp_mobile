@@ -12,10 +12,10 @@ SPDX-License-Identifier: MPL-2.0
  */
 
 import { useCallback, useMemo, useState } from 'react';
-import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 
 import type { IFormContext } from '../FormContext';
+import { navigateToPage } from '@/components/shell/usePageNavigation';
 import { submitForm, updateForm, type TFormResult } from '@/services/formsService';
 
 interface IUseFormControllerArgs {
@@ -93,12 +93,12 @@ export function useFormController(args: IUseFormControllerArgs): {
         void queryClient.invalidateQueries({ queryKey: ['page'] });
 
         if (!ajax && result.redirectUrl) {
-            router.push(result.redirectUrl);
+            navigateToPage(result.redirectUrl);
         }
     }, [ajax, errorMessage, formValues, isLog, pageId, queryClient, sectionId, successMessage]);
 
     const onCancel = useCallback((): void => {
-        if (cancelUrl) router.push(cancelUrl);
+        if (cancelUrl) navigateToPage(cancelUrl);
         else setFormValues({});
     }, [cancelUrl]);
 
