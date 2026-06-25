@@ -7,8 +7,8 @@ SPDX-License-Identifier: MPL-2.0
 Audience: Mobile developers, technical operators, build maintainers.
 Status: active.
 Applies to: SelfHelp2 Expo/React Native mobile app (`sh-selfhelp_mobile`) `>=0.1.20`.
-Last verified: 2026-06-24.
-Source of truth: `config/webPreviewContract.ts`, `config/webPreviewSession.ts`, `config/webPreview.ts`, `app/_layout.tsx`, `providers/I18nProvider.tsx`, `components/shell/LanguageSwitcher.tsx`, `components/shell/PageModalHost.tsx`, `components/shell/usePageNavigation.ts`, `components/preview/PreviewSyncBridge.tsx`, `components/preview/PreviewDraftBanner.tsx`, `components/dev/PhoneFrame.tsx`, `services/previewBridgeState.ts`, `services/previewPreferenceSync.ts`, `stores/pageModalStore.ts`, `components/shell/navigationUtils.ts`, `web-preview/server.mjs`, `web-preview/preview-plugins.json`, `web-preview/Dockerfile`, `scripts/plugins-sync.mjs`, `components/renderer/OpenOnWebFallback.tsx`, `.github/workflows/web-preview-release.yml`.
+Last verified: 2026-06-25.
+Source of truth: `index.js`, `config/webPreviewBoot.ts`, `config/webPreviewContract.ts`, `config/webPreviewSession.ts`, `config/webPreview.ts`, `app/_layout.tsx`, `providers/I18nProvider.tsx`, `components/shell/LanguageSwitcher.tsx`, `components/shell/PageModalHost.tsx`, `components/shell/usePageNavigation.ts`, `components/preview/PreviewSyncBridge.tsx`, `components/preview/PreviewDraftBanner.tsx`, `components/dev/PhoneFrame.tsx`, `services/previewBridgeState.ts`, `services/previewPreferenceSync.ts`, `stores/pageModalStore.ts`, `components/shell/navigationUtils.ts`, `web-preview/server.mjs`, `web-preview/preview-plugins.json`, `web-preview/Dockerfile`, `scripts/plugins-sync.mjs`, `components/renderer/OpenOnWebFallback.tsx`, `.github/workflows/web-preview-release.yml`.
 
 The **mobile preview** is the Expo app built as a **web export** and served as a
 standalone, manager-distributed Docker image (`selfhelp-mobile-preview`). A CMS
@@ -18,10 +18,12 @@ Preview Service** (core `>=0.1.19`, `@selfhelp/shared >=1.14.25`, manager
 `>=1.6.5`, frontend `>=0.1.31`).
 
 The initial validated embed query is retained in versioned `sessionStorage`.
-Expo Router removes the query while navigating to CMS routes, so this snapshot
-lets a document reload or Fast Refresh module reset recover the preview session,
-backend override, language/draft flags, and bridge origin. It is restored only
-inside an iframe and is cleared automatically with the browser tab.
+The custom entry (`index.js`) strips the one-time `previewSession` code from the
+URL **before** expo-router boots (see §3, step 1), and Expo Router removes the
+rest of the query while navigating to CMS routes, so this snapshot lets a
+document reload or Fast Refresh module reset recover the preview session, backend
+override, language/draft flags, and bridge origin. It is restored only inside an
+iframe and is cleared automatically with the browser tab.
 
 > Operator/route view: [`sh-manager` → operator/update.md](../../../sh-manager/docs/operator/update.md)
 > ("Mobile-preview updates") and operator/domains-and-ports.md ("How the address
@@ -103,6 +105,19 @@ dev / web-preview builds, never production native.
 
 ## 3. Boot flow
 
+0. **Strip `previewSession` from the URL (before expo-router).** The custom entry
+   `index.js` imports `config/webPreviewBoot.ts` ahead of `expo-router/entry`;
+   on web it persists the full embed query to `sessionStorage` and
+   `replaceState`s the URL **without** `previewSession`
+   (`capturePreviewSessionFromUrl`). This is required because on web
+   `expo-router/entry` renders synchronously as it evaluates and its linking
+   layer reads `window.location` immediately. A one-time code left in the address
+   bar destabilises expo-router's web `state <-> URL` round-trip: the linking
+   effect re-pushes the root route on every commit, Chromium throttles the
+   `history.pushState` flood ("Throttling navigation to prevent the browser from
+   hanging"), and the embedded pane hangs on "Starting up…". The other embed
+   params are stable and stay in the URL; the runtime recovers the full query
+   (incl. the code) from `sessionStorage`. No-op on native.
 1. **Parse** the embed params (`config/webPreview.ts`).
 2. **Exchange the one-time code.** If `previewSession` is present, the app POSTs
    it to `POST /cms-api/v1/mobile-preview/session/exchange` (through the

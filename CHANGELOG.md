@@ -4,6 +4,38 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.27
+
+### Fix the Live Preview "Starting up…" hang (previewSession navigation flood)
+
+The embedded mobile Live Preview could hang indefinitely on the "Starting up…"
+splash with Chromium logging *"Throttling navigation to prevent the browser from
+hanging"* (https://crbug.com/1038223). The earlier 0.1.24–0.1.26 work fixed the
+bridge READY/NAVIGATED loop, but a second, independent loop remained.
+
+Root cause (isolated with a Chromium DevTools-Protocol trace against the deployed
+bundle): the one-time `previewSession` code in the iframe URL destabilises
+expo-router's web `state <-> URL` round-trip. expo-router's `useLinking` effect
+re-pushed the root route (`/mobile-preview/`) on **every** React commit, so
+`history.pushState` was called in a tight loop until Chromium throttled it and
+the renderer starved — the session-exchange request never got CPU, which is why
+it looked like an auth/403 failure. The flood reproduced with `previewSession`
+present in **any** combination (even alone) and never without it; an arbitrary
+extra query param did not trigger it.
+
+Fix: strip `previewSession` from the address bar **before** expo-router boots.
+A new custom `index.js` entry imports `config/webPreviewBoot.ts` ahead of
+`expo-router/entry`; on web it persists the full embed query to `sessionStorage`
+(so `getWebPreviewRuntime` still recovers the one-time code for the token
+exchange) and `replaceState`s the URL without `previewSession`. The other embed
+params (`embed`, `keyword`, `modal`, `previewShell`, `parentOrigin`, …) are
+stable under expo-router and are left in place. No-op on native.
+
+This also stops the one-time code from lingering in browser history. No backend
+contract change; `supports.core` stays `>=0.1.19 <0.2.0`. Verify after updating
+that `/mobile-preview/version.json` reports `0.1.27` and the embedded frame
+reaches the requested page instead of stalling on "Starting up…".
+
 ## 0.1.26
 
 ### Re-ship the production Live Preview fix (clean image rebuild)
