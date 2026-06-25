@@ -1,6 +1,6 @@
 {
   "name": "selfhelp-mobile",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "private": true,
   "license": "MPL-2.0",
   "main": "expo-router/entry",

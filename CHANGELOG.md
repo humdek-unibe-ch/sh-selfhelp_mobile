@@ -4,6 +4,24 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.24
+
+### Live Preview no longer publishes its temporary startup route
+
+The embedded web preview now waits until its requested initial page is visible
+and the bridge has announced `READY` before sending `NAVIGATED` messages to the
+CMS shell. This prevents the temporary Expo root route from overwriting the
+shell's canonical page while `GateController` is still applying its initial
+`router.replace()`, which could trigger Chromium's navigation throttling and
+leave the mobile pane stuck on "Starting the mobile preview…".
+
+### Web preview no longer initializes Expo push notifications
+
+The web build now resolves notification helpers to a platform-specific no-op
+module that does not import `expo-notifications`. This removes Expo's unsupported
+web push-token listener warning while leaving Android and iOS notification
+registration unchanged.
+
 ## 0.1.23
 
 ### Off-menu pages open as a modal — now a GLOBAL rule
