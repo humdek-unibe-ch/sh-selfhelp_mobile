@@ -29,9 +29,10 @@ SPDX-License-Identifier: MPL-2.0
  *     URL-bound and applied by a clean frame remount, never through this live
  *     bridge.
  *
- * Loop safety: READY is delayed until the initial preview route is committed,
- * then the shell owns the canonical page and ignores the echo of a command it
- * just sent. This bridge also skips commands for the page it already shows.
+ * Loop safety: READY and outbound NAVIGATED messages are delayed until the
+ * initial preview route is committed, then the shell owns the canonical page
+ * and ignores the echo of a command it just sent. This bridge also skips
+ * commands for the page it already shows.
  *
  * Security: messages are only accepted from / sent to the shell origin handed in
  * via `parentOrigin` (the cross-origin dev case), never `'*'`; foreign / malformed
@@ -59,7 +60,10 @@ import {
     applyPreviewThemePreferences,
     previewThemePreferences,
 } from '@/services/previewPreferenceSync';
-import { shouldAnnouncePreviewReady } from '@/services/previewBridgeState';
+import {
+    shouldAnnouncePreviewReady,
+    shouldReportPreviewNavigation,
+} from '@/services/previewBridgeState';
 import { useAuthStore } from '@/stores/authStore';
 import { usePageModalStore } from '@/stores/pageModalStore';
 import { useServerStore } from '@/stores/serverStore';
@@ -91,7 +95,7 @@ export function PreviewSyncBridge(): null {
     const parentOriginRef = useRef<string | null>(null);
     const localeRef = useRef<string | null>(null);
     const currentKeywordRef = useRef<string | null>(null);
-    const lastSentRef = useRef<string | null>(null);
+    const lastSentRef = useRef<string | null | undefined>(undefined);
     const pagesRef = useRef(pages);
     const readySentRef = useRef(false);
     // Loop guard for theme sync: the last prefs we SENT to or RECEIVED from the
@@ -187,12 +191,26 @@ export function PreviewSyncBridge(): null {
         return () => window.removeEventListener('message', onMessage);
     }, [postToParent, router]);
 
-    // Report each navigation (incl. an open preview modal) up to the shell.
+    // Track every visible route immediately, but only report navigation after
+    // READY. During bootstrap Expo briefly exposes its root route before
+    // GateController commits the requested page. Publishing that temporary
+    // route lets the shell overwrite its canonical keyword while the app is
+    // still calling router.replace(), recreating the navigation flood that the
+    // READY guard prevents.
     useEffect(() => {
         if (!activeRef.current) return;
         const keyword = modalKeyword ?? previewKeywordFromPath(pathname);
         currentKeywordRef.current = keyword;
-        if (lastSentRef.current === (keyword ?? null)) return; // de-noise repeats
+        if (
+            !shouldReportPreviewNavigation({
+                active: activeRef.current,
+                readySent: readySentRef.current,
+                currentKeyword: keyword,
+                lastSentKeyword: lastSentRef.current,
+            })
+        ) {
+            return;
+        }
         lastSentRef.current = keyword ?? null;
         postToParent({
             type: PREVIEW_BRIDGE_MESSAGE.NAVIGATED,
