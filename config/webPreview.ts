@@ -54,6 +54,7 @@ export interface IWebPreviewRuntime {
      * override is honoured only on a dev instance.
      */
     apiBase: string | null;
+    baseUrl: string;
     /**
      * Web frontend origin used by `OpenOnWebFallback` deep-links. The preview
      * image is served on the SAME host as the web frontend (Traefik routes
@@ -130,6 +131,7 @@ export function getWebPreviewRuntime(): IWebPreviewRuntime {
             isEmbedded: false,
             params: EMPTY_PREVIEW_PARAMS,
             apiBase: null,
+            baseUrl: runtimeConfig.webPreviewBaseUrl,
             webFrontendOrigin: runtimeConfig.webFrontendOrigin,
         };
     }
@@ -147,6 +149,7 @@ export function getWebPreviewRuntime(): IWebPreviewRuntime {
         isEmbedded: params.embed,
         params,
         apiBase,
+        baseUrl: runtimeConfig.webPreviewBaseUrl,
         webFrontendOrigin,
     };
     return cachedRuntime;

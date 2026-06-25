@@ -13,6 +13,8 @@ SPDX-License-Identifier: MPL-2.0
  * temporary startup routes must not be reported as NAVIGATED before READY.
  */
 
+import { previewKeywordFromPath } from '@selfhelp/shared';
+
 interface IPreviewBridgeReadyOptions {
     active: boolean;
     alreadySent: boolean;
@@ -42,4 +44,20 @@ export function shouldReportPreviewNavigation(
 ): boolean {
     if (!options.active || !options.readySent) return false;
     return options.lastSentKeyword !== options.currentKeyword;
+}
+
+export function previewKeywordFromPathname(
+    path: string | null | undefined,
+    basePath: string | null | undefined,
+): string | null {
+    const base = (basePath ?? '').replace(/^\/+/, '').replace(/\/+$/, '');
+    if (base === '' || !path) return previewKeywordFromPath(path);
+
+    const withoutQuery = path.split(/[?#]/, 1)[0] ?? '';
+    const trimmed = withoutQuery.replace(/^\/+/, '');
+    if (trimmed === base || trimmed.startsWith(`${base}/`)) {
+        return previewKeywordFromPath(trimmed.slice(base.length).replace(/^\/+/, ''));
+    }
+
+    return previewKeywordFromPath(path);
 }

@@ -15,6 +15,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+    previewKeywordFromPathname,
     shouldAnnouncePreviewReady,
     shouldReportPreviewNavigation,
 } from '@/services/previewBridgeState';
@@ -102,4 +103,15 @@ test('navigation is reported after READY and duplicate routes are ignored', () =
         }),
         false,
     );
+});
+
+test('preview path keyword strips the installed mobile-preview base path', () => {
+    assert.equal(previewKeywordFromPathname('/mobile-preview/test', '/mobile-preview'), 'test');
+    assert.equal(previewKeywordFromPathname('/mobile-preview/test?embed=1', '/mobile-preview'), 'test');
+    assert.equal(previewKeywordFromPathname('/mobile-preview/', '/mobile-preview'), null);
+});
+
+test('preview path keyword still supports dev server root paths', () => {
+    assert.equal(previewKeywordFromPathname('/test', '/mobile-preview'), 'test');
+    assert.equal(previewKeywordFromPathname('/test', null), 'test');
 });

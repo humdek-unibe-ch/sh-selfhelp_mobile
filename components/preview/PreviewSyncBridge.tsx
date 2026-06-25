@@ -48,7 +48,6 @@ import {
     PREVIEW_BRIDGE_MESSAGE,
     arePreviewPreferencesEqual,
     isPreviewBridgeMessage,
-    previewKeywordFromPath,
     type IPreviewPreferences,
     type TPreviewBridgeMessage,
 } from '@selfhelp/shared';
@@ -61,6 +60,7 @@ import {
     previewThemePreferences,
 } from '@/services/previewPreferenceSync';
 import {
+    previewKeywordFromPathname,
     shouldAnnouncePreviewReady,
     shouldReportPreviewNavigation,
 } from '@/services/previewBridgeState';
@@ -199,7 +199,8 @@ export function PreviewSyncBridge(): null {
     // READY guard prevents.
     useEffect(() => {
         if (!activeRef.current) return;
-        const keyword = modalKeyword ?? previewKeywordFromPath(pathname);
+        const preview = getWebPreviewRuntime();
+        const keyword = modalKeyword ?? previewKeywordFromPathname(pathname, preview.baseUrl);
         currentKeywordRef.current = keyword;
         if (
             !shouldReportPreviewNavigation({
@@ -229,7 +230,7 @@ export function PreviewSyncBridge(): null {
     // command matches currentKeywordRef and is safely ignored as a no-op.
     useEffect(() => {
         const preview = getWebPreviewRuntime();
-        const currentKeyword = modalKeyword ?? previewKeywordFromPath(pathname);
+        const currentKeyword = modalKeyword ?? previewKeywordFromPathname(pathname, preview.baseUrl);
         if (
             !shouldAnnouncePreviewReady({
                 active: activeRef.current,
