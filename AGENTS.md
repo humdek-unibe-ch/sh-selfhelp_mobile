@@ -207,6 +207,16 @@ Plugin progress, dashboards, chat, collaborative editing, file uploads, LLM runs
 
 The offline fallback presents a manual refresh button + banner "Realtime updates unavailable". It is NOT a `setInterval` poller.
 
+### Version bump synchronization (bump it EVERYWHERE, in one change)
+
+A version bump is a SINGLE atomic change that updates every place the value appears — a partial bump breaks a CI version gate (a test pins `mobileRendererVersion` and the bundled plugin versions). When you bump:
+
+- the **app package version** → update `package.json` `version` AND the root `version` in `package-lock.json` together, plus `CHANGELOG.md`;
+- a **dependency you now require** (e.g. `@selfhelp/shared`, a plugin's mobile package) → update its range in `package.json` AND the resolved entry in `package-lock.json`;
+- the **renderer contract / bundled preview set** → keep `mobileRendererVersion` and every plugin `version` / `mobilePackageVersion` identical across `web-preview/preview-plugins.json` and `selfhelp.plugins.mobile.lock.json`, and matching the `@selfhelp/shared` `MOBILE_RENDERER_VERSION` you depend on (`__tests__/unit/pluginHostServices.test.mjs` asserts this).
+
+The Expo store version (`app.config.ts` `version`) is a SEPARATE, user-facing release number and is intentionally NOT tied to the `package.json` dev version — bump it on its own store/EAS cadence, do not force it equal. After any bump, grep the old version string to confirm nothing stale remains.
+
 ### Version mismatch handling
 
 - Mobile reads the backend manifest at startup. For every style declared by a plugin without a bundled mobile impl, the renderer marks the style as "web-only" and `UnknownStyle` renders an "Open on web" CTA with the deep link.
