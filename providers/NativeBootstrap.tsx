@@ -19,9 +19,14 @@ import { consumeInitialLink, subscribeToLinks } from '@/native/deepLinks';
 import { registerForPushNotifications, addNotificationResponseListener } from '@/native/notifications';
 import { reportPushToken } from '@/native/devicesService';
 import { checkForOtaUpdate } from '@/native/updates';
+import { registerMobileHostServices } from '@/services/pluginHostServices';
 
 export function NativeBootstrap(): null {
     useEffect(() => {
+        // Expose authenticated host services to plugin mobile packages (e.g. the
+        // SurveyJS WebView renderer) before any plugin style renders. Runs on
+        // web too — the preview embeds the app and plugins use the same bridge.
+        registerMobileHostServices();
         void consumeInitialLink();
         const unsub = subscribeToLinks();
         void checkForOtaUpdate();
