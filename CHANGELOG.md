@@ -4,6 +4,9 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.25
+ - fix mobile preview for production
+
 ## 0.1.24
 
 ### Live Preview no longer publishes its temporary startup route
