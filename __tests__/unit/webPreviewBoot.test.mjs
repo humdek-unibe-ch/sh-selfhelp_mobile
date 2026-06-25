@@ -14,10 +14,10 @@ SPDX-License-Identifier: MPL-2.0
  * bar before expo-router boots while preserving the full embed query in
  * `sessionStorage` so the token exchange can still recover the code.
  *
- * These tests pin that contract: the pure planner removes only `previewSession`
- * and persists only a valid embed contract, and the window wiring writes the
- * snapshot + `replaceState`s the cleaned URL, while staying a safe no-op when
- * there is no code, no `window`, or no history.
+ * These tests pin that contract: the pure planner removes the preview-only embed
+ * query from the visible URL and persists only a valid embed contract, and the
+ * window wiring writes the snapshot + `replaceState`s the cleaned URL, while
+ * staying a safe no-op when there is no code, no `window`, or no history.
  */
 
 import { test, beforeEach } from 'node:test';
@@ -66,17 +66,15 @@ test('planner returns null when there is no previewSession (nothing to strip)', 
     assert.equal(planPreviewSessionCleanup('?embed=1&keyword=test&modal=off'), null);
 });
 
-test('planner strips only previewSession and persists a valid embed contract', () => {
+test('planner strips the visible embed query and persists a valid embed contract', () => {
     const plan = planPreviewSessionCleanup(FULL);
     assert.ok(plan);
     // The full query (with the one-time code) is preserved for recovery.
     assert.equal(plan.persistSearch, FULL);
-    // The address bar keeps every other embed param but loses previewSession.
-    const cleaned = new URLSearchParams(plan.cleanedSearch);
-    assert.equal(cleaned.has('previewSession'), false);
-    assert.equal(cleaned.get('embed'), '1');
-    assert.equal(cleaned.get('keyword'), 'test');
-    assert.equal(cleaned.get('previewShell'), '1');
+    // The address bar loses every preview-only param; Expo Router reads the bare
+    // preview path, while getWebPreviewRuntime recovers the full contract from
+    // sessionStorage.
+    assert.equal(plan.cleanedSearch, '');
 });
 
 test('planner strips previewSession even without embed, but does not persist a non-contract query', () => {
@@ -91,7 +89,7 @@ test('planner strips previewSession even without embed, but does not persist a n
     assert.equal(partial.cleanedSearch, '?foo=bar');
 });
 
-test('capture persists the full embed query and removes previewSession from the URL', () => {
+test('capture persists the full embed query and removes preview params from the URL', () => {
     const { store, replaceCalls } = installWindow(FULL);
 
     capturePreviewSessionFromUrl();
@@ -102,8 +100,7 @@ test('capture persists the full embed query and removes previewSession from the 
 
     assert.equal(replaceCalls.length, 1);
     assert.equal(replaceCalls[0].state.id, 'seed', 'preserves the existing history state');
-    assert.ok(replaceCalls[0].url.startsWith('/mobile-preview/'));
-    assert.equal(new URLSearchParams(replaceCalls[0].url.slice(replaceCalls[0].url.indexOf('?'))).has('previewSession'), false);
+    assert.equal(replaceCalls[0].url, '/mobile-preview/');
 });
 
 test('capture is a no-op when the URL has no previewSession', () => {

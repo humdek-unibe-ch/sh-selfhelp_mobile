@@ -105,19 +105,19 @@ dev / web-preview builds, never production native.
 
 ## 3. Boot flow
 
-0. **Strip `previewSession` from the URL (before expo-router).** The custom entry
-   `index.js` imports `config/webPreviewBoot.ts` ahead of `expo-router/entry`;
-   on web it persists the full embed query to `sessionStorage` and
-   `replaceState`s the URL **without** `previewSession`
+0. **Strip preview embed params from the URL (before expo-router).** The custom
+   entry `index.js` imports `config/webPreviewBoot.ts` ahead of
+   `expo-router/entry`; on web it persists the full embed query to
+   `sessionStorage` and `replaceState`s the URL to the bare preview path
    (`capturePreviewSessionFromUrl`). This is required because on web
    `expo-router/entry` renders synchronously as it evaluates and its linking
-   layer reads `window.location` immediately. A one-time code left in the address
-   bar destabilises expo-router's web `state <-> URL` round-trip: the linking
-   effect re-pushes the root route on every commit, Chromium throttles the
+   layer reads `window.location` immediately. Preview-only params left in the
+   address bar (`previewSession`, `keyword`, `previewShell`, `modal`, …)
+   destabilise expo-router's web `state <-> URL` round-trip: the linking effect
+   can re-push the root route on every commit, Chromium throttles the
    `history.pushState` flood ("Throttling navigation to prevent the browser from
-   hanging"), and the embedded pane hangs on "Starting up…". The other embed
-   params are stable and stay in the URL; the runtime recovers the full query
-   (incl. the code) from `sessionStorage`. No-op on native.
+   hanging"), and the embedded pane hangs on "Starting up…". The runtime recovers
+   the full query (incl. the code) from `sessionStorage`. No-op on native.
 1. **Parse** the embed params (`config/webPreview.ts`).
 2. **Exchange the one-time code.** If `previewSession` is present, the app POSTs
    it to `POST /cms-api/v1/mobile-preview/session/exchange` (through the

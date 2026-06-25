@@ -5,12 +5,12 @@ SPDX-License-Identifier: MPL-2.0
 /**
  * Session-scoped persistence for the mobile web-preview embed contract.
  *
- * The boot entry (`config/webPreviewBoot.ts`) strips the one-time
- * `previewSession` code from the address bar BEFORE expo-router's web linking
- * reads it — left in the URL it destabilises expo-router's state<->URL
- * round-trip and floods `history.pushState`, which Chromium throttles
- * ("Throttling navigation to prevent the browser from hanging") and the
- * embedded pane hangs on "Starting up…". The full embed query is retained only
+ * The boot entry (`config/webPreviewBoot.ts`) strips the preview embed query from
+ * the address bar BEFORE expo-router's web linking reads it. Leaving those params
+ * in the URL destabilises expo-router's state<->URL round-trip on production
+ * exports and can flood `history.pushState`, which Chromium throttles
+ * ("Throttling navigation to prevent the browser from hanging") while the
+ * embedded pane remains on "Starting up…". The full embed query is retained only
  * in `sessionStorage` (same lifetime as the preview tab) so a document reload or
  * Fast Refresh module reset can still recover the one-time-code discriminator,
  * backend override, draft flag, language, and preview-bridge origin. The raw
@@ -90,29 +90,36 @@ export function resolveWebPreviewSearch(
 interface IPreviewSessionCleanup {
     /** Full query to persist for later recovery, or null when there is nothing worth keeping. */
     persistSearch: string | null;
-    /** The query string to leave in the address bar, with `previewSession` removed. */
+    /** The query string to leave in the address bar after preview-only params are removed. */
     cleanedSearch: string;
 }
 
 /**
  * Pure decision for the boot-time URL cleanup.
  *
- * Returns `null` when the URL has no `previewSession` (nothing to do). Otherwise
- * it returns the query to persist — the FULL embed query, but only when it is a
- * valid embed contract (`embed` + `previewSession`), so the runtime can recover
- * the one-time code for the token exchange — and the `previewSession`-stripped
- * query to write back to the address bar.
+ * Returns `null` when the URL is not a preview embed query (nothing to do).
+ * Otherwise it returns the query to persist — the FULL embed query, but only
+ * when it is a valid embed contract (`embed` + `previewSession`), so the runtime
+ * can recover the one-time code for the token exchange — and the cleaned query
+ * to write back to the address bar.
  *
- * `previewSession` is always removed when present (a one-time code must never
- * linger in history, and its presence is what trips expo-router's web linking
- * into the navigation flood). The other embed params (`embed`, `keyword`,
- * `modal`, `previewShell`, …) are stable under expo-router and are left in place.
+ * For a valid embed contract the address bar is reduced to the bare preview path:
+ * every preview-only param (`embed`, `keyword`, `modal`, `previewShell`, …) is
+ * already persisted in `sessionStorage`, and keeping it visible gives
+ * expo-router a query string it can repeatedly reconcile back onto the root
+ * route in production. A malformed URL that only carries `previewSession` still
+ * has that one-time code stripped but keeps unrelated params.
  */
 export function planPreviewSessionCleanup(search: string): IPreviewSessionCleanup | null {
     const params = new URLSearchParams(search);
-    if (!params.has('previewSession')) return null;
-
     const persistSearch = isPreviewSessionSearch(search) ? search : null;
+    const isPreviewEmbed = persistSearch !== null;
+    if (!isPreviewEmbed && !params.has('previewSession')) return null;
+
+    if (isPreviewEmbed) {
+        return { persistSearch, cleanedSearch: '' };
+    }
+
     params.delete('previewSession');
     const rest = params.toString();
     return { persistSearch, cleanedSearch: rest ? `?${rest}` : '' };
@@ -126,7 +133,7 @@ export function planPreviewSessionCleanup(search: string): IPreviewSessionCleanu
  * `config/webPreviewBoot.ts`, imported ahead of `expo-router/entry` from the
  * custom `index.js` entry. Persists the full embed query to `sessionStorage`
  * (so `resolveWebPreviewSearch` can still recover `previewSession` for the token
- * exchange) and removes `previewSession` from the address bar with
+ * exchange) and removes the preview embed params from the address bar with
  * `replaceState` (never `pushState`, so no history entry is added).
  *
  * No-op on native / SSR (no `window`), on a non-preview query, or when

@@ -4,6 +4,26 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.28
+
+### Fix the production Live Preview navigation throttle for the full embed query
+
+The installed `selfhelp-mobile-preview` image could still hang on the
+"Starting up…" splash with Chromium logging *"Throttling navigation to prevent
+the browser from hanging"* even after 0.1.27 stripped the one-time
+`previewSession` code. In production the remaining embed params (`embed`,
+`keyword`, `preview`, `modal`, `previewShell`, `parentOrigin`, `language`, …)
+were still visible to Expo Router at `/mobile-preview/`, so its web linking layer
+could keep reconciling the root route plus query string during startup.
+
+Fix: the pre-router boot cleanup now persists the full embed query in
+`sessionStorage` and then reduces the visible URL to the bare `/mobile-preview/`
+path before `expo-router/entry` runs. `getWebPreviewRuntime()` still recovers the
+full contract from session storage, so token exchange, draft mode, keyword,
+language, modal mode, and bridge origin are unchanged; only Expo Router stops
+seeing preview-only query params. No backend contract change; `supports.core`
+stays `>=0.1.19 <0.2.0`.
+
 ## 0.1.27
 
 ### Fix the Live Preview "Starting up…" hang (previewSession navigation flood)
