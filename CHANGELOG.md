@@ -4,6 +4,29 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.26
+
+### Re-ship the production Live Preview fix (clean image rebuild)
+
+Version-only bump that re-publishes the `selfhelp-mobile-preview` image so the
+0.1.25 production-preview fix actually reaches running instances.
+
+Background: 0.1.25 fixed the READY/NAVIGATED loop that struck the **installed**
+image (served under the `/mobile-preview` base path) — the keyword the bridge
+derives from `usePathname()` now strips that base prefix
+(`previewKeywordFromPathname`), so the shell's `NAVIGATE(canonicalKeyword)` after
+`READY` matches the frame's current keyword and is ignored instead of triggering
+a `router.replace()` storm that Chromium throttles ("Throttling navigation to
+prevent the browser from hanging"), leaving the embedded pane stuck. Instances
+whose container still serves `/mobile-preview/version.json: 0.1.24` never received
+that fix and continued to stall + fall back to the login screen (whose POST is
+correctly rejected `403` by the same-origin proxy allowlist). This release exists
+so the manager offers a clean update and the running container is rebuilt from
+source that contains the fix — verify by checking `/mobile-preview/version.json`
+reports `0.1.26` after updating.
+
+No code or contract change versus 0.1.25; `supports.core` stays `>=0.1.19`.
+
 ## 0.1.25
  - fix mobile preview for production
 
