@@ -31,8 +31,9 @@ import { fileURLToPath } from 'node:url';
 import {
     getMobileHostServices,
     setMobileHostServices,
+    MOBILE_RENDERER_VERSION,
+    isMobileRendererCompatible,
 } from '@selfhelp/shared/plugin-sdk';
-import { MOBILE_RENDERER_VERSION, isMobileRendererCompatible } from '@selfhelp/shared/plugin-sdk';
 
 test('host shared package exposes the mobile host-services bridge at 0.3.0', () => {
     assert.equal(MOBILE_RENDERER_VERSION, '0.3.0');

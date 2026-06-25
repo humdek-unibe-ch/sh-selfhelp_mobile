@@ -16,7 +16,10 @@ SPDX-License-Identifier: MPL-2.0
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isKeywordOnMenu } from '../../components/shell/navigationUtils.ts';
+import {
+    isKeywordOnMenu,
+    resolvePageNavigation,
+} from '../../components/shell/navigationUtils.ts';
 
 const pages = [
     { keyword: 'home', navPosition: 0, is_headless: false, children: [] },
@@ -51,4 +54,33 @@ test('headless page is off-menu (→ modal)', () => {
 
 test('unknown keyword is off-menu (→ modal, then not-found in the sheet)', () => {
     assert.equal(isKeywordOnMenu(pages, 'does-not-exist'), false);
+});
+
+/**
+ * `resolvePageNavigation` is the GLOBAL decision every "load a page" entry point
+ * runs (links, buttons, action icons, form redirects, plugin/survey host
+ * redirects). Off-menu → modal, on-menu → full-screen route, and unknown-until-
+ * loaded → route so a real menu link is never trapped behind a modal.
+ */
+test('resolvePageNavigation: on-menu target routes full-screen', () => {
+    assert.deepEqual(resolvePageNavigation('/team', pages), { kind: 'route', keyword: 'team' });
+    assert.deepEqual(resolvePageNavigation('people', pages), { kind: 'route', keyword: 'people' });
+});
+
+test('resolvePageNavigation: empty/"/" target normalises to home (on-menu → route)', () => {
+    assert.deepEqual(resolvePageNavigation('/', pages), { kind: 'route', keyword: 'home' });
+    assert.deepEqual(resolvePageNavigation('', pages), { kind: 'route', keyword: 'home' });
+});
+
+test('resolvePageNavigation: off-menu target opens as a modal', () => {
+    assert.deepEqual(resolvePageNavigation('/impressum', pages), { kind: 'modal', keyword: 'impressum' });
+    assert.deepEqual(resolvePageNavigation('secret', pages), { kind: 'modal', keyword: 'secret' });
+    assert.deepEqual(resolvePageNavigation('thank-you', pages), { kind: 'modal', keyword: 'thank-you' });
+});
+
+test('resolvePageNavigation: unknown until pages load routes full-screen (never trapped)', () => {
+    assert.deepEqual(resolvePageNavigation('/impressum', undefined), {
+        kind: 'route',
+        keyword: 'impressum',
+    });
 });
