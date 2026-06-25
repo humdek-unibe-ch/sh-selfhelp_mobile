@@ -233,7 +233,7 @@ function buildRegisteredFile(lock) {
 
     lines.push('const registrations = [');
     for (const entry of styleEntries) {
-        lines.push(`    ${entry.localName},`);
+        lines.push(`    ${entry.localName}(),`);
     }
     lines.push('];');
     lines.push('');
