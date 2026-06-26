@@ -4,6 +4,24 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.29
+
+### Fix installed Live Preview native-link replay on web
+
+The installed `selfhelp-mobile-preview` image could still stall on the mobile
+pane's "Starting up..." screen after successfully loading the iframe and
+exchanging the one-time preview code. The remaining trigger was not the backend
+or the exchange response: `NativeBootstrap` was still running the native
+deep-link bootstrap on Expo Web. In the installed image, the iframe lives under
+`/mobile-preview/`, so `Linking.getInitialURL()` could replay that browser URL
+as if it were a native deep link and push `/mobile-preview` through Expo Router,
+reintroducing a client-side History API loop.
+
+Fix: keep plugin host service registration active on web, but skip the native
+initial-link subscription and OTA startup check for web runtimes. Native iOS and
+Android still install the same startup side effects as before. No backend
+contract change; `supports.core` stays `>=0.1.19 <0.2.0`.
+
 ## 0.1.28
 
 ### Fix the production Live Preview navigation throttle for the full embed query

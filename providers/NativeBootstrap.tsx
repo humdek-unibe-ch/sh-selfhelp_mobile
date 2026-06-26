@@ -20,6 +20,7 @@ import { registerForPushNotifications, addNotificationResponseListener } from '@
 import { reportPushToken } from '@/native/devicesService';
 import { checkForOtaUpdate } from '@/native/updates';
 import { registerMobileHostServices } from '@/services/pluginHostServices';
+import { shouldRunNativeStartupSideEffects } from './nativeBootstrapPolicy';
 
 export function NativeBootstrap(): null {
     useEffect(() => {
@@ -27,6 +28,8 @@ export function NativeBootstrap(): null {
         // SurveyJS WebView renderer) before any plugin style renders. Runs on
         // web too — the preview embeds the app and plugins use the same bridge.
         registerMobileHostServices();
+        if (!shouldRunNativeStartupSideEffects(Platform.OS)) return undefined;
+
         void consumeInitialLink();
         const unsub = subscribeToLinks();
         void checkForOtaUpdate();
