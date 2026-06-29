@@ -11,10 +11,12 @@ SPDX-License-Identifier: MPL-2.0
  *   2. Reverse-proxy a NARROW allowlist of `BASE_URL/api/*` requests to the
  *      private backend (`SELFHELP_BACKEND_INTERNAL_URL`), stripping the
  *      `BASE_URL/api` prefix so the backend sees a normal `/cms-api/...` path.
- *      This is the only path from the public preview to the private backend;
- *      it is GET-only except for the one-time-code exchange POST. This mirrors
- *      the backend `MobilePreviewAccessGuard` (defense in depth: even a leaked
- *      scoped token cannot reach a write/admin route through here).
+ *      This is the only path from the public preview to the private backend.
+ *      Core routes are GET-only (plus the one-time-code exchange POST); plugin
+ *      PUBLIC runtime routes (`/cms-api/v{n}/plugins/...`) are forwarded for any
+ *      method so embedded plugin styles (e.g. SurveyJS) can load and submit.
+ *      This mirrors the backend `MobilePreviewAccessGuard` (defense in depth:
+ *      even a leaked scoped token cannot reach a core write/admin route here).
  *   3. Expose `BASE_URL/version.json` (image version + mobileRendererVersion +
  *      bundledPlugins) and `BASE_URL/healthz` for the orchestrator probe.
  *
@@ -52,6 +54,24 @@ export const ALLOWED_GET_PREFIXES = [
 /** The single POST the proxy allows: the one-time preview-code exchange. */
 export const ALLOWED_POST_EXACT = ['/cms-api/v1/mobile-preview/session/exchange'];
 
+/**
+ * Plugin PUBLIC runtime routes (`/cms-api/v{n}/plugins/...`). Mirrors the
+ * backend `MobilePreviewAccessGuard.isPluginPublicRoute()`: a previewed page may
+ * embed plugin styles (e.g. the SurveyJS runtime) that load, autosave and submit
+ * through the plugin's PUBLIC api with any method. The permission-gated admin
+ * surface (`/cms-api/v{n}/admin/plugins/...`) is intentionally NOT matched —
+ * `admin/` follows the version segment, so it never satisfies this prefix.
+ */
+const PLUGIN_PUBLIC_ROUTE = /^\/cms-api\/v\d+\/plugins\//;
+
+/**
+ * @param {string} backendPath path beginning with `/cms-api/...` (may include `?query`)
+ * @returns {boolean}
+ */
+export function isPluginPublicRoute(backendPath) {
+    return PLUGIN_PUBLIC_ROUTE.test(String(backendPath).split('?')[0]);
+}
+
 const MIME_TYPES = {
     '.html': 'text/html; charset=utf-8',
     '.js': 'text/javascript; charset=utf-8',
@@ -82,6 +102,13 @@ const MIME_TYPES = {
  */
 export function isProxyAllowed(method, backendPath) {
     const path = String(backendPath).split('?')[0];
+    // Plugin PUBLIC runtime routes (any method) — mirrors the backend
+    // MobilePreviewAccessGuard so embedded plugin styles (e.g. the SurveyJS
+    // runtime) can load, autosave and submit in the preview exactly as on the
+    // live page. The admin plugin surface is excluded by the prefix shape.
+    if (isPluginPublicRoute(path)) {
+        return true;
+    }
     if (method === 'GET') {
         return ALLOWED_GET_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
     }
