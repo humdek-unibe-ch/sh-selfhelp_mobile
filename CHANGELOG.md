@@ -4,6 +4,25 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.30
+
+### show-user-input headers honour the data-column display name (issue #56 v2)
+
+The mobile `show-user-input` card list rendered raw data keys as labels. After
+the host's Interpolation v2 switch, entries are keyed by the immutable
+`field_key` (e.g. `section_230`) instead of the human input name, so those keys
+leaked into the card labels and a `fields_map` authored against the human name
+no longer matched.
+
+Fix: the renderer now reads the section's `field_labels` (`field_key =>
+display_name`) map. Default headers show the display name (falling back to the
+key), and a `fields_map` entry resolves to a real data key by `field_key` first,
+then by the current `display_name`, so renaming a column relabels the header
+automatically and never breaks an existing mapping. Fully backward compatible:
+on an older host (entries keyed by name, no `field_labels`) every branch falls
+back to the key, preserving the previous behaviour, so `supports.core` stays
+`>=0.1.19 <0.2.0`.
+
 ## 0.1.29
 
 ### Fix installed Live Preview native-link replay on web
