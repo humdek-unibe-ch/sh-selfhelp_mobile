@@ -26,6 +26,7 @@ import {
     resolveBackendPath,
     createPreviewServer,
     DEFAULT_BASE_URL,
+    ALLOWED_FORM_ROUTES,
 } from '../../web-preview/server.mjs';
 
 test('isProxyAllowed permits only allowlisted GET reads', () => {
@@ -59,6 +60,25 @@ test('isProxyAllowed forwards plugin PUBLIC runtime routes for any method', () =
     // The permission-gated admin plugin surface must NOT slip through.
     assert.equal(isProxyAllowed('GET', '/cms-api/v1/admin/plugins/surveyjs/config'), false);
     assert.equal(isProxyAllowed('POST', '/cms-api/v1/admin/plugins/surveyjs/install'), false);
+});
+
+test('isProxyAllowed permits core form routes only with their declared methods', () => {
+    // A previewed page's core forms can be submitted/updated/deleted, mirroring
+    // the backend MobilePreviewAccessGuard so forms are testable in preview.
+    assert.equal(isProxyAllowed('POST', '/cms-api/v1/forms/submit'), true);
+    assert.equal(isProxyAllowed('PUT', '/cms-api/v1/forms/update'), true);
+    assert.equal(isProxyAllowed('DELETE', '/cms-api/v1/forms/delete'), true);
+    // The method must match the declared one; a mismatched method is refused.
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/forms/submit'), false);
+    assert.equal(isProxyAllowed('POST', '/cms-api/v1/forms/delete'), false);
+    // A non-form core write look-alike is still refused.
+    assert.equal(isProxyAllowed('POST', '/cms-api/v1/forms/other'), false);
+    // The exported allowlist is exactly the three core form routes.
+    assert.deepEqual(ALLOWED_FORM_ROUTES, {
+        '/cms-api/v1/forms/submit': 'POST',
+        '/cms-api/v1/forms/update': 'PUT',
+        '/cms-api/v1/forms/delete': 'DELETE',
+    });
 });
 
 test('isPluginPublicRoute matches public plugin routes but never admin plugin routes', () => {
@@ -144,6 +164,10 @@ test('boot: static, version, health, allowlist proxy, and refusals', async () =>
         const pluginSubmit = await call('POST', '/mobile-preview/api/cms-api/v1/plugins/surveyjs/submit');
         assert.equal(pluginSubmit.status, 200);
 
+        // A core form submit is proxied through so forms are testable in preview.
+        const formSubmit = await call('POST', '/mobile-preview/api/cms-api/v1/forms/submit');
+        assert.equal(formSubmit.status, 200);
+
         // A non-allowlisted admin read is refused with 403 and never proxied.
         const admin = await call('GET', '/mobile-preview/api/cms-api/v1/admin/pages');
         assert.equal(admin.status, 403);
@@ -161,6 +185,7 @@ test('boot: static, version, health, allowlist proxy, and refusals', async () =>
             'GET /cms-api/v1/languages',
             'POST /cms-api/v1/mobile-preview/session/exchange',
             'POST /cms-api/v1/plugins/surveyjs/submit',
+            'POST /cms-api/v1/forms/submit',
         ]);
     } finally {
         await new Promise((r) => server.close(r));

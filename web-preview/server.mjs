@@ -12,11 +12,13 @@ SPDX-License-Identifier: MPL-2.0
  *      private backend (`SELFHELP_BACKEND_INTERNAL_URL`), stripping the
  *      `BASE_URL/api` prefix so the backend sees a normal `/cms-api/...` path.
  *      This is the only path from the public preview to the private backend.
- *      Core routes are GET-only (plus the one-time-code exchange POST); plugin
- *      PUBLIC runtime routes (`/cms-api/v{n}/plugins/...`) are forwarded for any
- *      method so embedded plugin styles (e.g. SurveyJS) can load and submit.
- *      This mirrors the backend `MobilePreviewAccessGuard` (defense in depth:
- *      even a leaked scoped token cannot reach a core write/admin route here).
+ *      Core routes are GET-only (plus the one-time-code exchange POST and the
+ *      core form submit/update/delete routes so a previewed page's forms can be
+ *      tested); plugin PUBLIC runtime routes (`/cms-api/v{n}/plugins/...`) are
+ *      forwarded for any method so embedded plugin styles (e.g. SurveyJS) can
+ *      load and submit. This mirrors the backend `MobilePreviewAccessGuard`
+ *      (defense in depth: even a leaked scoped token cannot reach a non-form
+ *      core write or any admin route here).
  *   3. Expose `BASE_URL/version.json` (image version + mobileRendererVersion +
  *      bundledPlugins) and `BASE_URL/healthz` for the orchestrator probe.
  *
@@ -53,6 +55,20 @@ export const ALLOWED_GET_PREFIXES = [
 
 /** The single POST the proxy allows: the one-time preview-code exchange. */
 export const ALLOWED_POST_EXACT = ['/cms-api/v1/mobile-preview/session/exchange'];
+
+/**
+ * Core frontend form routes (path => method) the previewed page's forms call to
+ * submit/update/delete their data. Mirrors the backend
+ * `MobilePreviewAccessGuard.ALLOWED_FORM_ROUTES` so a core form embedded in the
+ * mobile preview can be exercised end-to-end exactly as on the live page. They
+ * carry no route permission and enforce their own ACL/page-access in the backend
+ * FormController, and the preview runs as the admin's (or impersonated) identity.
+ */
+export const ALLOWED_FORM_ROUTES = {
+    '/cms-api/v1/forms/submit': 'POST',
+    '/cms-api/v1/forms/update': 'PUT',
+    '/cms-api/v1/forms/delete': 'DELETE',
+};
 
 /**
  * Plugin PUBLIC runtime routes (`/cms-api/v{n}/plugins/...`). Mirrors the
@@ -107,6 +123,13 @@ export function isProxyAllowed(method, backendPath) {
     // runtime) can load, autosave and submit in the preview exactly as on the
     // live page. The admin plugin surface is excluded by the prefix shape.
     if (isPluginPublicRoute(path)) {
+        return true;
+    }
+    // Core frontend form routes (submit/update/delete with their declared
+    // methods) — mirrors the backend MobilePreviewAccessGuard so a previewed
+    // page's core forms can be submitted/updated/deleted in the mobile preview
+    // exactly as on the live page.
+    if (ALLOWED_FORM_ROUTES[path] === method) {
         return true;
     }
     if (method === 'GET') {
