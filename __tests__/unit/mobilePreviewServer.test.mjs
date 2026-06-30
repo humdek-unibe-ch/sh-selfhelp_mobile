@@ -22,9 +22,11 @@ import { join } from 'node:path';
 
 import {
     isProxyAllowed,
+    isPluginPublicRoute,
     resolveBackendPath,
     createPreviewServer,
     DEFAULT_BASE_URL,
+    ALLOWED_FORM_ROUTES,
 } from '../../web-preview/server.mjs';
 
 test('isProxyAllowed permits only allowlisted GET reads', () => {
@@ -47,6 +49,43 @@ test('isProxyAllowed refuses writes, admin reads, and prefix look-alikes', () =>
 test('isProxyAllowed permits only the one-time-code exchange POST', () => {
     assert.equal(isProxyAllowed('POST', '/cms-api/v1/mobile-preview/session/exchange'), true);
     assert.equal(isProxyAllowed('POST', '/cms-api/v1/auth/login'), false);
+});
+
+test('isProxyAllowed forwards plugin PUBLIC runtime routes for any method', () => {
+    // SurveyJS runtime: load the published survey, autosave progress, submit.
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/plugins/surveyjs/published?section=5'), true);
+    assert.equal(isProxyAllowed('POST', '/cms-api/v1/plugins/surveyjs/submit'), true);
+    assert.equal(isProxyAllowed('PUT', '/cms-api/v1/plugins/surveyjs/progress'), true);
+    assert.equal(isProxyAllowed('GET', '/cms-api/v2/plugins/anything'), true);
+    // The permission-gated admin plugin surface must NOT slip through.
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/admin/plugins/surveyjs/config'), false);
+    assert.equal(isProxyAllowed('POST', '/cms-api/v1/admin/plugins/surveyjs/install'), false);
+});
+
+test('isProxyAllowed permits core form routes only with their declared methods', () => {
+    // A previewed page's core forms can be submitted/updated/deleted, mirroring
+    // the backend MobilePreviewAccessGuard so forms are testable in preview.
+    assert.equal(isProxyAllowed('POST', '/cms-api/v1/forms/submit'), true);
+    assert.equal(isProxyAllowed('PUT', '/cms-api/v1/forms/update'), true);
+    assert.equal(isProxyAllowed('DELETE', '/cms-api/v1/forms/delete'), true);
+    // The method must match the declared one; a mismatched method is refused.
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/forms/submit'), false);
+    assert.equal(isProxyAllowed('POST', '/cms-api/v1/forms/delete'), false);
+    // A non-form core write look-alike is still refused.
+    assert.equal(isProxyAllowed('POST', '/cms-api/v1/forms/other'), false);
+    // The exported allowlist is exactly the three core form routes.
+    assert.deepEqual(ALLOWED_FORM_ROUTES, {
+        '/cms-api/v1/forms/submit': 'POST',
+        '/cms-api/v1/forms/update': 'PUT',
+        '/cms-api/v1/forms/delete': 'DELETE',
+    });
+});
+
+test('isPluginPublicRoute matches public plugin routes but never admin plugin routes', () => {
+    assert.equal(isPluginPublicRoute('/cms-api/v1/plugins/surveyjs/submit'), true);
+    assert.equal(isPluginPublicRoute('/cms-api/v1/plugins/manifest'), true);
+    assert.equal(isPluginPublicRoute('/cms-api/v1/admin/plugins/surveyjs'), false);
+    assert.equal(isPluginPublicRoute('/cms-api/v1/pages'), false);
 });
 
 test('resolveBackendPath strips the base/api prefix or returns null', () => {
@@ -121,18 +160,32 @@ test('boot: static, version, health, allowlist proxy, and refusals', async () =>
         const exchange = await call('POST', '/mobile-preview/api/cms-api/v1/mobile-preview/session/exchange');
         assert.equal(exchange.status, 200);
 
+        // A plugin PUBLIC submit (e.g. SurveyJS) is proxied through.
+        const pluginSubmit = await call('POST', '/mobile-preview/api/cms-api/v1/plugins/surveyjs/submit');
+        assert.equal(pluginSubmit.status, 200);
+
+        // A core form submit is proxied through so forms are testable in preview.
+        const formSubmit = await call('POST', '/mobile-preview/api/cms-api/v1/forms/submit');
+        assert.equal(formSubmit.status, 200);
+
         // A non-allowlisted admin read is refused with 403 and never proxied.
         const admin = await call('GET', '/mobile-preview/api/cms-api/v1/admin/pages');
         assert.equal(admin.status, 403);
 
-        // A write to an otherwise-readable resource is refused.
+        // An admin plugin write is refused (admin surface stays gated).
+        const adminPlugin = await call('POST', '/mobile-preview/api/cms-api/v1/admin/plugins/surveyjs/install');
+        assert.equal(adminPlugin.status, 403);
+
+        // A write to an otherwise-readable core resource is refused.
         const write = await call('POST', '/mobile-preview/api/cms-api/v1/pages');
         assert.equal(write.status, 403);
 
-        // The backend only ever saw the two allowed calls.
+        // The backend only ever saw the allowed calls.
         assert.deepEqual(received, [
             'GET /cms-api/v1/languages',
             'POST /cms-api/v1/mobile-preview/session/exchange',
+            'POST /cms-api/v1/plugins/surveyjs/submit',
+            'POST /cms-api/v1/forms/submit',
         ]);
     } finally {
         await new Promise((r) => server.close(r));

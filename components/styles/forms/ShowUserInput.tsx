@@ -56,13 +56,20 @@ export function ShowUserInput({ section, values }: IStyleProps): React.ReactElem
         () => (section as { entries?: IUserInputEntry[] }).entries ?? [],
         [section]
     );
+    // Issue #56 v2: header labels come from the section's `field_labels`
+    // (`field_key => display_name`) map, so a renamed column relabels the header
+    // automatically. Absent on older hosts → columns fall back to the key.
+    const fieldLabels = useMemo<Record<string, string>>(
+        () => (section as { field_labels?: Record<string, string> }).field_labels ?? {},
+        [section]
+    );
 
     // Author-selected columns (fields_map) + optional leading timestamp column.
     const showTimestamp = readBooleanField(section, 'show_timestamp', false);
     const rawFieldsMap = readField<string>(section, 'fields_map');
     const columns = useMemo<IShowUserInputColumn[]>(
-        () => buildShowUserInputColumns(rawFieldsMap, entries[0], showTimestamp),
-        [rawFieldsMap, entries, showTimestamp]
+        () => buildShowUserInputColumns(rawFieldsMap, entries[0], showTimestamp, fieldLabels),
+        [rawFieldsMap, entries, showTimestamp, fieldLabels]
     );
 
     const deleteEnabled = readBooleanField(section, 'delete_entry', false);

@@ -9,7 +9,10 @@ SPDX-License-Identifier: MPL-2.0
  *   - select + relabel exactly the mapped columns when a map is set,
  *   - fall back to every non-bookkeeping key when no map is set,
  *   - prepend the leading "Date" column when show_timestamp is on,
- *   - tolerate empty / malformed `fields_map` JSON without throwing.
+ *   - tolerate empty / malformed `fields_map` JSON without throwing,
+ *   - (issue #56 v2) default headers to the `field_labels` display name and
+ *     resolve a `fields_map` authored against either the immutable field_key or
+ *     the current display_name.
  */
 
 import test from 'node:test';
@@ -60,4 +63,47 @@ test('tolerates malformed / non-array fields_map JSON', () => {
 test('empty entry list yields no columns (no crash on undefined sample)', () => {
     assert.deepEqual(buildShowUserInputColumns(undefined, undefined, false), []);
     assert.deepEqual(buildShowUserInputColumns(undefined, undefined, true), [{ key: 'entry_date', label: 'Date' }]);
+});
+
+// Issue #56 v2: entries are keyed by the immutable field_key; the human label
+// lives in field_labels (field_key => display_name).
+const FIELD_KEY_SAMPLE = { record_id: 7, id_users: 3, _can_delete: true, entry_date: '2026-06-22', section_230: 'Ann', section_231: 'ok' };
+const FIELD_LABELS = { section_230: 'Name', section_231: 'How are you?' };
+
+test('default headers use the field_labels display name, not the raw field_key', () => {
+    assert.deepEqual(buildShowUserInputColumns(undefined, FIELD_KEY_SAMPLE, false, FIELD_LABELS), [
+        { key: 'section_230', label: 'Name' },
+        { key: 'section_231', label: 'How are you?' },
+    ]);
+});
+
+test('default headers fall back to the field_key when no label is mapped', () => {
+    assert.deepEqual(buildShowUserInputColumns(undefined, FIELD_KEY_SAMPLE, false, { section_230: 'Name' }), [
+        { key: 'section_230', label: 'Name' },
+        { key: 'section_231', label: 'section_231' },
+    ]);
+});
+
+test('fields_map resolves a mapping authored against the immutable field_key', () => {
+    const map = JSON.stringify([{ field_name: 'section_231', field_new_name: '' }]);
+    assert.deepEqual(buildShowUserInputColumns(map, FIELD_KEY_SAMPLE, false, FIELD_LABELS), [
+        { key: 'section_231', label: 'How are you?' },
+    ]);
+});
+
+test('fields_map resolves a mapping authored against the current display_name (rename-safe)', () => {
+    const map = JSON.stringify([{ field_name: 'How are you?', field_new_name: 'Mood' }]);
+    assert.deepEqual(buildShowUserInputColumns(map, FIELD_KEY_SAMPLE, false, FIELD_LABELS), [
+        { key: 'section_231', label: 'Mood' },
+    ]);
+});
+
+test('fields_map drops a mapping that matches no field_key or display_name', () => {
+    const map = JSON.stringify([
+        { field_name: 'section_230', field_new_name: 'Name' },
+        { field_name: 'nonexistent', field_new_name: 'Ghost' },
+    ]);
+    assert.deepEqual(buildShowUserInputColumns(map, FIELD_KEY_SAMPLE, false, FIELD_LABELS), [
+        { key: 'section_230', label: 'Name' },
+    ]);
 });
