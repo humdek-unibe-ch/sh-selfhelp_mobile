@@ -141,24 +141,25 @@ dev / web-preview builds, never production native.
 
 ## 3a. Off-menu pages open as a modal
 
-A page that is **not on the navigation menu** (no `navPosition`, or headless) has
-no drawer/tab entry to reach it, so it is presented as a **modal sliding up over
-the current page** instead of routing to a bare full-screen page. This makes
-off-menu pages — exactly the ones an author wants to "just show" — immediately
-visible in context. This is **app-wide core behaviour**, not preview-only: it
-applies to every in-app navigation (a `Button`/`Link` to an off-menu keyword) and
-the preview boot reuses the same mechanism.
+A page that is **not on a resolved mobile menu** (absent from `mobile_drawer` and
+`mobile_bottom_tabs` in `GET /navigation`) has no drawer/tab entry to reach it,
+so it is presented as a **modal sliding up over the current page** instead of
+routing to a bare full-screen page. This makes off-menu pages — exactly the
+ones an author wants to "just show" — immediately visible in context. This is
+**app-wide core behaviour**, not preview-only: it applies to every in-app
+navigation (a `Button`/`Link` to an off-menu keyword) and the preview boot
+reuses the same mechanism.
 
 - **Central navigator (`components/shell/usePageNavigation.ts`).** Every in-app
   "go to this page" affordance (`Button`, `Link`) calls `navigateToPage(target)`,
-  which opens a modal when `isKeywordOnMenu(pages, keyword)` is false (off-menu /
-  unknown) and otherwise `router.push`es `/[keyword]` full-screen. External URLs
-  and "open in new tab" are handled by the caller (OS link), not here.
+  which opens a modal when `isKeywordOnResolvedMobileMenu(pages, keyword, navigation)`
+  is false (off-menu / unknown) and otherwise `router.push`es the resolved route
+  full-screen. External URLs and "open in new tab" are handled by the caller (OS
+  link), not here.
 - **Preview boot decision (`app/_layout.tsx`).** For the launched preview keyword
   the gate resolves the presentation once per session: `modal=on` → always modal;
-  `modal=off` → always route; `modal=auto` → **wait for the navigation pages**
-  (`usePages`) and then open a modal when the page is off-menu, otherwise route to
-  `/[keyword]`.
+  `modal=off` → always route; `modal=auto` → wait for `usePages` + `useNavigation`
+  and then open a modal when the page is off-menu, otherwise route to the keyword.
 - **Host (`components/shell/PageModalHost.tsx`).** Mounted once at the root, it
   reads the keyword from `stores/pageModalStore.ts` and renders it via the
   existing `CmsPageScreen` inside a dependency-light React Native `Modal` (no

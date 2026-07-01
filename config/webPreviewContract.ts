@@ -31,9 +31,9 @@ export type TPreviewOrientation = 'portrait' | 'landscape';
 /**
  * How the previewed `keyword` is presented on boot:
  *   - `auto` (default) — present it as a MODAL over home when the page is NOT on
- *     the navigation menu (no `navPosition` / headless), otherwise route to it
- *     normally. This makes off-menu pages (which have no menu entry to reach
- *     them) immediately visible in context, exactly as a deep-linked overlay.
+ *     a resolved mobile menu (`mobile_drawer` / `mobile_bottom_tabs` from
+ *     `GET /navigation`), otherwise route to it normally. Off-menu pages have no
+ *     drawer/tab entry, so they appear as a contextual overlay.
  *   - `on`  — always present the keyword as a modal over home (explicit override,
  *     e.g. a "preview in modal" button).
  *   - `off` — never modal; always route to the keyword full-screen.
