@@ -7,7 +7,7 @@ SPDX-License-Identifier: MPL-2.0
 Audience: Operators and deployers.
 Status: active.
 Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
-Last verified: 2026-06-03.
+Last verified: 2026-07-01.
 Source of truth: Runtime configuration, environment variables, scripts, and deployment services.
 
 The app handles three classes of link, all routed through `native/deepLinks.ts`:
@@ -18,7 +18,22 @@ The app handles three classes of link, all routed through `native/deepLinks.ts`:
 | Custom scheme + auth | `selfhelp://validate/42/abc...`            | Email validation / password reset deep-link from emails. |
 | Universal / app link | `https://app.selfhelp.com/messages`        | Tappable URLs that open the app if installed, fall back to web otherwise. |
 
-`deepLinks.ts` parses each URL into a `{ keyword, userId?, token? }` triple and routes via Expo Router. Validate / reset-password links carry the `user_id` and `token` segments through to the corresponding screens.
+`deepLinks.ts` classifies each URL with `classifyDeepLink()` and routes through Expo Router. Auth-flow keywords use the live kebab-case CMS keywords (`validate`, `reset-password`). Validate / reset-password links carry the `user_id` and `token` segments through to the corresponding screens as **snake_case** Expo Router params (`user_id`, `token`) — matching the backend `page_routes` parameter names (issue #30). The canonical reset email link is `/reset/{user_id}/{token}`; the `/reset-password/{user_id}/{token}` alias is accepted too.
+
+**Routing identity:** Expo screens still mount on the `[keyword]` catch-all route, but internal shell navigation and deep links resolve targets through page URLs (`pageUrlToMobileRoute`) and, for parameterized paths, `pageService.resolvePageByPath()` so nested public URLs do not rely on keyword guessing.
+
+### DB-driven path resolution (parameterized links)
+
+The single-keyword parser above covers the auth flows. For richer parameterized
+public URLs — e.g. an entry-record deep link `/team/{record_id}` — the app
+resolves the **full path** against the backend `page_routes` contract with
+`pageService.resolvePageByPath('/team/7')` (which calls
+`GET /cms-api/v1/pages/resolve?path=...`). The resolved page carries snake_case
+`route_params` (`{ record_id: '7' }`) plus `matched_url_pattern` and
+`canonical_url`, so the renderer shows the right record without hardcoding slug
+parsing. Open-access applies only to the resolve API route; the resolved page
+still enforces full page ACL, so an unauthorized deep link renders nothing
+sensitive.
 
 ## Configuring the custom scheme
 
