@@ -23,9 +23,10 @@ import { AccountMenu } from './AccountMenu';
 
 interface IAppHeaderProps {
     onOpenDrawer: () => void;
+    showDrawer?: boolean;
 }
 
-export function AppHeader({ onOpenDrawer }: IAppHeaderProps): React.ReactElement {
+export function AppHeader({ onOpenDrawer, showDrawer = true }: IAppHeaderProps): React.ReactElement {
     const user = useAuthStore((s) => s.user);
     const colors = useAppColors();
     const appName = Constants.expoConfig?.name ?? 'SelfHelp';
@@ -48,14 +49,16 @@ export function AppHeader({ onOpenDrawer }: IAppHeaderProps): React.ReactElement
             }}
         >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <Pressable
-                    onPress={onOpenDrawer}
-                    accessibilityRole="button"
-                    accessibilityLabel="Open menu"
-                    hitSlop={8}
-                >
-                    <Text style={{ fontSize: 22, fontWeight: '700', color: colors.text }}>{'\u2630'}</Text>
-                </Pressable>
+                {showDrawer ? (
+                    <Pressable
+                        onPress={onOpenDrawer}
+                        accessibilityRole="button"
+                        accessibilityLabel="Open menu"
+                        hitSlop={8}
+                    >
+                        <Text style={{ fontSize: 22, fontWeight: '700', color: colors.text }}>{'\u2630'}</Text>
+                    </Pressable>
+                ) : null}
                 <Pressable onPress={() => router.push('/')} accessibilityRole="button" accessibilityLabel={appName}>
                     <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{appName}</Text>
                 </Pressable>

@@ -52,8 +52,9 @@ import {
     type TPreviewBridgeMessage,
 } from '@selfhelp/shared';
 
-import { isKeywordOnMenu } from '@/components/shell/navigationUtils';
+import { isKeywordOnResolvedMobileMenu } from '@/components/shell/navigationUtils';
 import { getWebPreviewRuntime } from '@/config/webPreview';
+import { useNavigation } from '@/hooks/useNavigation';
 import { usePages } from '@/hooks/usePages';
 import {
     applyPreviewThemePreferences,
@@ -79,6 +80,7 @@ export function PreviewSyncBridge(): null {
     // (see `goToKeyword`); read through a ref so the once-registered listener sees
     // the latest pages without re-subscribing.
     const { data: pages } = usePages();
+    const { data: navigation } = useNavigation();
     const authBootstrapped = useAuthStore((s) => s.bootstrapped);
     const serverHydrated = useServerStore((s) => s.hydrated);
 
@@ -97,6 +99,7 @@ export function PreviewSyncBridge(): null {
     const currentKeywordRef = useRef<string | null>(null);
     const lastSentRef = useRef<string | null | undefined>(undefined);
     const pagesRef = useRef(pages);
+    const navigationRef = useRef(navigation);
     const readySentRef = useRef(false);
     // Loop guard for theme sync: the last prefs we SENT to or RECEIVED from the
     // shell. Seeded on activation so the initial state is never echoed back.
@@ -105,6 +108,10 @@ export function PreviewSyncBridge(): null {
     useEffect(() => {
         pagesRef.current = pages;
     }, [pages]);
+
+    useEffect(() => {
+        navigationRef.current = navigation;
+    }, [navigation]);
 
     const postToParent = useCallback((message: TPreviewBridgeMessage): void => {
         if (!activeRef.current || typeof window === 'undefined') return;
@@ -165,7 +172,7 @@ export function PreviewSyncBridge(): null {
             // we treat the target as on-menu so a real menu link is never trapped
             // behind a modal.
             const knownPages = pagesRef.current;
-            if (knownPages && !isKeywordOnMenu(knownPages, keyword)) {
+            if (knownPages && !isKeywordOnResolvedMobileMenu(knownPages, keyword, navigationRef.current)) {
                 usePageModalStore.getState().open(keyword);
                 return;
             }

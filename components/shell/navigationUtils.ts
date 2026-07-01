@@ -3,80 +3,93 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 /**
- * Navigation helpers shared by the drawer, the bottom tab bar, the
- * menu fallback list, and the segmented child-tabs renderer.
+ * Navigation helpers shared by the drawer, bottom tab bar, segmented child
+ * tabs, and modal-vs-route resolution.
  *
- * Selection rules for what a "menu page" is:
- *
- *   - `navPosition !== null`  — the CMS author placed the page on the
- *     header / drawer menu. Pages assigned only to the footer
- *     (`footerPosition !== null && navPosition === null`) are *not*
- *     shown in the mobile drawer/tabs.
- *   - `is_headless === false` — headless pages are content-only
- *     (used as fragments / API endpoints) and never appear in the UI.
- *
- * `getMenuTree()` returns the tree filtered to menu pages only,
- * preserving order via `navPosition`. `flattenMenuPages()` flattens
- * the same tree into a list (used by drawer + page-list fallback).
- *
- * `getTopLevelMenuPages()` is used by the bottom tab bar where we
- * only show the first-level menu items.
- *
- * `isPageActive()` matches the CURRENT URL pathname against a page's
- * href, including matching all of a page's descendants — so e.g.
- * landing on `/team/people` highlights the parent `team` tab too.
+ * Menu membership comes from the menu-builder payload (`mobile_drawer`,
+ * `mobile_bottom_tabs`). Page tree lookups still use `IPageItem[]` from
+ * `/pages/language/{id}` for keyword resolution and branch nav.
  */
 
-import type { IPageItem } from '@selfhelp/shared';
+import type {
+    INavigationMenuItem,
+    INavigationPayload,
+    IPageItem,
+} from '@selfhelp/shared';
+import { getNavigationItemLabel, isOnAnyMobileMenuFromPayload, pageUrlToMobileRoute } from '@selfhelp/shared';
+
+function getNavigationItemMobileRoute(item: INavigationMenuItem): string {
+    if (item.item_type === 'external_url' && item.external_url) {
+        return item.external_url;
+    }
+    const page = item.page;
+    if (!page) {
+        return '/index';
+    }
+    return pageUrlToMobileRoute(page.url, page.keyword);
+}
+
+export function getNavigationItemHref(item: INavigationMenuItem): string {
+    return getNavigationItemMobileRoute(item);
+}
 
 export function getPageLabel(page: IPageItem): string {
     return page.title ?? page.keyword;
 }
 
 export function getPageHref(page: IPageItem): string {
-    return page.keyword === 'home' ? '/' : `/${page.keyword}`;
+    return pageUrlToMobileRoute(page.url, page.keyword);
 }
 
-function sortByNavPosition(a: IPageItem, b: IPageItem): number {
-    return (a.navPosition ?? 0) - (b.navPosition ?? 0);
+export function menuItemToPageItem(item: INavigationMenuItem): IPageItem | null {
+    const page = item.page;
+    if (!page) {
+        return null;
+    }
+    return {
+        id: page.id,
+        id_pages: page.id,
+        keyword: page.keyword,
+        url: page.url,
+        parent_page_id: null,
+        is_headless: false,
+        title: page.title ?? item.label,
+        icon: item.icon ?? page.icon ?? null,
+        mobile_icon: page.mobile_icon ?? null,
+        children: (item.children ?? [])
+            .map(menuItemToPageItem)
+            .filter((child): child is IPageItem => child !== null),
+    };
 }
 
-function isMenuPage(page: IPageItem): boolean {
-    if (page.is_headless) return false;
-    return page.navPosition !== null && page.navPosition !== undefined;
+export function getDrawerMenuItems(navigation: INavigationPayload | null | undefined): INavigationMenuItem[] {
+    return navigation?.menus?.mobile_drawer?.items ?? [];
 }
 
-/**
- * Filter `pages` to only those that should appear in the navigation
- * surface (drawer / tabs / menu list), preserving the parent → child
- * tree but pruning footer-only / unassigned pages.
- */
-export function getMenuTree(pages: IPageItem[]): IPageItem[] {
-    return pages
-        .filter(isMenuPage)
-        .map((page) => ({
-            ...page,
-            children: page.children ? getMenuTree(page.children) : undefined,
-        }))
-        .sort(sortByNavPosition);
+export function getBottomTabMenuItems(navigation: INavigationPayload | null | undefined): INavigationMenuItem[] {
+    const items = navigation?.menus?.mobile_bottom_tabs?.items ?? [];
+    const limit = navigation?.menus?.mobile_bottom_tabs?.item_limit ?? 5;
+    return items.slice(0, limit > 0 ? limit : items.length);
 }
 
-/** First-level menu items only (used by the bottom tab bar). */
-export function getTopLevelMenuPages(pages: IPageItem[]): IPageItem[] {
-    return pages
-        .filter((page) => !page.parent_page_id && isMenuPage(page))
-        .sort(sortByNavPosition);
+/** Holder tabs redirect to the first menu-visible child when pressed. */
+export function resolveTabPressHref(item: INavigationMenuItem): string {
+    const children = (item.children ?? []).filter(
+        (child) => child.page != null && child.is_active !== false,
+    );
+    if (children.length > 0) {
+        return getNavigationItemHref(children[0]);
+    }
+
+    return getNavigationItemHref(item);
 }
 
-/** Flatten a menu tree (post-filter) for the drawer body. */
-export function flattenMenuPages(pages: IPageItem[]): IPageItem[] {
-    return getMenuTree(pages).flatMap((page) => [
-        page,
-        ...(page.children ? flattenMenuPages(page.children) : []),
-    ]);
+/** Flatten menu items (post-filter) for keyword lookup helpers. */
+export function flattenMenuItems(items: INavigationMenuItem[]): INavigationMenuItem[] {
+    return items.flatMap((item) => [item, ...flattenMenuItems(item.children ?? [])]);
 }
 
-/** Flatten the *full* tree (used for keyword lookup, no menu filter). */
+/** Flatten the *full* page tree (used for keyword lookup, no menu filter). */
 export function flattenPages(pages: IPageItem[]): IPageItem[] {
     return pages.flatMap((page) => [page, ...flattenPages(page.children ?? [])]);
 }
@@ -85,54 +98,134 @@ export function findPageByKeyword(pages: IPageItem[], keyword: string): IPageIte
     return flattenPages(pages).find((page) => page.keyword === keyword) ?? null;
 }
 
-/**
- * True when `keyword` resolves to a page that appears on the navigation menu
- * (has a `navPosition`, not headless). Off-menu pages (footer-only, unassigned,
- * headless, or unknown) return false — the web-preview boot presents those as a
- * modal over home in `modal=auto` so they are reachable in context.
- */
-export function isKeywordOnMenu(pages: IPageItem[], keyword: string): boolean {
-    const page = findPageByKeyword(pages, keyword);
-    return page !== null && isMenuPage(page);
+export function findMenuItemByKeyword(
+    items: INavigationMenuItem[],
+    keyword: string,
+): INavigationMenuItem | null {
+    return flattenMenuItems(items).find((item) => item.page?.keyword === keyword) ?? null;
 }
 
-/** Normalise an internal target ("/impressum", "impressum", "/") to a keyword. */
+/**
+ * True when `keyword` is represented on a resolved mobile menu surface
+ * (`mobile_drawer` or `mobile_bottom_tabs` from `GET /navigation`).
+ */
+export function isKeywordOnResolvedMobileMenu(
+    pages: IPageItem[],
+    keyword: string,
+    navigation?: INavigationPayload | null,
+): boolean {
+    if (!navigation) {
+        return false;
+    }
+    const page = findPageByKeyword(pages, keyword);
+    if (!page) {
+        return false;
+    }
+    const pageId = page.id_pages ?? page.id;
+    return isOnAnyMobileMenuFromPayload(navigation, pageId);
+}
+
+/** Normalise an internal target ("/impressum", "impressum", "/") to a URL path. */
+export function normalizeNavigationTarget(target: string): string {
+    const trimmed = target.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+        try {
+            return new URL(trimmed).pathname || '/';
+        } catch {
+            return trimmed;
+        }
+    }
+    if (!trimmed.startsWith('/')) {
+        return `/${trimmed}`;
+    }
+    return trimmed === '' ? '/' : trimmed;
+}
+
+/** Normalise an internal target to a page keyword (legacy catch-all route identity). */
 export function toKeyword(target: string): string {
-    const trimmed = target.replace(/^\/+/, '').trim();
-    return trimmed === '' ? 'home' : trimmed;
+    const path = normalizeNavigationTarget(target);
+    const trimmed = path.replace(/^\/+/, '').trim();
+    return trimmed === '' ? 'home' : trimmed.split('/')[0] ?? 'home';
+}
+
+export function findPageByUrl(pages: IPageItem[], urlPath: string): IPageItem | null {
+    const normalized = urlPath === '' ? '/' : urlPath.replace(/\/+$/, '') || '/';
+    return flattenPages(pages).find((page) => {
+        const pageUrl = (page.url ?? '').replace(/\/+$/, '') || '/';
+        return pageUrl === normalized;
+    }) ?? null;
+}
+
+export function findMenuItemByUrl(
+    items: INavigationMenuItem[],
+    urlPath: string,
+): INavigationMenuItem | null {
+    const normalized = urlPath === '' ? '/' : urlPath.replace(/\/+$/, '') || '/';
+    return flattenMenuItems(items).find((item) => {
+        if (!item.page) {
+            return false;
+        }
+        const itemUrl = (item.page.url ?? '').replace(/\/+$/, '') || '/';
+        return itemUrl === normalized;
+    }) ?? null;
 }
 
 export type TPageNavigation =
     | { kind: 'modal'; keyword: string }
-    | { kind: 'route'; keyword: string };
+    | { kind: 'route'; keyword: string; href: string };
 
-/**
- * The GLOBAL "load a CMS page" decision, kept pure (no router/store/React deps)
- * so it can run from anywhere — links, buttons, action icons, form redirects,
- * plugin host redirects — and be unit-tested in isolation.
- *
- *   - OFF-MENU pages (no drawer/tab entry) → `modal` (open as a sheet over the
- *     current page so they are reachable in context; closing returns).
- *   - ON-MENU pages → `route` (full-screen).
- *   - Unknown until `pages` load (undefined) → `route`, so a real menu link is
- *     never trapped behind a modal (matches the `[keyword]` route guard).
- */
 export function resolvePageNavigation(
     target: string,
     pages: IPageItem[] | undefined,
+    navigation?: INavigationPayload | null,
 ): TPageNavigation {
-    const keyword = toKeyword(target);
-    if (pages && !isKeywordOnMenu(pages, keyword)) {
+    const path = normalizeNavigationTarget(target);
+    let keyword: string | undefined;
+    let href: string | undefined;
+
+    if (navigation) {
+        const drawer = getDrawerMenuItems(navigation);
+        const tabs = getBottomTabMenuItems(navigation);
+        const menuItem = findMenuItemByUrl(drawer, path)
+            ?? findMenuItemByUrl(tabs, path);
+        if (menuItem?.page) {
+            keyword = menuItem.page.keyword;
+            href = getNavigationItemHref(menuItem);
+        }
+    }
+
+    const pageFromUrl = pages ? findPageByUrl(pages, path) : null;
+    if (!keyword) {
+        keyword = pageFromUrl?.keyword ?? toKeyword(target);
+    }
+
+    if (!href) {
+        if (navigation) {
+            const drawer = getDrawerMenuItems(navigation);
+            const tabs = getBottomTabMenuItems(navigation);
+            const menuItem = findMenuItemByKeyword(drawer, keyword)
+                ?? findMenuItemByKeyword(tabs, keyword);
+            if (menuItem) {
+                href = getNavigationItemHref(menuItem);
+            }
+        }
+        if (!href && pageFromUrl) {
+            href = getPageHref(pageFromUrl);
+        } else if (!href && pages) {
+            const page = findPageByKeyword(pages, keyword);
+            if (page) {
+                href = getPageHref(page);
+            }
+        }
+    }
+    href = href ?? pageUrlToMobileRoute(pageFromUrl?.url ?? null, keyword);
+
+    if (pages && !isKeywordOnResolvedMobileMenu(pages, keyword, navigation)) {
         return { kind: 'modal', keyword };
     }
-    return { kind: 'route', keyword };
+    return { kind: 'route', keyword, href };
 }
 
-/**
- * Lightweight icon hint — a single character per page. We keep the set
- * small intentionally so HeroUI / system fonts can render it crisply
- * on every platform without bundling an icon font.
- */
 export function iconForPage(page: IPageItem): string {
     const keyword = page.keyword.toLowerCase();
     if (keyword.includes('home')) return '⌂';
@@ -143,22 +236,38 @@ export function iconForPage(page: IPageItem): string {
     return getPageLabel(page).slice(0, 1).toUpperCase();
 }
 
-/**
- * Active-route matcher.
- *
- * A page is considered active when:
- *
- *   - Its href equals the current pathname exactly, OR
- *   - The current pathname is one of its descendants (e.g. parent
- *     `/team` is active while we're on `/team/people`), OR
- *   - The page is `home` and the current pathname is `/`.
- */
+export function isNavigationItemActive(item: INavigationMenuItem, pathname: string): boolean {
+    const href = getNavigationItemHref(item);
+    if (pathname === href) return true;
+    if (href === '/index' && (pathname === '' || pathname === '/' || pathname === '/index')) return true;
+    if (href !== '/' && pathname.startsWith(`${href}/`)) return true;
+    return (item.children ?? []).some((child) => isNavigationItemActive(child, pathname));
+}
+
 export function isPageActive(page: IPageItem, pathname: string): boolean {
     const href = getPageHref(page);
     if (pathname === href) return true;
-    if (href === '/' && (pathname === '' || pathname === '/')) return true;
+    if (href === '/index' && (pathname === '' || pathname === '/' || pathname === '/index')) return true;
+    if (href !== '/' && pathname.startsWith(`${href}/`)) return true;
     if (page.children?.length) {
         return page.children.some((child) => isPageActive(child, pathname));
     }
     return false;
 }
+
+/** @deprecated Use menu-builder items via `getDrawerMenuItems`. */
+export function getMenuTree(pages: IPageItem[]): IPageItem[] {
+    return pages;
+}
+
+/** @deprecated Use `getBottomTabMenuItems`. */
+export function getTopLevelMenuPages(pages: IPageItem[]): IPageItem[] {
+    return pages.filter((page) => !page.parent_page_id);
+}
+
+/** @deprecated Use `flattenMenuItems`. */
+export function flattenMenuPages(pages: IPageItem[]): IPageItem[] {
+    return flattenPages(pages);
+}
+
+export { getNavigationItemLabel };

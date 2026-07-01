@@ -3,38 +3,35 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 /**
- * Drawer content — lists CMS menu pages (only those with a
- * `navPosition`), in tree order. Children are indented and inherit
- * the parent's tap behaviour. Whichever page matches the current URL
- * (or whose descendant matches) is highlighted so users always know
- * where they are.
+ * Drawer content — lists `mobile_drawer` menu items in tree order.
  */
 
 import { router, usePathname } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
-import type { IPageItem } from '@selfhelp/shared';
+import type { INavigationMenuItem } from '@selfhelp/shared';
 
-import { usePages } from '@/hooks/usePages';
+import { useNavigation } from '@/hooks/useNavigation';
 import { useAppColors } from '@/hooks/useAppColors';
 import {
-    getMenuTree,
-    getPageHref,
-    getPageLabel,
-    iconForPage,
-    isPageActive,
+    getDrawerMenuItems,
+    getNavigationItemHref,
+    getNavigationItemLabel,
+    isNavigationItemActive,
+    menuItemToPageItem,
 } from './navigationUtils';
+import { PageMenuIcon } from './PageMenuIcon';
 
 export function CmsDrawerContent(props: DrawerContentComponentProps): React.ReactElement {
     const pathname = usePathname();
     const colors = useAppColors();
-    const { data, isLoading, error } = usePages();
-    const tree = data ? getMenuTree(data) : [];
+    const { data: navigation, isLoading, error } = useNavigation();
+    const tree = getDrawerMenuItems(navigation);
 
-    const handlePress = (page: IPageItem): void => {
+    const handlePress = (item: INavigationMenuItem): void => {
         props.navigation.closeDrawer();
-        router.push(getPageHref(page));
+        router.push(getNavigationItemHref(item));
     };
 
     return (
@@ -52,10 +49,10 @@ export function CmsDrawerContent(props: DrawerContentComponentProps): React.Reac
             {error ? (
                 <Text style={{ paddingHorizontal: 16, color: colors.danger }}>{error.message}</Text>
             ) : null}
-            {tree.map((page) => (
+            {tree.map((item) => (
                 <DrawerEntry
-                    key={page.id ?? page.keyword}
-                    page={page}
+                    key={String(item.id)}
+                    item={item}
                     pathname={pathname}
                     depth={0}
                     onPress={handlePress}
@@ -69,41 +66,38 @@ export function CmsDrawerContent(props: DrawerContentComponentProps): React.Reac
 }
 
 interface IDrawerEntryProps {
-    page: IPageItem;
+    item: INavigationMenuItem;
     pathname: string;
     depth: number;
-    onPress: (page: IPageItem) => void;
+    onPress: (item: INavigationMenuItem) => void;
 }
 
-function DrawerEntry({ page, pathname, depth, onPress }: IDrawerEntryProps): React.ReactElement {
-    const active = isPageActive(page, pathname);
+function DrawerEntry({ item, pathname, depth, onPress }: IDrawerEntryProps): React.ReactElement {
+    const active = isNavigationItemActive(item, pathname);
     const colors = useAppColors();
+    const page = menuItemToPageItem(item);
+    const children = item.children ?? [];
+
     return (
         <View>
             <Pressable
-                onPress={() => onPress(page)}
+                onPress={() => onPress(item)}
                 style={({ pressed }) => ({
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 12,
-                    paddingVertical: 12,
-                    paddingLeft: 16 + depth * 16,
-                    paddingRight: 16,
-                    backgroundColor: active ? colors.activeSurface : pressed ? colors.pressed : 'transparent',
-                    borderLeftWidth: 3,
-                    borderLeftColor: active ? colors.primaryStrong : 'transparent',
+                    gap: 10,
+                    paddingVertical: 10,
+                    paddingHorizontal: 16 + depth * 14,
+                    backgroundColor: active ? colors.activeSurface : pressed ? colors.surfaceMuted : 'transparent',
                 })}
             >
-                <Text
-                    style={{
-                        width: 22,
-                        textAlign: 'center',
-                        color: active ? colors.primaryStrong : colors.textFaint,
-                        fontWeight: '700',
-                    }}
-                >
-                    {iconForPage(page)}
-                </Text>
+                {page ? (
+                    <PageMenuIcon
+                        page={page}
+                        size={20}
+                        color={active ? colors.primaryStrong : colors.textMuted}
+                    />
+                ) : null}
                 <Text
                     style={{
                         flex: 1,
@@ -112,13 +106,13 @@ function DrawerEntry({ page, pathname, depth, onPress }: IDrawerEntryProps): Rea
                         color: active ? colors.primaryStrong : colors.text,
                     }}
                 >
-                    {getPageLabel(page)}
+                    {getNavigationItemLabel(item)}
                 </Text>
             </Pressable>
-            {page.children?.map((child) => (
+            {children.map((child) => (
                 <DrawerEntry
-                    key={child.id ?? child.keyword}
-                    page={child}
+                    key={String(child.id)}
+                    item={child}
                     pathname={pathname}
                     depth={depth + 1}
                     onPress={onPress}

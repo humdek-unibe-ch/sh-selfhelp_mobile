@@ -9,8 +9,8 @@ SPDX-License-Identifier: MPL-2.0
  *
  *   - ON-MENU pages (a drawer/tab entry exists) route FULL-SCREEN via the
  *     `[keyword]` catch-all, exactly as before.
- *   - OFF-MENU pages (no menu entry: footer-only, unassigned, headless, or
- *     unknown) open as a MODAL sheet over the current page (`usePageModalStore`),
+ *   - OFF-MENU pages (no entry on resolved `mobile_drawer` / `mobile_bottom_tabs`)
+ *     open as a MODAL sheet over the current page (`usePageModalStore`),
  *     so they are reachable in context and closing returns to the previous page.
  *
  * Every "go to this page" affordance — links, buttons, action icons, form
@@ -32,12 +32,14 @@ import { router } from 'expo-router';
 import type { IPageItem } from '@selfhelp/shared';
 
 import { resolvePageNavigation } from '@/components/shell/navigationUtils';
+import { navigationQueryKey } from '@/hooks/useNavigation';
 import { pagesQueryKey } from '@/hooks/usePages';
 import { appQueryClient } from '@/services/queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import { useLanguageStore } from '@/stores/languageStore';
 import { usePageModalStore } from '@/stores/pageModalStore';
 import { useServerStore } from '@/stores/serverStore';
+import type { INavigationPayload } from '@selfhelp/shared';
 
 /**
  * Read the menu pages currently cached for the active server / language / auth
@@ -58,13 +60,22 @@ function getCachedPages(): IPageItem[] | undefined {
  * rule ({@link resolvePageNavigation}) DIRECTLY against the cached menu so it
  * behaves identically in the native app AND the web-export live preview.
  */
+function getCachedNavigation(): INavigationPayload | undefined {
+    const serverUrl = useServerStore.getState().serverUrl;
+    const languageId = useLanguageStore.getState().languageId;
+    const authScope = useAuthStore.getState().accessToken ? 'auth' : 'anon';
+    return appQueryClient.getQueryData<INavigationPayload>(
+        navigationQueryKey(serverUrl, languageId, authScope),
+    );
+}
+
 export function navigateToPage(target: string): void {
-    const action = resolvePageNavigation(target, getCachedPages());
+    const action = resolvePageNavigation(target, getCachedPages(), getCachedNavigation());
     if (action.kind === 'modal') {
         usePageModalStore.getState().open(action.keyword);
         return;
     }
-    router.push(`/${action.keyword}`);
+    router.push(action.href as `/${string}`);
 }
 
 export function usePageNavigation(): (target: string) => void {

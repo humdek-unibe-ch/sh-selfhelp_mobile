@@ -1,89 +1,172 @@
 /*
+
 SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+
 SPDX-License-Identifier: MPL-2.0
+
 */
+
 /**
- * Bottom tab bar — first `MAX_BOTTOM_TABS` top-level menu pages.
- *
- * The active tab is highlighted with the brand colour, an underline
- * indicator on the icon, and a heavier label weight, matching the
- * pattern used elsewhere in the shell (drawer + segmented child tabs).
+
+ * Bottom tab bar — top-level `mobile_bottom_tabs` menu items.
+
  */
 
+
+
 import { router, usePathname } from 'expo-router';
+
 import { Pressable, Text, View } from 'react-native';
 
-import { usePages } from '@/hooks/usePages';
-import { useAppColors } from '@/hooks/useAppColors';
-import { getPageHref, getPageLabel, getTopLevelMenuPages, iconForPage, isPageActive } from './navigationUtils';
 
-const MAX_BOTTOM_TABS = 5;
+
+import { useNavigation } from '@/hooks/useNavigation';
+
+import { useAppColors } from '@/hooks/useAppColors';
+
+import {
+    getBottomTabMenuItems,
+    getNavigationItemLabel,
+    menuItemToPageItem,
+    resolveTabPressHref,
+} from './navigationUtils';
+import { isBottomTabMenuItemActive } from '@selfhelp/shared';
+
+import { PageMenuIcon } from './PageMenuIcon';
+
+
 
 export function BottomNavigationTabs(): React.ReactElement | null {
+
     const pathname = usePathname();
+
     const colors = useAppColors();
-    const { data } = usePages();
-    const tabs = getTopLevelMenuPages(data ?? []).slice(0, MAX_BOTTOM_TABS);
+
+    const { data: navigation } = useNavigation();
+
+    const tabs = getBottomTabMenuItems(navigation);
+
+
 
     if (tabs.length === 0) return null;
 
+
+
     return (
+
         <View
+
             style={{
+
                 flexDirection: 'row',
+
                 borderTopWidth: 1,
+
                 borderColor: colors.border,
+
                 backgroundColor: colors.surface,
+
                 paddingBottom: 4,
+
             }}
+
         >
-            {tabs.map((page) => {
-                const href = getPageHref(page);
-                const active = isPageActive(page, pathname);
+
+            {tabs.map((item) => {
+
+                const href = resolveTabPressHref(item);
+
+                const active = isBottomTabMenuItemActive(item, pathname);
+
+                const page = menuItemToPageItem(item);
+
                 return (
+
                     <Pressable
-                        key={page.id ?? page.keyword}
+
+                        key={String(item.id)}
+
                         onPress={() => router.push(href)}
+
                         style={({ pressed }) => ({
+
                             flex: 1,
+
                             alignItems: 'center',
+
                             paddingVertical: 8,
+
                             paddingHorizontal: 4,
+
                             opacity: pressed ? 0.7 : 1,
+
                         })}
+
                     >
+
                         <View
+
                             style={{
+
                                 width: 32,
+
                                 height: 4,
+
                                 borderRadius: 2,
+
                                 backgroundColor: active ? colors.primaryStrong : 'transparent',
+
                                 marginBottom: 4,
+
                             }}
+
                         />
+
+                        {page ? (
+
+                            <PageMenuIcon
+
+                                page={page}
+
+                                size={22}
+
+                                color={active ? colors.primaryStrong : colors.textFaint}
+
+                            />
+
+                        ) : null}
+
                         <Text
-                            style={{
-                                color: active ? colors.primaryStrong : colors.textFaint,
-                                fontWeight: '700',
-                                fontSize: 16,
-                            }}
-                        >
-                            {iconForPage(page)}
-                        </Text>
-                        <Text
+
                             numberOfLines={1}
+
                             style={{
+
                                 color: active ? colors.primaryStrong : colors.textMuted,
+
                                 fontSize: 11,
+
                                 fontWeight: active ? '700' : '500',
+
                                 marginTop: 2,
+
                             }}
+
                         >
-                            {getPageLabel(page)}
+
+                            {getNavigationItemLabel(item)}
+
                         </Text>
+
                     </Pressable>
+
                 );
+
             })}
+
         </View>
+
     );
+
 }
+

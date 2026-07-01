@@ -8,8 +8,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
 import { LoadingScreen } from '@/components/feedback/LoadingScreen';
 import { CmsPageScreen } from '@/components/renderer/CmsPageScreen';
-import { isKeywordOnMenu } from '@/components/shell/navigationUtils';
+import { isKeywordOnResolvedMobileMenu } from '@/components/shell/navigationUtils';
 import { getWebPreviewRuntime } from '@/config/webPreview';
+import { useNavigation } from '@/hooks/useNavigation';
 import { usePages } from '@/hooks/usePages';
 import { usePageModalStore } from '@/stores/pageModalStore';
 
@@ -29,13 +30,14 @@ export default function PageByKeywordScreen(): React.ReactElement | null {
     const { keyword } = useLocalSearchParams<{ keyword: string }>();
     const router = useRouter();
     const { data: pages } = usePages();
+    const { data: navigation } = useNavigation();
     const handledRef = useRef(false);
 
     const inPreviewShell = getWebPreviewRuntime().params.previewShell === true;
     // Until the menu loads we treat the page as on-menu (route full-screen) so a
     // real menu link is never trapped behind a modal — matching `usePageNavigation`.
     const offMenu =
-        !inPreviewShell && !!keyword && pages != null && !isKeywordOnMenu(pages, keyword);
+        !inPreviewShell && !!keyword && pages != null && !isKeywordOnResolvedMobileMenu(pages, keyword, navigation);
 
     useEffect(() => {
         if (handledRef.current || !offMenu) return;
