@@ -4,6 +4,71 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.32
+
+### Menu-builder navigation (breaking cleanup)
+
+Replaces the page-level `mobile_nav_render` / exclusive global shell model with
+first-class menus from `GET /cms-api/v1/navigation`:
+
+- **Drawer + bottom tabs** render independently when each menu has items (both
+  can appear together).
+- **`MobileBranchNavigation`** — automatic sibling/child segmented nav from
+  resolved menu trees (replaces `SegmentedChildPages` and per-page render modes).
+- **Modal vs route** — off-menu pages open as sheets; on-menu pages route
+  full-screen using URL-derived paths (`pageUrlToMobileRoute`), not keyword
+  guessing.
+- **Startup pages** — cold start respects configured guest/logged-in targets and
+  optional last-visited fallback from the navigation payload.
+- **Last visited** — records normal on-menu page visits via
+  `PUT /navigation/last-visited`.
+- **Holder pages** — tab pages without content auto-select the first visible
+  child; tab pages with content prepend a self segment.
+- Removed exclusive `globalNavRender` store, standalone `menu.tsx` route, and
+  `SegmentedChildPages`.
+
+Consumes `@selfhelp/shared` `1.21.0` (`INavigationPayload`, branch-nav helpers,
+`isOnAnyMobileMenuFromPayload`). Raised `supports.core` `>=0.1.31` → `>=0.1.32`.
+
+## 0.1.31
+
+### Navigation pages, nav rendering & page icons (host issue #30)
+
+Pages can act as navigation hubs with per-platform icons and render types.
+Mobile adds `lucide-react-native` and a `PageMenuIcon` component that draws the
+page's `mobile_icon` from the curated `MOBILE_ICON_SET` (`@selfhelp/shared`),
+with a text-glyph fallback, used by the drawer, bottom tabs, and segmented child
+pages. A mobile navigation renderer registry (`segmented-tabs` default,
+`bottom-tabs`, `drawer`, `hero-cards`) reads `mobile_nav_render` and a page with
+no body sections but menu-visible children auto-renders a virtual navigation
+block (`CmsPageScreen`); deeper levels drill down via the Expo Router stack. The
+global shell (bottom-tabs vs drawer) is configurable via `useMobileShellStore`
+(default `bottom-tabs`).
+
+Consumes `@selfhelp/shared >=1.19.0` (the `navigation` module +
+`mobile_icon`/`mobile_nav_render` on `IPageItem`/`IPageContent`; caret bumped
+`^1.18.0` → `^1.19.0`).
+
+The shared caret is further bumped `^1.19.0` → `^1.20.0` for the CMS-in-CMS modal
+contract (`IPageContent.modal_width`/`modal_height`). Those fields are **web
+only** — the mobile app opens an `open_in_modal` page as a normal screen — so this
+is a dependency-floor bump with **no mobile behavior change**.
+
+### DB-driven public routing for deep links (host issue #30)
+
+Public page resolution moves from client-side slug parsing to the host's new
+DB-driven resolver. `pageService` gains `resolvePageByPath(path)` which calls the
+open-access endpoint `GET /cms-api/v1/pages/resolve`, and the renderer threads the
+returned `route_params` into interpolation as `{{route.<snake_case>}}`. The
+validate screen now reads `route_params.user_id` / `route_params.token` from the
+resolver instead of parsing the URL, matching the parameterized reset/validate
+routes.
+
+Because public pages and deep links are now resolved through `/pages/resolve`,
+which first ships in core `0.1.31`, `supports.core` is raised `>=0.1.19` →
+`>=0.1.31`. Pairs with `@selfhelp/shared >=1.18.0` (route-metadata types +
+`PAGES.RESOLVE`).
+
 ## 0.1.30
 
 ### show-user-input headers honour the data-column display name (issue #56 v2)
