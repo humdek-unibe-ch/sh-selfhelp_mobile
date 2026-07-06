@@ -8,6 +8,7 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField } from '@/components/renderer/useField';
 import type { TMantineSize } from '@selfhelp/shared';
 import { mobileStyleProps, mobileIntentPalette } from '@/components/ui/mobileStyleProps';
+import { resolveGlyphIcon, looksLikeIconName } from '@/components/ui/glyphIcon';
 
 const SIZE_PX: Record<TMantineSize, number> = { xs: 16, sm: 20, md: 28, lg: 36, xl: 48 };
 
@@ -15,6 +16,11 @@ const SIZE_PX: Record<TMantineSize, number> = { xs: 16, sm: 20, md: 28, lg: 36, 
  * ThemeIcon — small colored icon container. HeroUI Native has no direct
  * equivalent, so this is a clean RN fallback driven by the shared semantic
  * model: `intent` -> color (via the shared mapper), `size`, `radius`.
+ *
+ * Icon fields may carry lucide names, Tabler names (`IconCircleCheck` from
+ * web-authored bundles) or plain text glyphs (emoji). Names resolve to real
+ * lucide icons; unresolvable NAMES fall back to a neutral dot instead of
+ * leaking `IconSomething` text into the UI.
  */
 export function ThemeIcon({ section }: IStyleProps): React.ReactElement {
     const resolved = mobileStyleProps(section);
@@ -24,6 +30,10 @@ export function ThemeIcon({ section }: IStyleProps): React.ReactElement {
 
     const dim = SIZE_PX[size] ?? 28;
     const isFilled = variant === 'filled';
+    const foreground = isFilled ? '#fff' : palette.foreground;
+
+    const IconCmp = resolveGlyphIcon(icon);
+    const glyph = !IconCmp && looksLikeIconName(icon) ? '●' : icon;
 
     return (
         <View
@@ -37,7 +47,11 @@ export function ThemeIcon({ section }: IStyleProps): React.ReactElement {
                 justifyContent: 'center',
             }}
         >
-            <Text style={{ color: isFilled ? '#fff' : palette.foreground, fontSize: dim * 0.55 }}>{icon}</Text>
+            {IconCmp ? (
+                <IconCmp size={Math.round(dim * 0.6)} color={foreground} />
+            ) : (
+                <Text style={{ color: foreground, fontSize: dim * 0.55 }}>{glyph}</Text>
+            )}
         </View>
     );
 }
