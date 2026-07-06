@@ -12,14 +12,15 @@ SPDX-License-Identifier: MPL-2.0
 
 import { useEffect, useMemo, useState } from 'react';
 import { router, usePathname } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import type { INavigationMenuItem } from '@selfhelp/shared';
-import { expandedIdsForActiveTrail, isMenuItemActiveOnMobile } from '@selfhelp/shared';
+import { expandedIdsForActiveTrail, isMenuItemActiveOnMobile, resolveAssetUrl } from '@selfhelp/shared';
 
 import { useNavigation } from '@/hooks/useNavigation';
 import { useAppColors } from '@/hooks/useAppColors';
+import { useServerStore } from '@/stores/serverStore';
 import {
     getDrawerMenuItems,
     getNavigationItemHref,
@@ -31,8 +32,14 @@ import { PageMenuIcon } from './PageMenuIcon';
 export function CmsDrawerContent(props: DrawerContentComponentProps): React.ReactElement {
     const pathname = usePathname();
     const colors = useAppColors();
+    const baseUrl = useServerStore((s) => s.serverUrl) ?? '';
     const { data: navigation, isLoading, error } = useNavigation();
     const tree = getDrawerMenuItems(navigation);
+
+    // Global branding (Navigation → Settings): logo image + accessible name.
+    const branding = navigation?.branding ?? null;
+    const brandTitle = branding?.logo_alt?.trim() || 'Menu';
+    const brandLogoUrl = branding?.logo_url ? resolveAssetUrl(branding.logo_url, baseUrl) : null;
 
     const activeTrailIds = useMemo(
         () => expandedIdsForActiveTrail(tree, pathname, 'mobile'),
@@ -74,8 +81,24 @@ export function CmsDrawerContent(props: DrawerContentComponentProps): React.Reac
             contentContainerStyle={{ paddingTop: 12 }}
             style={{ backgroundColor: colors.surface }}
         >
-            <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Menu</Text>
+            <View
+                style={{
+                    paddingHorizontal: 16,
+                    paddingBottom: 12,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                }}
+            >
+                {brandLogoUrl ? (
+                    <Image
+                        source={{ uri: brandLogoUrl }}
+                        accessibilityLabel={brandTitle}
+                        style={{ width: 32, height: 32, borderRadius: 6 }}
+                        resizeMode="contain"
+                    />
+                ) : null}
+                <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>{brandTitle}</Text>
             </View>
             {isLoading ? (
                 <Text style={{ paddingHorizontal: 16, color: colors.textFaint }}>Loading…</Text>
