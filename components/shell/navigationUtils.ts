@@ -16,21 +16,15 @@ import type {
     INavigationPayload,
     IPageItem,
 } from '@selfhelp/shared';
-import { getNavigationItemLabel, isOnAnyMobileMenuFromPayload, pageUrlToMobileRoute } from '@selfhelp/shared';
-
-function getNavigationItemMobileRoute(item: INavigationMenuItem): string {
-    if (item.item_type === 'external_url' && item.external_url) {
-        return item.external_url;
-    }
-    const page = item.page;
-    if (!page) {
-        return '/index';
-    }
-    return pageUrlToMobileRoute(page.url, page.keyword);
-}
+import {
+    getNavigationItemLabel,
+    getNavigationItemMobileHref,
+    isOnAnyMobileMenuFromPayload,
+    pageUrlToMobileRoute,
+} from '@selfhelp/shared';
 
 export function getNavigationItemHref(item: INavigationMenuItem): string {
-    return getNavigationItemMobileRoute(item);
+    return getNavigationItemMobileHref(item);
 }
 
 export function getPageLabel(page: IPageItem): string {
@@ -54,8 +48,8 @@ export function menuItemToPageItem(item: INavigationMenuItem): IPageItem | null 
         parent_page_id: null,
         is_headless: false,
         title: page.title ?? item.label,
-        icon: item.icon ?? page.icon ?? null,
-        mobile_icon: page.mobile_icon ?? null,
+        icon: item.icon,
+        mobile_icon: item.mobile_icon,
         children: (item.children ?? [])
             .map(menuItemToPageItem)
             .filter((child): child is IPageItem => child !== null),
@@ -236,14 +230,6 @@ export function iconForPage(page: IPageItem): string {
     return getPageLabel(page).slice(0, 1).toUpperCase();
 }
 
-export function isNavigationItemActive(item: INavigationMenuItem, pathname: string): boolean {
-    const href = getNavigationItemHref(item);
-    if (pathname === href) return true;
-    if (href === '/index' && (pathname === '' || pathname === '/' || pathname === '/index')) return true;
-    if (href !== '/' && pathname.startsWith(`${href}/`)) return true;
-    return (item.children ?? []).some((child) => isNavigationItemActive(child, pathname));
-}
-
 export function isPageActive(page: IPageItem, pathname: string): boolean {
     const href = getPageHref(page);
     if (pathname === href) return true;
@@ -253,21 +239,6 @@ export function isPageActive(page: IPageItem, pathname: string): boolean {
         return page.children.some((child) => isPageActive(child, pathname));
     }
     return false;
-}
-
-/** @deprecated Use menu-builder items via `getDrawerMenuItems`. */
-export function getMenuTree(pages: IPageItem[]): IPageItem[] {
-    return pages;
-}
-
-/** @deprecated Use `getBottomTabMenuItems`. */
-export function getTopLevelMenuPages(pages: IPageItem[]): IPageItem[] {
-    return pages.filter((page) => !page.parent_page_id);
-}
-
-/** @deprecated Use `flattenMenuItems`. */
-export function flattenMenuPages(pages: IPageItem[]): IPageItem[] {
-    return flattenPages(pages);
 }
 
 export { getNavigationItemLabel };

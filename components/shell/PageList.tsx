@@ -15,13 +15,13 @@ import { Pressable, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { usePages } from '@/hooks/usePages';
-import { flattenMenuPages, getPageHref, getPageLabel, isPageActive } from './navigationUtils';
+import { flattenPages, getPageHref, getPageLabel, isPageActive } from './navigationUtils';
 
 export function PageList(): React.ReactElement {
     const { t } = useTranslation();
     const pathname = usePathname();
     const { data, isLoading, error } = usePages();
-    const items = data ? flattenMenuPages(data) : [];
+    const items = data ? flattenPages(data) : [];
 
     if (isLoading) return <Text>{t('loading')}</Text>;
     if (error) return <Text style={{ color: '#fa5252' }}>{(error).message}</Text>;

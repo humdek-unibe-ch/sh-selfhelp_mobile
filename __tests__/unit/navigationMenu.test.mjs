@@ -127,6 +127,39 @@ test('holder tab press resolves to first visible child route', async () => {
     assert.equal(resolveTabPressHref(holderItem), '/people');
 });
 
+test('drawer active trail auto-expands ancestors of the current page', async () => {
+    const { expandedIdsForActiveTrail } = await import('@selfhelp/shared');
+    const drawerItems = navigation.menus.mobile_drawer.items;
+    assert.deepEqual([...expandedIdsForActiveTrail(drawerItems, '/people', 'mobile')], [2]);
+    assert.deepEqual([...expandedIdsForActiveTrail(drawerItems, '/index', 'mobile')], []);
+});
+
+test('bottom tabs are sliced to the menu item_limit', async () => {
+    const { getBottomTabMenuItems } = await import('../../components/shell/navigationUtils.ts');
+    const tabItem = (id, keyword) => ({
+        id,
+        item_type: 'page',
+        label: keyword,
+        position: id,
+        page: { id, keyword, url: `/${keyword}`, title: keyword },
+        children: [],
+    });
+    const limited = {
+        ...navigation,
+        menus: {
+            ...navigation.menus,
+            mobile_bottom_tabs: {
+                item_limit: 2,
+                items: [tabItem(1, 'one'), tabItem(2, 'two'), tabItem(3, 'three')],
+            },
+        },
+    };
+    assert.deepEqual(
+        getBottomTabMenuItems(limited).map((item) => item.page.keyword),
+        ['one', 'two'],
+    );
+});
+
 test('page in both drawer and bottom tabs is on-menu from either surface', async () => {
     const { isOnAnyMobileMenuFromPayload } = await import('@selfhelp/shared');
     const dualNavigation = {
