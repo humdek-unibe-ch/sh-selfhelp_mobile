@@ -68,6 +68,17 @@ These rules apply to every documentation change in active SelfHelp2 repositories
 - Render CMS children through `<Children>`, not by directly mapping `section.children`.
 - Unknown styles should fall back safely through `UnknownStyle`.
 
+## Navigation System Rules
+
+Mobile navigation is driven by the backend `GET /navigation` payload (typed in `@selfhelp/shared`): the app renders the `mobile_drawer` and `mobile_bottom_tabs` menus. Backend reference: `sh-selfhelp_backend/docs/developer/29-navigation-menu-builder.md`.
+
+- **Loading:** the navigation context/hook is the single source for menus, `settings`, and `branding`. Do not fetch or reshape the payload in components.
+- **Drawer:** `components/shell/CmsDrawerContent.tsx` renders the `mobile_drawer` tree recursively (`DrawerEntry`) — up to three levels, collapsible groups, per-item `mobile_icon` (Lucide names). The drawer header renders `branding` (logo via `resolveAssetUrl` + `logo_alt`, fallback text).
+- **Bottom tabs:** `mobile_bottom_tabs` respects `item_limit`; group items act as holder tabs (first-child redirect / segment children).
+- **Page opening rule:** a CMS page that exists in the mobile menu structure opens as a normal screen; a page NOT in any mobile menu opens as a modal. Keep this logic in the shell (it must also hold inside the web live preview, which drives this app through the preview token — the backend `MobilePreviewAccessGuard` allows `navigation_get_v1`).
+- **Icons:** menu/CMS icon names may arrive as Lucide (`House`) or web Tabler (`IconCircleCheck`) names. Always resolve through `components/ui/glyphIcon.tsx` (`GLYPH_ICONS`, `resolveGlyphIcon`, `TABLER_ALIASES`) — never render raw icon-name strings; `ThemeIcon`/`ActionIcon`/`PageMenuIcon` already do this.
+- **Helpers:** use the shared navigation helpers (`clampMenuItemsAtDepth`, item label/href/aria resolution, `branchNav` where applicable) instead of hand-rolling menu traversal.
+
 ## Component Design Rules
 
 - Prefer small, focused components instead of large multi-purpose files.
