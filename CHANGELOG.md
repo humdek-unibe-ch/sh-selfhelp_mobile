@@ -4,6 +4,31 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.33
+
+### Navigation overhaul — strict v2 contract (breaking)
+
+Adopts the strict navigation payload from core `0.1.33` and `@selfhelp/shared`
+`2.0.0` (major; every menu-item key always present, `config` removed, typed
+`preset` / `max_depth` / `item_limit` on menus):
+
+- **Collapsible drawer** — `CmsDrawerContent` renders `mobile_drawer` as a
+  collapsible tree: parents get a chevron toggle, the active trail auto-expands
+  on navigation (`expandedIdsForActiveTrail`), group rows without a page toggle
+  on press, and active detection uses the shared `isMenuItemActiveOnMobile`.
+- **Bottom tabs item limit** — `getBottomTabMenuItems` slices to the menu's
+  `item_limit` (default 5) from the typed payload.
+- **De-duplicated helpers** — removed local `isNavigationItemActive`,
+  `getNavigationItemMobileRoute`, `flattenMenuPages`, and the deprecated
+  `getMenuTree` / `getTopLevelMenuPages`; hrefs and active states now come from
+  shared (`getNavigationItemMobileHref`, `isMenuItemActiveOnMobile`).
+- `menuItemToPageItem` reads `icon` / `mobile_icon` from the menu item (the
+  resolved page ref no longer carries icons).
+
+Consumes `@selfhelp/shared` `2.0.0` (pinned via `overrides` until the SurveyJS
+mobile package raises its peer range). Raised `supports.core` `>=0.1.32` →
+`>=0.1.33`.
+
 ## 0.1.32
 
 ### Menu-builder navigation (breaking cleanup)
