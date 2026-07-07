@@ -4,8 +4,8 @@ SPDX-License-Identifier: MPL-2.0
 */
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { INavigationPayload } from '@selfhelp/shared';
@@ -18,13 +18,19 @@ interface IMobileBranchNavigationProps {
     currentPageId: number;
 }
 
+/**
+ * Top tab strip for nested pages — horizontal underline tabs (not stacked
+ * pills). Few tabs share the row width evenly; many tabs become a horizontal
+ * scroll strip and the active tab auto-scrolls into view.
+ */
 export function MobileBranchNavigation({ navigation, currentPageId }: IMobileBranchNavigationProps): React.ReactElement | null {
     const pathname = usePathname();
     const colors = useAppColors();
     // The app shell only applies the top safe-area edge; in landscape (or on
     // devices with side notches) the horizontal insets land on this bar, so it
-    // pads them itself to keep the first/last pill fully tappable.
+    // pads them itself to keep the first/last tab fully tappable.
     const insets = useSafeAreaInsets();
+    const { width: windowWidth } = useWindowDimensions();
     const segments = useMemo(
         () => (navigation ? resolveMobileSegmentGroup(navigation, currentPageId) : null),
         [navigation, currentPageId],
@@ -35,19 +41,33 @@ export function MobileBranchNavigation({ navigation, currentPageId }: IMobileBra
         ?? '';
 
     const [selectedKeyword, setSelectedKeyword] = useState(initial);
-    const useFullWidth = (segments?.length ?? 0) <= 3;
+    // Up to 4 tabs share the row; beyond that the strip scrolls horizontally.
+    const useFullWidth = (segments?.length ?? 0) <= 4;
+
+    const scrollRef = useRef<ScrollView | null>(null);
+    const tabLayoutsRef = useRef<Map<string, { x: number; width: number }>>(new Map());
+
+    const scrollActiveIntoView = useCallback((keyword: string) => {
+        if (useFullWidth) return;
+        const layout = tabLayoutsRef.current.get(keyword);
+        if (!layout || !scrollRef.current) return;
+        // Center the active tab in the viewport when possible.
+        const target = Math.max(0, layout.x - (windowWidth - layout.width) / 2);
+        scrollRef.current.scrollTo({ x: target, animated: true });
+    }, [useFullWidth, windowWidth]);
 
     useEffect(() => {
         const fromUrl = segments?.find((segment) => {
             const href = pageUrlToMobileRoute(segment.url, segment.keyword);
             return pathname === href || pathname.endsWith(`/${segment.keyword}`);
         });
-        if (fromUrl) {
-            setSelectedKeyword(fromUrl.keyword);
-            return;
+        const next = fromUrl?.keyword ?? segments?.[0]?.keyword ?? '';
+        setSelectedKeyword(next);
+        if (next) {
+            // Wait one frame so onLayout data exists on first render.
+            requestAnimationFrame(() => scrollActiveIntoView(next));
         }
-        setSelectedKeyword(segments?.[0]?.keyword ?? '');
-    }, [pathname, segments]);
+    }, [pathname, segments, scrollActiveIntoView]);
 
     if (!segments || segments.length === 0) {
         return null;
@@ -55,13 +75,13 @@ export function MobileBranchNavigation({ navigation, currentPageId }: IMobileBra
 
     return (
         <ScrollView
-            horizontal={!useFullWidth}
+            ref={scrollRef}
+            horizontal
+            scrollEnabled={!useFullWidth}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{
-                paddingLeft: 12 + insets.left,
-                paddingRight: 12 + insets.right,
-                paddingVertical: 10,
-                gap: 8,
+                paddingLeft: insets.left,
+                paddingRight: insets.right,
                 ...(useFullWidth ? { flexGrow: 1, width: '100%' } : {}),
             }}
             style={{
@@ -77,58 +97,74 @@ export function MobileBranchNavigation({ navigation, currentPageId }: IMobileBra
                 return (
                     <Pressable
                         key={segment.pageId}
-                        accessibilityRole="button"
+                        accessibilityRole="tab"
                         accessibilityState={{ selected }}
                         accessibilityLabel={segment.label}
+                        onLayout={(event) => {
+                            const { x, width } = event.nativeEvent.layout;
+                            tabLayoutsRef.current.set(segment.keyword, { x, width });
+                        }}
                         onPress={() => {
                             setSelectedKeyword(segment.keyword);
+                            scrollActiveIntoView(segment.keyword);
                             router.push(href as `/${string}`);
                         }}
                         style={({ pressed }) => ({
                             flex: useFullWidth ? 1 : undefined,
-                            flexDirection: 'row',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: 6,
-                            minHeight: 44,
-                            minWidth: useFullWidth ? 0 : 96,
-                            maxWidth: useFullWidth ? undefined : 220,
-                            paddingVertical: 8,
-                            paddingHorizontal: useFullWidth ? 10 : 14,
-                            borderRadius: 999,
-                            borderWidth: 1,
-                            // primaryStrong + border keep the active pill readable
-                            // in both themes (plain `primary` washed out on dark).
-                            borderColor: selected ? colors.primaryStrong : colors.border,
-                            backgroundColor: selected ? colors.primaryStrong : colors.surfaceMuted,
-                            opacity: pressed ? 0.75 : 1,
+                            minHeight: 46,
+                            minWidth: useFullWidth ? 0 : 88,
+                            maxWidth: useFullWidth ? undefined : 240,
+                            paddingHorizontal: useFullWidth ? 6 : 16,
+                            paddingTop: 8,
+                            opacity: pressed ? 0.7 : 1,
                         })}
                     >
-                        <PageMenuIcon
-                            page={{
-                                id: segment.pageId,
-                                keyword: segment.keyword,
-                                url: segment.url,
-                                icon: segment.icon,
-                                mobile_icon: segment.mobile_icon,
-                                parent_page_id: null,
-                                is_headless: false,
-                            }}
-                            size={16}
-                            color={selected ? colors.onPrimary : colors.text}
-                        />
-                        <Text
-                            numberOfLines={2}
+                        <View
                             style={{
-                                flexShrink: 1,
-                                color: selected ? colors.onPrimary : colors.text,
-                                fontWeight: selected ? '700' : '600',
-                                fontSize: 13,
-                                textAlign: 'center',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 6,
+                                paddingBottom: 8,
                             }}
                         >
-                            {segment.label}
-                        </Text>
+                            <PageMenuIcon
+                                page={{
+                                    id: segment.pageId,
+                                    keyword: segment.keyword,
+                                    url: segment.url,
+                                    icon: segment.icon,
+                                    mobile_icon: segment.mobile_icon,
+                                    parent_page_id: null,
+                                    is_headless: false,
+                                }}
+                                size={15}
+                                color={selected ? colors.primaryStrong : colors.textMuted}
+                            />
+                            <Text
+                                numberOfLines={1}
+                                style={{
+                                    flexShrink: 1,
+                                    color: selected ? colors.primaryStrong : colors.textMuted,
+                                    fontWeight: selected ? '700' : '600',
+                                    fontSize: 13.5,
+                                    textAlign: 'center',
+                                }}
+                            >
+                                {segment.label}
+                            </Text>
+                        </View>
+                        {/* Active underline indicator */}
+                        <View
+                            style={{
+                                alignSelf: 'stretch',
+                                height: 3,
+                                borderTopLeftRadius: 3,
+                                borderTopRightRadius: 3,
+                                backgroundColor: selected ? colors.primaryStrong : 'transparent',
+                            }}
+                        />
                     </Pressable>
                 );
             })}

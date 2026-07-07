@@ -4,12 +4,19 @@ SPDX-License-Identifier: MPL-2.0
 */
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { View } from 'react-native';
 import { router, usePathname } from 'expo-router';
 import { AxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { resolveHolderRedirectPath, findPageRefInNavigationPayload } from '@selfhelp/shared';
+import {
+    pageUrlToMobileRoute,
+    resolveHolderRedirectPath,
+    resolveMobileSegmentGroup,
+    findPageRefInNavigationPayload,
+} from '@selfhelp/shared';
 
 import { LoadingScreen } from '@/components/feedback/LoadingScreen';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
@@ -107,6 +114,39 @@ export function CmsPageScreen({ keyword }: ICmsPageScreenProps): React.ReactElem
         });
     }, [accessToken, data, keyword, resolvedPageId]);
 
+    // Swipe left/right between the sibling pages of the branch tab strip.
+    // The pan only activates on a mostly-horizontal drag (activeOffsetX) and
+    // fails on vertical movement so page scrolling keeps working.
+    const branchSegments = useMemo(
+        () => (navigation && resolvedPageId > 0
+            ? resolveMobileSegmentGroup(navigation, resolvedPageId)
+            : null),
+        [navigation, resolvedPageId],
+    );
+
+    const swipeGesture = useMemo(() => {
+        const segments = branchSegments ?? [];
+        const currentIndex = segments.findIndex((segment) => segment.pageId === resolvedPageId);
+        return Gesture.Pan()
+            .runOnJS(true)
+            .enabled(segments.length > 1 && currentIndex >= 0)
+            .activeOffsetX([-48, 48])
+            .failOffsetY([-24, 24])
+            .onEnd((event) => {
+                if (currentIndex < 0) return;
+                const goNext = event.translationX < -60 || event.velocityX < -800;
+                const goPrev = event.translationX > 60 || event.velocityX > 800;
+                const target = goNext
+                    ? segments[currentIndex + 1]
+                    : goPrev
+                        ? segments[currentIndex - 1]
+                        : null;
+                if (target) {
+                    router.push(pageUrlToMobileRoute(target.url, target.keyword) as `/${string}`);
+                }
+            });
+    }, [branchSegments, resolvedPageId]);
+
     if (shouldRedirectToLogin) {
         return <LoadingScreen message={t('loading')} />;
     }
@@ -172,7 +212,11 @@ export function CmsPageScreen({ keyword }: ICmsPageScreenProps): React.ReactElem
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             {branchNav}
-            <PageRenderer page={data} />
+            <GestureDetector gesture={swipeGesture}>
+                <View style={{ flex: 1 }} collapsable={false}>
+                    <PageRenderer page={data} />
+                </View>
+            </GestureDetector>
         </SafeAreaView>
     );
 }

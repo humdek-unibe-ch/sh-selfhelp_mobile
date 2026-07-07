@@ -24,6 +24,15 @@ Adopts the strict navigation payload from core `0.1.33` and `@selfhelp/shared`
   shared (`getNavigationItemMobileHref`, `isMenuItemActiveOnMobile`).
 - `menuItemToPageItem` reads `icon` / `mobile_icon` from the menu item (the
   resolved page ref no longer carries icons).
+- **Horizontal underline branch tabs** — `MobileBranchNavigation` replaces the
+  stacked pill buttons with a Material-style top tab bar: tabs stretch evenly
+  when four or fewer fit, otherwise the bar scrolls horizontally and
+  auto-scrolls the active tab into view; the active tab gets a primary
+  underline + tinted label/icon.
+- **Swipe between sibling pages** — `CmsPageScreen` wraps the rendered page in
+  a horizontal pan gesture (react-native-gesture-handler): swiping left/right
+  (>60 px, vertical scroll unaffected) navigates to the next/previous page of
+  the same branch segment group.
 
 Consumes `@selfhelp/shared` `2.0.0` (pinned via `overrides` until the SurveyJS
 mobile package raises its peer range). Raised `supports.core` `>=0.1.32` →
