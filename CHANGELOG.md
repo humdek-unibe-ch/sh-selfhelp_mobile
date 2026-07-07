@@ -34,9 +34,23 @@ Adopts the strict navigation payload from core `0.1.33` and `@selfhelp/shared`
   (>60 px, vertical scroll unaffected) navigates to the next/previous page of
   the same branch segment group.
 
-Consumes `@selfhelp/shared` `2.0.0` (pinned via `overrides` until the SurveyJS
-mobile package raises its peer range). Raised `supports.core` `>=0.1.32` →
-`>=0.1.33`.
+### CMS-in-CMS polish wave — entry-table rename (breaking, same release)
+
+Adopts the `show-user-input` → `entry-table` style rename from core `0.1.33`
+and `@selfhelp/shared` `3.0.0` (breaking major):
+
+- The renderer is `components/styles/forms/EntryTable.tsx` (+
+  `entryTableColumns.ts`), dispatched on `style_name: 'entry-table'` with the
+  shared `IEntryTableStyle` / `IEntryTableEntry` types. No alias is kept —
+  existing sections keep working because the backend renames the catalog row in
+  the same release.
+- The new server-computed `_can_edit` flag is treated as internal bookkeeping
+  (hidden from the data columns, like `_can_delete` / `record_id`); the delete
+  button keeps honouring `_can_delete`.
+
+Consumes `@selfhelp/shared` `3.0.0` (pinned via `overrides` until the SurveyJS
+mobile package raises its peer range; `2.0.0` navigation contract adopted in
+the same wave). Raised `supports.core` `>=0.1.32` → `>=0.1.33`.
 
 ## 0.1.32
 

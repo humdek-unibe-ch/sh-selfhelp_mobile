@@ -88,7 +88,7 @@ export function useFormController(args: IUseFormControllerArgs): {
         setResultMessage(successMessage || result.message || 'Saved');
         if (isLog) setFormValues({});
 
-        // Refetch the page so a sibling show-user-input (and form-record values)
+        // Refetch the page so a sibling entry-table (and form-record values)
         // reflects the new/updated submission immediately.
         void queryClient.invalidateQueries({ queryKey: ['page'] });
 

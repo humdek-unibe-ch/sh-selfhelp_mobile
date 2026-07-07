@@ -3,10 +3,10 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 /**
- * show-user-input — displays previously submitted user input as a mobile-
+ * entry-table (renamed from show-user-input) — displays previously submitted user input as a mobile-
  * friendly list of cards (rather than a desktop table; plan section 11.6). Each
- * entry is resolved on the section as `entries` (`IShowUserInputEntry[]`).
- * Internal bookkeeping keys (`record_id`, `id_users`, `_can_delete`) are hidden.
+ * entry is resolved on the section as `entries` (`IEntryTableEntry[]`).
+ * Internal bookkeeping keys (`record_id`, `id_users`, `_can_delete`, `_can_edit`) are hidden.
  * The web-only DataTable options (`dt_*`, `web_table_*`) are intentionally
  * ignored on mobile.
  *
@@ -31,7 +31,7 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readBooleanField, readField, useInterpolatedField } from '@/components/renderer/useField';
 import { useAppColors } from '@/hooks/useAppColors';
 import { deleteFormRecord } from '@/services/formsService';
-import { buildShowUserInputColumns, type IShowUserInputColumn } from './showUserInputColumns';
+import { buildEntryTableColumns, type IEntryTableColumn } from './entryTableColumns';
 
 interface IUserInputEntry {
     record_id: number;
@@ -40,14 +40,14 @@ interface IUserInputEntry {
     [key: string]: unknown;
 }
 
-function entryRows(entry: IUserInputEntry, columns: IShowUserInputColumn[]): { key: string; label: string; value: string }[] {
+function entryRows(entry: IUserInputEntry, columns: IEntryTableColumn[]): { key: string; label: string; value: string }[] {
     return columns.map((col) => {
         const value = entry[col.key];
         return { key: col.key, label: col.label, value: value === null || value === undefined ? '' : String(value) };
     });
 }
 
-export function ShowUserInput({ section, values }: IStyleProps): React.ReactElement {
+export function EntryTable({ section, values }: IStyleProps): React.ReactElement {
     const colors = useAppColors();
     const queryClient = useQueryClient();
     const heading = useInterpolatedField(section, 'title', values);
@@ -67,8 +67,8 @@ export function ShowUserInput({ section, values }: IStyleProps): React.ReactElem
     // Author-selected columns (fields_map) + optional leading timestamp column.
     const showTimestamp = readBooleanField(section, 'show_timestamp', false);
     const rawFieldsMap = readField<string>(section, 'fields_map');
-    const columns = useMemo<IShowUserInputColumn[]>(
-        () => buildShowUserInputColumns(rawFieldsMap, entries[0], showTimestamp, fieldLabels),
+    const columns = useMemo<IEntryTableColumn[]>(
+        () => buildEntryTableColumns(rawFieldsMap, entries[0], showTimestamp, fieldLabels),
         [rawFieldsMap, entries, showTimestamp, fieldLabels]
     );
 

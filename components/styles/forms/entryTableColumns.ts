@@ -3,7 +3,7 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 /**
- * Pure column-selection logic for the mobile `show-user-input` style, kept in a
+ * Pure column-selection logic for the mobile `entry-table` style (renamed from `show-user-input`), kept in a
  * react-native-free module so it can be unit-tested directly.
  *
  * Mirrors the web table contract: the author picks which fields render (and
@@ -27,14 +27,14 @@ export interface IFieldMapping {
     field_new_name: string;
 }
 
-export interface IShowUserInputColumn {
+export interface IEntryTableColumn {
     key: string;
     label: string;
 }
 
 // Bookkeeping keys never shown as data rows. `entry_date` surfaces only as the
 // leading "Date" column when `show_timestamp` is enabled (matching the web table).
-const INTERNAL_KEYS = new Set(['record_id', 'id_users', '_can_delete', 'entry_date']);
+const INTERNAL_KEYS = new Set(['record_id', 'id_users', '_can_delete', '_can_edit', 'entry_date']);
 
 /** Parse the author's `fields_map` column config; tolerate empty/invalid JSON. */
 export function parseFieldMappings(raw: string | undefined): IFieldMapping[] {
@@ -51,7 +51,7 @@ export function parseFieldMappings(raw: string | undefined): IFieldMapping[] {
 }
 
 /**
- * Resolve the ordered columns to render for a show-user-input card list.
+ * Resolve the ordered columns to render for an entry-table card list.
  *
  * @param rawFieldsMap  the section's `fields_map` JSON string (or undefined)
  * @param sampleEntry   any one entry, used to derive columns when no map is set
@@ -59,17 +59,17 @@ export function parseFieldMappings(raw: string | undefined): IFieldMapping[] {
  * @param fieldLabels   `field_key => display_name` map from the section payload
  *                      (issue #56 v2); empty on older hosts
  */
-export function buildShowUserInputColumns(
+export function buildEntryTableColumns(
     rawFieldsMap: string | undefined,
     sampleEntry: Record<string, unknown> | undefined,
     showTimestamp: boolean,
     fieldLabels: Record<string, string> = {},
-): IShowUserInputColumn[] {
+): IEntryTableColumn[] {
     const mappings = parseFieldMappings(rawFieldsMap);
     const dataKeys = Object.keys(sampleEntry ?? {}).filter((k) => !INTERNAL_KEYS.has(k));
-    const mapped: IShowUserInputColumn[] = mappings.length > 0
+    const mapped: IEntryTableColumn[] = mappings.length > 0
         ? mappings
-            .map((m): IShowUserInputColumn | null => {
+            .map((m): IEntryTableColumn | null => {
                 // Resolve the author's mapping to a real data key: by immutable
                 // field_key first, then by the current display_name.
                 const key = dataKeys.includes(m.field_name)
@@ -78,7 +78,7 @@ export function buildShowUserInputColumns(
                 if (key === undefined) return null;
                 return { key, label: m.field_new_name || fieldLabels[key] || key };
             })
-            .filter((c): c is IShowUserInputColumn => c !== null)
+            .filter((c): c is IEntryTableColumn => c !== null)
         : dataKeys.map((k) => ({ key: k, label: fieldLabels[k] || k }));
     return showTimestamp ? [{ key: 'entry_date', label: 'Date' }, ...mapped] : mapped;
 }

@@ -110,7 +110,7 @@ import { NoAccess, NotFound, Missing, Version } from './auth/SystemSurfaces';
 import { RefContainer } from './layout/RefContainer';
 import { DataContainer } from './layout/DataContainer';
 import { TimelineItem } from './composite/TimelineItem';
-import { ShowUserInput } from './forms/ShowUserInput';
+import { EntryTable } from './forms/EntryTable';
 
 export const styleImpls: TStyleImplMap = {
     // layout
@@ -185,7 +185,7 @@ export const styleImpls: TStyleImplMap = {
     progress: Progress,
     'progress-root': ProgressRoot,
     'progress-section': ProgressSection,
-    'show-user-input': ShowUserInput,
+    'entry-table': EntryTable,
     // composite
     accordion: Accordion,
     'accordion-item': AccordionItem,
