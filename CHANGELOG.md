@@ -6,6 +6,13 @@ SPDX-License-Identifier: MPL-2.0
 
 ## 0.1.33
 
+### User-owned option labels
+
+- Select, radio, combobox, and segmented-control renderers use the canonical
+  `@selfhelp/shared` option resolver. Stable codes remain the submitted values;
+  translated `option_labels` drive display text and legacy `text`/`label`
+  catalogs keep their labels.
+
 ### Navigation overhaul — strict v2 contract (breaking)
 
 Adopts the strict navigation payload from core `0.1.33` and `@selfhelp/shared`
