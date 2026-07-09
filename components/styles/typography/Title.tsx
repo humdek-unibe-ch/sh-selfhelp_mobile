@@ -25,12 +25,18 @@ export function Title({ section, values }: IStyleProps): React.ReactElement {
     const content = contentField || textField;
     const colors = useAppColors();
 
-    // `color` (a Mantine palette name) drives the heading colour on both
-    // platforms; resolve it to a concrete accent hex (lightened on dark for
-    // contrast) and fall back to the themed body-text colour when unset.
+    // `color` drives the heading colour on both platforms. A Mantine palette
+    // name is resolved to a concrete accent hex (lightened on dark for contrast);
+    // a raw CSS colour from the picker (hex / rgb / hsl) is used verbatim, since
+    // `resolveMantineVariant` only understands palette names and would otherwise
+    // fall back to its default accent (blue). Falls back to the themed body-text
+    // colour when unset.
     const sharedColor = readField<string>(section, 'color');
+    const isRawColor = /^(#|rgb|hsl)/i.test(sharedColor ?? '');
     const color = sharedColor
-        ? resolveMantineVariant('filled', sharedColor).accent ?? colors.text
+        ? isRawColor
+            ? sharedColor
+            : resolveMantineVariant('filled', sharedColor).accent ?? colors.text
         : colors.text;
 
     // `line_clamp` truncates the heading to N lines (matches the web
