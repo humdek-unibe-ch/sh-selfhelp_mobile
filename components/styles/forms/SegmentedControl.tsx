@@ -5,28 +5,11 @@ SPDX-License-Identifier: MPL-2.0
 import { Pressable, Text, View } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readField, useInterpolatedField } from '@/components/renderer/useField';
+import { readBooleanField, readField, useInterpolatedField } from '@/components/renderer/useField';
 import { useFieldBinding } from './_useFieldBinding';
 import { FieldShell } from './_FieldShell';
 import { useAppColors } from '@/hooks/useAppColors';
-
-interface ISegment {
-    value: string;
-    label: string;
-}
-
-function parseSegments(raw: unknown): ISegment[] {
-    if (!raw) return [];
-    if (Array.isArray(raw)) return raw as ISegment[];
-    if (typeof raw === 'string') {
-        try {
-            return JSON.parse(raw) as ISegment[];
-        } catch {
-            return [];
-        }
-    }
-    return [];
-}
+import { resolveOptions } from '@selfhelp/shared';
 
 /**
  * SegmentedControl — OSS fallback: a tab row (RN Pressables). HeroUI Native
@@ -36,7 +19,11 @@ function parseSegments(raw: unknown): ISegment[] {
 export function SegmentedControl({ section, values }: IStyleProps): React.ReactElement {
     const name = readField<string>(section, 'name') ?? '';
     const label = useInterpolatedField(section, 'label', values);
-    const segments = parseSegments(readField(section, 'segmented_control_data'));
+    const disabled = readBooleanField(section, 'disabled', false);
+    const segments = resolveOptions(
+        readField(section, 'segmented_control_data'),
+        readField(section, 'option_labels'),
+    );
     const initial = readField<string>(section, 'value') ?? segments[0]?.value ?? '';
     const { value, error, setValue } = useFieldBinding(name, initial);
     const colors = useAppColors();
@@ -46,9 +33,12 @@ export function SegmentedControl({ section, values }: IStyleProps): React.ReactE
             <View style={{ flexDirection: 'row', backgroundColor: colors.surfaceMuted, padding: 2, borderRadius: 4 }}>
                 {segments.map((seg) => {
                     const active = seg.value === value;
+                    const segmentDisabled = disabled || seg.disabled === true;
                     return (
                         <Pressable
                             key={seg.value}
+                            disabled={segmentDisabled}
+                            accessibilityState={{ disabled: segmentDisabled, selected: active }}
                             onPress={() => setValue(seg.value)}
                             style={{
                                 flex: 1,
@@ -56,6 +46,7 @@ export function SegmentedControl({ section, values }: IStyleProps): React.ReactE
                                 alignItems: 'center',
                                 backgroundColor: active ? colors.surface : 'transparent',
                                 borderRadius: 4,
+                                opacity: segmentDisabled ? 0.5 : 1,
                             }}
                         >
                             <Text style={{ fontWeight: active ? '600' : '400', color: colors.text }}>{seg.label}</Text>
