@@ -53,6 +53,7 @@ import {
 } from '@selfhelp/shared';
 
 import { isKeywordOnResolvedMobileMenu } from '@/components/shell/navigationUtils';
+import { navigateToResolvedPath } from '@/components/shell/usePageNavigation';
 import { getWebPreviewRuntime } from '@/config/webPreview';
 import { useNavigation } from '@/hooks/useNavigation';
 import { usePages } from '@/hooks/usePages';
@@ -159,7 +160,11 @@ export function PreviewSyncBridge(): null {
             );
         };
 
-        const goToKeyword = (keyword: string | null): void => {
+        const goToKeyword = (keyword: string | null, resolvePath?: string | null): void => {
+            if (resolvePath) {
+                void navigateToResolvedPath(resolvePath);
+                return;
+            }
             if (!keyword) {
                 usePageModalStore.getState().close();
                 router.replace('/(app)/');
@@ -173,7 +178,7 @@ export function PreviewSyncBridge(): null {
             // behind a modal.
             const knownPages = pagesRef.current;
             if (knownPages && !isKeywordOnResolvedMobileMenu(knownPages, keyword, navigationRef.current)) {
-                usePageModalStore.getState().open(keyword);
+                usePageModalStore.getState().open(keyword, resolvePath ?? null);
                 return;
             }
             usePageModalStore.getState().close();
@@ -189,8 +194,13 @@ export function PreviewSyncBridge(): null {
             }
             if (event.data.type !== PREVIEW_BRIDGE_MESSAGE.NAVIGATE) return;
             const next = event.data.keyword;
+            const nextPath = event.data.path ?? null;
             // Already there → ignore (defends against a redundant command).
-            if ((next ?? null) === (currentKeywordRef.current ?? null)) return;
+            if (!nextPath && (next ?? null) === (currentKeywordRef.current ?? null)) return;
+            if (nextPath) {
+                void navigateToResolvedPath(nextPath);
+                return;
+            }
             goToKeyword(next ?? null);
         };
         window.addEventListener('message', onMessage);

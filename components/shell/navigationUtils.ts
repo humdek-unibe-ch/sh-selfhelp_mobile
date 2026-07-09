@@ -17,6 +17,7 @@ import type {
     IPageItem,
 } from '@selfhelp/shared';
 import {
+    buildPublicPathFromRoute,
     getNavigationItemLabel,
     getNavigationItemMobileHref,
     isOnAnyMobileMenuFromPayload,
@@ -241,4 +242,11 @@ export function isPageActive(page: IPageItem, pathname: string): boolean {
     return false;
 }
 
-export { getNavigationItemLabel };
+/** True when the target path has more than one segment (needs DB resolve). */
+export function isParameterizedNavigationPath(target: string): boolean {
+    const path = normalizeNavigationTarget(target);
+    const segments = path.replace(/^\/+/, '').split('/').filter(Boolean);
+    return segments.length > 1;
+}
+
+export { buildPublicPathFromRoute };

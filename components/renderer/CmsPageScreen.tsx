@@ -6,12 +6,13 @@ SPDX-License-Identifier: MPL-2.0
 
 import { useEffect, useMemo, useRef } from 'react';
 import { View } from 'react-native';
-import { router, usePathname } from 'expo-router';
+import { router, useLocalSearchParams, usePathname } from 'expo-router';
 import { AxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
+    buildPublicPathFromRoute,
     pageUrlToMobileRoute,
     resolveHolderRedirectPath,
     resolveMobileSegmentGroup,
@@ -32,16 +33,28 @@ import { MobileBranchNavigation } from './MobileBranchNavigation';
 
 interface ICmsPageScreenProps {
     keyword: string;
+    /** When set, fetch page content via `GET /pages/resolve` (parameterized routes). */
+    resolvePath?: string | null;
 }
 
-export function CmsPageScreen({ keyword }: ICmsPageScreenProps): React.ReactElement {
+export function CmsPageScreen({ keyword, resolvePath: resolvePathProp }: ICmsPageScreenProps): React.ReactElement {
+    const routeParams = useLocalSearchParams<Record<string, string>>();
     const { t } = useTranslation();
     const colors = useAppColors();
     const { data: pages } = usePages();
     const { data: navigation } = useNavigation();
     const navPage = pages ? findPageByKeyword(pages, keyword) : null;
     const navPageId = navPage?.id ?? navPage?.id_pages ?? 0;
-    const { data, isLoading, error, refetch } = usePageContent(keyword);
+    const resolvePath = useMemo(() => {
+        if (resolvePathProp) {
+            return resolvePathProp;
+        }
+        if (!navPage?.url) {
+            return null;
+        }
+        return buildPublicPathFromRoute(navPage.url, routeParams);
+    }, [navPage?.url, resolvePathProp, routeParams]);
+    const { data, isLoading, error, refetch } = usePageContent(keyword, resolvePath);
     const accessToken = useAuthStore((s) => s.accessToken);
     const status = httpErrorStatus(error);
     const shouldRedirectToLogin = !accessToken && (status === 401 || status === 403);

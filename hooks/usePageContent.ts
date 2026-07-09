@@ -15,7 +15,7 @@ SPDX-License-Identifier: MPL-2.0
 import { useQuery } from '@tanstack/react-query';
 import type { IPageContent } from '@selfhelp/shared';
 
-import { fetchPageByKeyword } from '@/services/pageService';
+import { fetchPageByKeyword, resolvePageByPath } from '@/services/pageService';
 import { resolvePreviewRequest } from '@/services/previewPolicy';
 import { useDevModeStore } from '@/stores/devModeStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -27,11 +27,23 @@ export const pageContentQueryKey = (
     keyword: string,
     languageId: number | null,
     preview: boolean,
-    authScope: 'auth' | 'anon'
+    authScope: 'auth' | 'anon',
+    resolvePath?: string | null,
 ): readonly unknown[] =>
-    ['page', serverUrl ?? 'no-server', keyword, languageId, preview ? 'preview' : 'published', authScope] as const;
+    [
+        'page',
+        serverUrl ?? 'no-server',
+        keyword,
+        languageId,
+        preview ? 'preview' : 'published',
+        authScope,
+        resolvePath ?? '',
+    ] as const;
 
-export function usePageContent(keyword: string): {
+export function usePageContent(
+    keyword: string,
+    resolvePath?: string | null,
+): {
     data: IPageContent | undefined;
     isLoading: boolean;
     error: Error | null;
@@ -49,12 +61,19 @@ export function usePageContent(keyword: string): {
     const preview = resolvePreviewRequest(previewMode, Boolean(accessToken));
 
     const q = useQuery<IPageContent, Error>({
-        queryKey: pageContentQueryKey(serverUrl, keyword, languageId, preview, authScope),
-        queryFn: () =>
-            fetchPageByKeyword(keyword, {
+        queryKey: pageContentQueryKey(serverUrl, keyword, languageId, preview, authScope, resolvePath),
+        queryFn: () => {
+            if (resolvePath) {
+                return resolvePageByPath(resolvePath, {
+                    languageId: languageId ?? undefined,
+                    preview,
+                });
+            }
+            return fetchPageByKeyword(keyword, {
                 languageId: languageId ?? undefined,
                 preview,
-            }),
+            });
+        },
         enabled: Boolean(keyword) && Boolean(serverUrl) && serverHydrated && bootstrapped,
         // Preview content is short-lived: never cache it across mode flips.
         staleTime: preview ? 0 : 30 * 1000,

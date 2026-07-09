@@ -13,6 +13,9 @@ SPDX-License-Identifier: MPL-2.0
  *     open as a MODAL sheet over the current page (`usePageModalStore`),
  *     so they are reachable in context and closing returns to the previous page.
  *
+ * Parameterized public URLs (`/team-members/5`) are resolved through
+ * `pageService.resolvePageByPath()` so route params hydrate entry-record pages.
+ *
  * Every "go to this page" affordance — links, buttons, action icons, form
  * redirects, and plugin host redirects (e.g. a survey's "redirect on completion")
  * — calls `navigateToPage` (or `usePageNavigation`, which just returns it) instead
@@ -30,12 +33,20 @@ SPDX-License-Identifier: MPL-2.0
 import { useCallback } from 'react';
 import { router } from 'expo-router';
 import type { IPageItem } from '@selfhelp/shared';
+import { pageUrlToMobileRoute } from '@selfhelp/shared';
 
-import { resolvePageNavigation } from '@/components/shell/navigationUtils';
+import {
+    isParameterizedNavigationPath,
+    normalizeNavigationTarget,
+    resolvePageNavigation,
+} from '@/components/shell/navigationUtils';
 import { navigationQueryKey } from '@/hooks/useNavigation';
 import { pagesQueryKey } from '@/hooks/usePages';
 import { appQueryClient } from '@/services/queryClient';
+import { resolvePageByPath } from '@/services/pageService';
+import { resolvePreviewRequest } from '@/services/previewPolicy';
 import { useAuthStore } from '@/stores/authStore';
+import { useDevModeStore } from '@/stores/devModeStore';
 import { useLanguageStore } from '@/stores/languageStore';
 import { usePageModalStore } from '@/stores/pageModalStore';
 import { useServerStore } from '@/stores/serverStore';
@@ -69,12 +80,63 @@ function getCachedNavigation(): INavigationPayload | undefined {
     );
 }
 
+function pushResolvedPage(
+    keyword: string,
+    resolvePath: string,
+    routeParams: Record<string, string | number | undefined>,
+): void {
+    const pages = getCachedPages();
+    const navigation = getCachedNavigation();
+    const mobileRoute = pageUrlToMobileRoute(resolvePath, keyword);
+    const action = resolvePageNavigation(mobileRoute, pages, navigation);
+    const params: Record<string, string> = {};
+    for (const [key, value] of Object.entries(routeParams)) {
+        if (value !== undefined && value !== null) {
+            params[key] = String(value);
+        }
+    }
+
+    if (action.kind === 'modal') {
+        usePageModalStore.getState().open(keyword, resolvePath);
+        return;
+    }
+    usePageModalStore.getState().close();
+    router.push({ pathname: mobileRoute, params });
+}
+
+export async function navigateToResolvedPath(path: string): Promise<void> {
+    const languageId = useLanguageStore.getState().languageId ?? undefined;
+    const preview = resolvePreviewRequest(
+        useDevModeStore.getState().previewMode,
+        Boolean(useAuthStore.getState().accessToken),
+    );
+    try {
+        const page = await resolvePageByPath(path, { languageId, preview });
+        const resolvePath = (page.canonical_url ?? page.url ?? path).replace(/\/+$/, '') || path;
+        pushResolvedPage(page.keyword, resolvePath, page.route_params ?? {});
+    } catch {
+        const action = resolvePageNavigation(path, getCachedPages(), getCachedNavigation());
+        if (action.kind === 'modal') {
+            usePageModalStore.getState().open(action.keyword);
+            return;
+        }
+        usePageModalStore.getState().close();
+        router.push(action.href as `/${string}`);
+    }
+}
+
 export function navigateToPage(target: string): void {
+    if (isParameterizedNavigationPath(target)) {
+        void navigateToResolvedPath(normalizeNavigationTarget(target));
+        return;
+    }
+
     const action = resolvePageNavigation(target, getCachedPages(), getCachedNavigation());
     if (action.kind === 'modal') {
         usePageModalStore.getState().open(action.keyword);
         return;
     }
+    usePageModalStore.getState().close();
     router.push(action.href as `/${string}`);
 }
 
