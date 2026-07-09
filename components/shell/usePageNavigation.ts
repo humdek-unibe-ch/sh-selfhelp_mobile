@@ -32,8 +32,11 @@ SPDX-License-Identifier: MPL-2.0
  */
 import { useCallback } from 'react';
 import { router } from 'expo-router';
-import type { IPageItem } from '@selfhelp/shared';
-import { pageUrlToMobileRoute } from '@selfhelp/shared';
+import {
+    pageUrlToMobileRoute,
+    type INavigationPayload,
+    type IPageItem,
+} from '@selfhelp/shared';
 
 import {
     isParameterizedNavigationPath,
@@ -50,7 +53,6 @@ import { useDevModeStore } from '@/stores/devModeStore';
 import { useLanguageStore } from '@/stores/languageStore';
 import { usePageModalStore } from '@/stores/pageModalStore';
 import { useServerStore } from '@/stores/serverStore';
-import type { INavigationPayload } from '@selfhelp/shared';
 
 /**
  * Read the menu pages currently cached for the active server / language / auth
@@ -121,7 +123,7 @@ export async function navigateToResolvedPath(path: string): Promise<void> {
             return;
         }
         usePageModalStore.getState().close();
-        router.push(action.href as `/${string}`);
+        router.push(action.href);
     }
 }
 
@@ -137,7 +139,7 @@ export function navigateToPage(target: string): void {
         return;
     }
     usePageModalStore.getState().close();
-    router.push(action.href as `/${string}`);
+    router.push(action.href);
 }
 
 export function usePageNavigation(): (target: string) => void {

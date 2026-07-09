@@ -107,7 +107,7 @@ export function MobileBranchNavigation({ navigation, currentPageId }: IMobileBra
                         onPress={() => {
                             setSelectedKeyword(segment.keyword);
                             scrollActiveIntoView(segment.keyword);
-                            router.push(href as `/${string}`);
+                            router.push(href);
                         }}
                         style={({ pressed }) => ({
                             flex: useFullWidth ? 1 : undefined,

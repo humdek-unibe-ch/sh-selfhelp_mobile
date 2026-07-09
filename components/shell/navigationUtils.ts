@@ -249,4 +249,4 @@ export function isParameterizedNavigationPath(target: string): boolean {
     return segments.length > 1;
 }
 
-export { buildPublicPathFromRoute };
+export { buildPublicPathFromRoute, getNavigationItemLabel };

@@ -31,7 +31,7 @@ export default function HomeScreen(): React.ReactElement {
         if (!navigation || targetRoute === '/index') {
             return;
         }
-        router.replace(targetRoute as `/${string}`);
+        router.replace(targetRoute);
     }, [navigation, targetRoute]);
 
     if (isLoading || !navigation) {

@@ -91,7 +91,7 @@ export function CmsPageScreen({ keyword, resolvePath: resolvePathProp }: ICmsPag
             return;
         }
         holderRedirectRef.current = true;
-        router.replace(target as `/${string}`);
+        router.replace(target);
     }, [navigation, navPageId, pathname]);
 
     const pageHasSections = (data?.sections?.length ?? 0) > 0;
@@ -105,7 +105,7 @@ export function CmsPageScreen({ keyword, resolvePath: resolvePathProp }: ICmsPag
             return;
         }
         holderRedirectRef.current = true;
-        router.replace(target as `/${string}`);
+        router.replace(target);
     }, [navigation, data, isLoading, pageHasSections, resolvedPageId, pathname]);
 
     const lastVisitedRef = useRef<number | null>(null);
@@ -155,7 +155,7 @@ export function CmsPageScreen({ keyword, resolvePath: resolvePathProp }: ICmsPag
                         ? segments[currentIndex - 1]
                         : null;
                 if (target) {
-                    router.push(pageUrlToMobileRoute(target.url, target.keyword) as `/${string}`);
+                    router.push(pageUrlToMobileRoute(target.url, target.keyword));
                 }
             });
     }, [branchSegments, resolvedPageId]);
