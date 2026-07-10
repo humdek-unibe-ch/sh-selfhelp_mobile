@@ -7,7 +7,7 @@ SPDX-License-Identifier: MPL-2.0
  *
  * The mobile `BasicStyle` dispatcher skips styles that do not target mobile
  * using `isStyleSupportedOnPlatform` from the shared registry. The established
- * 90-style catalog currently targets `both` for every style (no style declares
+ * 91-style catalog currently targets `both` for every style (no style declares
  * a single-platform `platforms`), so these tests assert the contract the
  * dispatcher relies on: a core style renders on both platforms, unknown styles
  * default to both (so the page keeps rendering), and the CMS render-target

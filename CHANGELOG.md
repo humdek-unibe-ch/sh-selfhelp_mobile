@@ -17,9 +17,15 @@ SPDX-License-Identifier: MPL-2.0
   `_can_edit` and navigate via `navigateToPage` after substituting `{record_id}`;
   optional `add_url` shows an Add new control (desktop DataTable / CSV options
   remain web-only).
-- **`form-record` record-edit** — consumes backend-hydrated `section_data` for
-  prefill and sends `update_based_on.record_id` on update (parity with web
-  `FormStyle`).
+- **`form-record` / `entry-record-form` record-edit** — consumes backend-hydrated
+  `section_data` for prefill and sends `update_based_on.record_id` on update
+  (parity with web `FormStyle`). Create vs edit for `entry-record-form` is
+  entirely server-driven via `load_record_from` hydration.
+- **Page fetch** — prefers `GET /pages/resolve` when a public path is known;
+  keyword fetch remains for static shell pages (login, profile).
+
+### Dependency
+- Pins `@selfhelp/shared` `1.21.5`.
 
 ### User-owned option labels
 
