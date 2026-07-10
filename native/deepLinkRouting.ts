@@ -10,13 +10,18 @@ SPDX-License-Identifier: MPL-2.0
  * `expo-linking` and feeds the resulting path here; this module decides how the
  * link should be routed:
  *
- *   - `auth`    → the two auth flows that carry `user_id` + `token` straight in
- *                 the path (`/validate/{user_id}/{token}`,
- *                 `/reset/{user_id}/{token}` and the `/reset-password/...`
- *                 alias). Handled locally so they work fully offline and never
- *                 need a network round-trip. The captured values use the
- *                 snake_case names (`user_id`, `token`) that the backend
- *                 `page_routes` use and that the auth screens read.
+ *   - `auth`    → intentional **pre-auth** local parsing for the two seeded
+ *                 activation/reset flows that must work before a session (and
+ *                 often offline): `/validate/{user_id}/{token}`,
+ *                 `/reset/{user_id}/{token}`, and the `/reset-password/...`
+ *                 alias. This is NOT a general page router — patterns are
+ *                 deliberately narrow (exact first segment + ≥2 trailing
+ *                 segments) so arbitrary CMS parameterized routes
+ *                 (`/team/5`, …) never classify as auth. Captured values use
+ *                 the snake_case names (`user_id`, `token`) that backend
+ *                 `page_routes` and the auth screens share. Keep these
+ *                 patterns in lockstep with backend seeded routes (parity
+ *                 covered by mobile + backend tests).
  *   - `keyword` → a single static segment (`/login`, `/home`): route straight
  *                 to the Expo Router screen for that keyword (no network).
  *   - `resolve` → anything deeper / parameterized (`/team/5`,

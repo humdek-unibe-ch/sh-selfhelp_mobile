@@ -23,8 +23,12 @@ const utilsSource = readFileSync(
     join(here, '../../components/shell/navigationUtils.ts'),
     'utf8',
 );
-const deepLinkSource = readFileSync(
+const deepLinkRoutingSource = readFileSync(
     join(here, '../../native/deepLinkRouting.ts'),
+    'utf8',
+);
+const deepLinksSource = readFileSync(
+    join(here, '../../native/deepLinks.ts'),
     'utf8',
 );
 
@@ -52,6 +56,11 @@ test('navigateToPage routes parameterized targets through navigateToResolvedPath
         navSource,
         /Never keyword-fallback a parameterized path/,
         'catch path must refuse keyword fallback for parameterized URLs',
+    );
+    assert.match(
+        navSource,
+        /Alert\.alert\(/,
+        'parameterized resolve failure must surface an explicit error',
     );
     assert.doesNotMatch(
         navSource,
@@ -86,6 +95,32 @@ test('concretePathAfterResolve prefers requested path over {param} templates', (
 });
 
 test('deep links classify multi-segment paths as resolve (not keyword)', () => {
-    assert.match(deepLinkSource, /kind: 'resolve'/);
-    assert.match(deepLinkSource, /segments\.length === 1/);
+    assert.match(deepLinkRoutingSource, /kind: 'resolve'/);
+    assert.match(deepLinkRoutingSource, /segments\.length === 1/);
+});
+
+test('deepLinks resolve case uses navigateToResolvedPath (no keyword fallback)', () => {
+    assert.match(deepLinksSource, /navigateToResolvedPath/);
+    assert.match(
+        deepLinksSource,
+        /case 'resolve':[\s\S]*navigateToResolvedPath\(plan\.path\)/,
+    );
+    assert.doesNotMatch(
+        deepLinksSource,
+        /router\.push\(`\/\$\{first\}`\)/,
+        'must not keyword-fallback a failed parameterized deep link',
+    );
+    assert.doesNotMatch(
+        deepLinksSource,
+        /canonical_url \?\? page\.url/,
+        'must not route via canonical_url templates after resolve',
+    );
+});
+
+test('entry-record and entry-record-form parameterized opens require path resolve', () => {
+    // Both styles hydrate from backend section_data only when /pages/resolve
+    // receives the concrete path (load_record_from + route_params).
+    assert.match(navSource, /resolvePageByPath/);
+    assert.match(navSource, /isParameterizedNavigationPath/);
+    assert.match(navSource, /navigateToResolvedPath/);
 });

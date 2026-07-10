@@ -57,6 +57,31 @@ test('an auth keyword without enough segments is not treated as auth', () => {
     assert.deepEqual(classifyDeepLink('/reset/7'), { kind: 'resolve', path: '/reset/7' });
 });
 
+test('encoded and dotted tokens are preserved as path segments', () => {
+    assert.deepEqual(classifyDeepLink('/validate/42/abc.def~1'), {
+        kind: 'auth',
+        keyword: 'validate',
+        routeParams: { user_id: '42', token: 'abc.def~1' },
+    });
+    assert.deepEqual(classifyDeepLink('/reset/7/a%2Fb'), {
+        kind: 'auth',
+        keyword: 'reset-password',
+        routeParams: { user_id: '7', token: 'a%2Fb' },
+    });
+});
+
+test('auth classification does not claim arbitrary CMS parameterized routes', () => {
+    assert.deepEqual(classifyDeepLink('/team/5'), { kind: 'resolve', path: '/team/5' });
+    assert.deepEqual(classifyDeepLink('/validate-extra/1/2'), {
+        kind: 'resolve',
+        path: '/validate-extra/1/2',
+    });
+    assert.deepEqual(classifyDeepLink('/resetting/1/2'), {
+        kind: 'resolve',
+        path: '/resetting/1/2',
+    });
+});
+
 test('parameterized / nested non-auth paths defer to the DB-driven resolver', () => {
     assert.deepEqual(classifyDeepLink('/team/5'), { kind: 'resolve', path: '/team/5' });
     assert.deepEqual(classifyDeepLink('help/getting-started'), {

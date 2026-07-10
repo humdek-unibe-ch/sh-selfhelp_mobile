@@ -13,17 +13,19 @@ SPDX-License-Identifier: MPL-2.0
  * `classifyDeepLink()` helper (see `deepLinkRouting.ts`). Auth flows and simple
  * single-keyword links route locally (offline, no network). Anything
  * parameterized or nested (`/team/{record_id}`, `/help/getting-started`) is
- * resolved against the DB-driven `page_routes` contract via
- * `pageService.resolvePageByPath()` so the right page keyword + snake_case
- * `route_params` are used instead of hardcoded slug parsing (issue #30).
+ * resolved through `navigateToResolvedPath` → `GET /pages/resolve` so
+ * `route_params` hydrate entry-record / entry-record-form pages (issue #30).
+ * Parameterized resolve failures never keyword-fallback (that drops hydration).
  */
 
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 
-import { resolvePageByPath } from '../services/pageService';
+import {
+    navigateToPage,
+    navigateToResolvedPath,
+} from '@/components/shell/usePageNavigation';
 import { classifyDeepLink } from './deepLinkRouting';
-import { pageUrlToMobileRoute } from '@selfhelp/shared';
 
 async function routeFromUrl(url: string): Promise<void> {
     const parsed = Linking.parse(url);
@@ -38,35 +40,12 @@ async function routeFromUrl(url: string): Promise<void> {
             return;
 
         case 'keyword':
-            try {
-                const page = await resolvePageByPath(`/${plan.keyword}`);
-                const params: Record<string, string> = {};
-                for (const [key, value] of Object.entries(page.route_params ?? {})) {
-                    params[key] = String(value);
-                }
-                const mobileRoute = pageUrlToMobileRoute(page.canonical_url ?? page.url, page.keyword);
-                router.push({ pathname: mobileRoute, params });
-            } catch {
-                router.push(`/${plan.keyword}`);
-            }
+            navigateToPage(`/${plan.keyword}`);
             return;
 
         case 'resolve':
-            try {
-                const page = await resolvePageByPath(plan.path);
-                const params: Record<string, string> = {};
-                for (const [key, value] of Object.entries(page.route_params ?? {})) {
-                    params[key] = String(value);
-                }
-                const mobileRoute = pageUrlToMobileRoute(page.canonical_url ?? page.url, page.keyword);
-                router.push({ pathname: mobileRoute, params });
-            } catch {
-                // Path could not be resolved (offline, removed route, …). Fall
-                // back to the first segment as a keyword so the link still lands
-                // somewhere sane rather than dropping silently.
-                const first = plan.path.replace(/^\/+/, '').split('/')[0];
-                if (first) router.push(`/${first}`);
-            }
+            // Path-first only — never keyword-fallback a multi-segment URL.
+            await navigateToResolvedPath(plan.path);
             return;
     }
 }

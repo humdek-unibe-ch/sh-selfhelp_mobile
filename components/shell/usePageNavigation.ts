@@ -31,6 +31,7 @@ SPDX-License-Identifier: MPL-2.0
  * not here.
  */
 import { useCallback } from 'react';
+import { Alert } from 'react-native';
 import { router } from 'expo-router';
 import {
     pageUrlToMobileRoute,
@@ -131,10 +132,15 @@ export async function navigateToResolvedPath(path: string): Promise<void> {
         }
         const resolvePath = concretePathAfterResolve(path, page);
         pushResolvedPage(page.keyword, resolvePath, page.route_params ?? {});
-    } catch {
+    } catch (error) {
         // Never keyword-fallback a parameterized path — that drops route_params
         // and leaves entry-record / entry-record-form unhydrated.
         if (isParameterizedNavigationPath(path)) {
+            const message =
+                error instanceof Error && error.message.trim() !== ''
+                    ? error.message
+                    : 'This page could not be loaded.';
+            Alert.alert('Page not found', message);
             return;
         }
         const action = resolvePageNavigation(path, getCachedPages(), getCachedNavigation());
