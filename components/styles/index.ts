@@ -63,7 +63,7 @@ import { Indicator } from './interactive/Indicator';
 import { ThemeIcon } from './interactive/ThemeIcon';
 import { Notification } from './interactive/Notification';
 
-import { FormLog, FormRecord } from './forms/FormUserInput/index';
+import { FormLog, FormRecord, FormEntryRecordForm } from './forms/FormUserInput/index';
 import { Input } from './forms/Input';
 import { TextInput } from './forms/TextInput';
 import { Textarea } from './forms/Textarea';
@@ -164,6 +164,7 @@ export const styleImpls: TStyleImplMap = {
     // forms
     'form-log': FormLog,
     'form-record': FormRecord,
+    'entry-record-form': FormEntryRecordForm,
     input: Input,
     'text-input': TextInput,
     textarea: Textarea,

@@ -25,7 +25,15 @@ import {
 
 const SAMPLE = { record_id: 7, id_users: 3, _can_delete: true, entry_date: '2026-06-22', name: 'Ann', mood: 'ok' };
 
-test('uses fields_map to select and relabel only the chosen columns', () => {
+test('uses fields_map catalog + fields_map_labels to select and relabel columns', () => {
+    const map = JSON.stringify(['mood']);
+    const labels = JSON.stringify({ mood: 'How are you?' });
+    assert.deepEqual(buildEntryTableColumns(map, SAMPLE, false, {}, labels), [
+        { key: 'mood', label: 'How are you?' },
+    ]);
+});
+
+test('uses legacy fields_map objects to select and relabel only the chosen columns', () => {
     const map = JSON.stringify([{ field_name: 'mood', field_new_name: 'How are you?' }]);
     assert.deepEqual(buildEntryTableColumns(map, SAMPLE, false), [
         { key: 'mood', label: 'How are you?' },
@@ -37,6 +45,12 @@ test('falls back to every non-bookkeeping key when no fields_map is set', () => 
         { key: 'name', label: 'name' },
         { key: 'mood', label: 'mood' },
     ]);
+});
+
+test('resolveEntryTableEditUrl substitutes the single-brace record_id placeholder', async () => {
+    const { resolveEntryTableEditUrl } = await import('../../components/styles/forms/entryTableEditUrl.ts');
+    assert.equal(resolveEntryTableEditUrl('/cms/team/{record_id}', 42), '/cms/team/42');
+    assert.equal(resolveEntryTableEditUrl('/cms/team/{record_id}/edit', 7), '/cms/team/7/edit');
 });
 
 test('prepends the leading Date column when show_timestamp is enabled', () => {
@@ -84,7 +98,15 @@ test('default headers fall back to the field_key when no label is mapped', () =>
     ]);
 });
 
-test('fields_map resolves a mapping authored against the immutable field_key', () => {
+test('fields_map catalog resolves a mapping authored against the immutable field_key', () => {
+    const map = JSON.stringify(['section_231']);
+    const labels = JSON.stringify({ section_231: 'Mood override' });
+    assert.deepEqual(buildEntryTableColumns(map, FIELD_KEY_SAMPLE, false, FIELD_LABELS, labels), [
+        { key: 'section_231', label: 'Mood override' },
+    ]);
+});
+
+test('fields_map resolves a mapping authored against the immutable field_key (legacy objects)', () => {
     const map = JSON.stringify([{ field_name: 'section_231', field_new_name: '' }]);
     assert.deepEqual(buildEntryTableColumns(map, FIELD_KEY_SAMPLE, false, FIELD_LABELS), [
         { key: 'section_231', label: 'How are you?' },

@@ -11,6 +11,12 @@ SPDX-License-Identifier: MPL-2.0
 import type { IStyleProps } from '@/components/renderer/types';
 
 export interface IFormBaseProps extends IStyleProps {
-    /** True for `form-log` (append-only), false for `form-record`. */
+    /** True for `form-log` (append-only), false for record forms. */
     isLog: boolean;
+    /**
+     * When true (`entry-record-form`), create mode stays empty unless the backend
+     * hydrates `section_data` for a route record id. Same prefill parser as
+     * `form-record`, but documents the route-aware contract for readers.
+     */
+    routeAware?: boolean;
 }

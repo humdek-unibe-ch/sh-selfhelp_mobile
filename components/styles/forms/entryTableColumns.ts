@@ -3,25 +3,15 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 /**
- * Pure column-selection logic for the mobile `entry-table` style (renamed from `show-user-input`), kept in a
- * react-native-free module so it can be unit-tested directly.
+ * Pure column-selection logic for the mobile `entry-table` style.
  *
- * Mirrors the web table contract: the author picks which fields render (and
- * their labels) through the `fields_map` JSON; with no mapping every data key is
- * shown. `show_timestamp` prepends a leading "Date" column. The internal
- * bookkeeping keys are never shown as data rows.
- *
- * Issue #56 v2: rows are keyed by the immutable data-column `field_key`, and the
- * human label travels in a separate `field_labels` (`field_key => display_name`)
- * map. Default headers therefore show the display name (falling back to the
- * key), and a `fields_map` mapping resolves to a real data key by `field_key`
- * first, then by the current `display_name`, so renaming a column never breaks
- * an existing mapping. On an older host (entries keyed by name, no
- * `field_labels`) every branch falls back to the key, preserving the previous
- * behaviour.
+ * `fields_map` is an ordered JSON array of `field_key` values; per-locale header
+ * overrides live in `fields_map_labels` (`field_key => label`). Legacy
+ * `{field_name, field_new_name}` objects are still parsed for older content.
  */
 
-/** A column definition authored in the `fields_map` JSON. */
+import { parseFieldsMapCatalog, parseFieldsMapLabels } from '@selfhelp/shared';
+
 export interface IFieldMapping {
     field_name: string;
     field_new_name: string;
@@ -32,53 +22,66 @@ export interface IEntryTableColumn {
     label: string;
 }
 
-// Bookkeeping keys never shown as data rows. `entry_date` surfaces only as the
-// leading "Date" column when `show_timestamp` is enabled (matching the web table).
 const INTERNAL_KEYS = new Set(['record_id', 'id_users', '_can_delete', '_can_edit', 'entry_date']);
 
-/** Parse the author's `fields_map` column config; tolerate empty/invalid JSON. */
-export function parseFieldMappings(raw: string | undefined): IFieldMapping[] {
-    if (!raw) return [];
+function parseLegacyLabelOverrides(raw: string | undefined): Record<string, string> {
+    if (!raw) return {};
     try {
         const parsed = JSON.parse(raw) as unknown;
-        if (!Array.isArray(parsed)) return [];
-        return parsed
-            .filter((m): m is IFieldMapping => !!m && typeof (m as IFieldMapping).field_name === 'string')
-            .map((m) => ({ field_name: m.field_name, field_new_name: m.field_new_name ?? '' }));
+        if (!Array.isArray(parsed)) return {};
+        const labels: Record<string, string> = {};
+        for (const item of parsed) {
+            if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+            const record = item as Record<string, unknown>;
+            const fieldName = typeof record.field_name === 'string' ? record.field_name.trim() : '';
+            const fieldLabel = typeof record.field_new_name === 'string' ? record.field_new_name.trim() : '';
+            if (fieldName && fieldLabel) {
+                labels[fieldName] = fieldLabel;
+            }
+        }
+        return labels;
     } catch {
-        return [];
+        return {};
     }
 }
 
-/**
- * Resolve the ordered columns to render for an entry-table card list.
- *
- * @param rawFieldsMap  the section's `fields_map` JSON string (or undefined)
- * @param sampleEntry   any one entry, used to derive columns when no map is set
- * @param showTimestamp whether to prepend the leading "Date" column
- * @param fieldLabels   `field_key => display_name` map from the section payload
- *                      (issue #56 v2); empty on older hosts
- */
+/** @deprecated Use parseFieldsMapCatalog — kept for tests importing the legacy name. */
+export function parseFieldMappings(raw: string | undefined): IFieldMapping[] {
+    return parseFieldsMapCatalog(raw).map((field_name) => ({ field_name, field_new_name: '' }));
+}
+
 export function buildEntryTableColumns(
     rawFieldsMap: string | undefined,
     sampleEntry: Record<string, unknown> | undefined,
     showTimestamp: boolean,
     fieldLabels: Record<string, string> = {},
+    rawFieldsMapLabels?: string,
 ): IEntryTableColumn[] {
-    const mappings = parseFieldMappings(rawFieldsMap);
-    const dataKeys = Object.keys(sampleEntry ?? {}).filter((k) => !INTERNAL_KEYS.has(k));
-    const mapped: IEntryTableColumn[] = mappings.length > 0
-        ? mappings
-            .map((m): IEntryTableColumn | null => {
-                // Resolve the author's mapping to a real data key: by immutable
-                // field_key first, then by the current display_name.
-                const key = dataKeys.includes(m.field_name)
-                    ? m.field_name
-                    : dataKeys.find((k) => fieldLabels[k] === m.field_name);
+    const fieldKeys = parseFieldsMapCatalog(rawFieldsMap);
+    const fieldsMapLabels = {
+        ...parseLegacyLabelOverrides(rawFieldsMap),
+        ...parseFieldsMapLabels(rawFieldsMapLabels),
+    };
+    const dataKeys = Object.keys(sampleEntry ?? {}).filter((key) => !INTERNAL_KEYS.has(key));
+
+    const mapped: IEntryTableColumn[] = fieldKeys.length > 0
+        ? fieldKeys
+            .map((fieldKey): IEntryTableColumn | null => {
+                const key = dataKeys.includes(fieldKey)
+                    ? fieldKey
+                    : dataKeys.find((candidate) => fieldLabels[candidate] === fieldKey);
                 if (key === undefined) return null;
-                return { key, label: m.field_new_name || fieldLabels[key] || key };
+                const label = fieldsMapLabels[key]
+                    || fieldsMapLabels[fieldKey]
+                    || fieldLabels[key]
+                    || key;
+                return { key, label };
             })
-            .filter((c): c is IEntryTableColumn => c !== null)
-        : dataKeys.map((k) => ({ key: k, label: fieldLabels[k] || k }));
+            .filter((column): column is IEntryTableColumn => column !== null)
+        : dataKeys.map((key) => ({
+            key,
+            label: fieldsMapLabels[key] || fieldLabels[key] || key,
+        }));
+
     return showTimestamp ? [{ key: 'entry_date', label: 'Date' }, ...mapped] : mapped;
 }

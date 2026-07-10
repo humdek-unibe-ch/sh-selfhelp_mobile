@@ -16,7 +16,7 @@ SPDX-License-Identifier: MPL-2.0
  * reads — same authored config, native rendering.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { colorToHex } from '@selfhelp/shared';
 
@@ -30,6 +30,7 @@ import { FormContext } from '../FormContext';
 import type { IFormBaseProps } from './FormUserInput.types';
 import { useFormController } from './FormUserInput.hooks';
 import { styles } from './FormUserInput.styles';
+import { parseFormRecordPrefill } from '../formRecordPrefill';
 
 /** Maps the shared size token to RN padding + font size. */
 const SIZE_PADDING: Record<string, { v: number; h: number; font: number }> = {
@@ -61,9 +62,10 @@ const POSITION_JUSTIFY: Record<string, 'flex-start' | 'center' | 'flex-end' | 's
     'space-between': 'space-between',
 };
 
-function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElement {
+function FormBase({ section, values, isLog, routeAware: _routeAware = false }: IFormBaseProps): React.ReactElement {
     const formName = readField<string>(section, 'name') ?? `form-${section.id}`;
     const saveLabel = useInterpolatedField(section, 'btn_save_label', values) || 'Submit';
+    const updateLabel = useInterpolatedField(section, 'btn_update_label', values) || saveLabel;
     const cancelLabel = useInterpolatedField(section, 'btn_cancel_label', values);
     const successMessage = useInterpolatedField(section, 'alert_success', values);
     const errorMessage = useInterpolatedField(section, 'alert_error', values);
@@ -97,11 +99,19 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
     // `PageRenderer` seeds it into the interpolation values (same as `register`).
     const pageId = typeof values.page_id === 'number' ? values.page_id : Number(values.page_id);
 
+    const { recordId: existingRecordId, values: initialValues } = useMemo(
+        () => parseFormRecordPrefill(section as Parameters<typeof parseFormRecordPrefill>[0]),
+        [section],
+    );
+    const hydrationKey = `${section.id}:${existingRecordId ?? 'create'}`;
+
     const { ctx, isSubmitting, resultMessage, resultIsError, onSubmit, onCancel } = useFormController({
         sectionId: section.id,
         pageId,
         formName,
         isLog,
+        existingRecordId,
+        initialValues,
         successMessage,
         errorMessage,
         cancelUrl,
@@ -134,7 +144,9 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
                 opacity: isSubmitting ? 0.6 : 1,
             }}
         >
-            <Text style={{ color: isFilled ? '#fff' : saveColor, fontWeight: '600', fontSize: pad.font }}>{saveLabel}</Text>
+            <Text style={{ color: isFilled ? '#fff' : saveColor, fontWeight: '600', fontSize: pad.font }}>
+                {!isLog && existingRecordId ? updateLabel : saveLabel}
+            </Text>
         </Pressable>
     );
 
@@ -158,7 +170,7 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
     const actionButtons = order === 'cancel-save' ? [cancelButton, submitButton] : [submitButton, cancelButton];
 
     return (
-        <View className={buildSectionClasses(section)}>
+        <View key={hydrationKey} className={buildSectionClasses(section)}>
             {(formTitle || formDescription) ? (
                 <View style={{ marginBottom: 12, gap: 4 }}>
                     {formTitle ? (
@@ -218,4 +230,8 @@ export function FormLog(props: IStyleProps): React.ReactElement {
 
 export function FormRecord(props: IStyleProps): React.ReactElement {
     return <FormBase {...props} isLog={false} />;
+}
+
+export function FormEntryRecordForm(props: IStyleProps): React.ReactElement {
+    return <FormBase {...props} isLog={false} routeAware />;
 }
