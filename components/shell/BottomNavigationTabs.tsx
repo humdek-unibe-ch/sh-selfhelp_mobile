@@ -3,27 +3,49 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 /**
- * Bottom tab bar — first `MAX_BOTTOM_TABS` top-level menu pages.
+ * Bottom tab bar — top-level `mobile_bottom_tabs` menu items.
  *
- * The active tab is highlighted with the brand colour, an underline
- * indicator on the icon, and a heavier label weight, matching the
- * pattern used elsewhere in the shell (drawer + segmented child tabs).
+ * Group items act as holder tabs: pressing one routes to its first
+ * menu-visible child (`resolveTabPressHref`), and the tab renders the
+ * group's own `mobile_icon` / label since it has no page of its own.
  */
 
 import { router, usePathname } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
-import { usePages } from '@/hooks/usePages';
+import { useNavigation } from '@/hooks/useNavigation';
 import { useAppColors } from '@/hooks/useAppColors';
-import { getPageHref, getPageLabel, getTopLevelMenuPages, iconForPage, isPageActive } from './navigationUtils';
+import {
+    getBottomTabMenuItems,
+    getNavigationItemLabel,
+    menuItemToPageItem,
+    resolveTabPressHref,
+} from './navigationUtils';
+import { isBottomTabMenuItemActive, type INavigationMenuItem, type IPageItem } from '@selfhelp/shared';
 
-const MAX_BOTTOM_TABS = 5;
+import { PageMenuIcon } from './PageMenuIcon';
+
+/** Icon stub for page-less (group holder) tabs so they still show an icon. */
+function iconStubForItem(item: INavigationMenuItem): IPageItem {
+    const label = getNavigationItemLabel(item);
+    return {
+        id: item.id,
+        keyword: label,
+        url: null,
+        parent_page_id: null,
+        is_headless: false,
+        title: label,
+        icon: item.icon,
+        mobile_icon: item.mobile_icon,
+        children: [],
+    };
+}
 
 export function BottomNavigationTabs(): React.ReactElement | null {
     const pathname = usePathname();
     const colors = useAppColors();
-    const { data } = usePages();
-    const tabs = getTopLevelMenuPages(data ?? []).slice(0, MAX_BOTTOM_TABS);
+    const { data: navigation } = useNavigation();
+    const tabs = getBottomTabMenuItems(navigation);
 
     if (tabs.length === 0) return null;
 
@@ -37,12 +59,13 @@ export function BottomNavigationTabs(): React.ReactElement | null {
                 paddingBottom: 4,
             }}
         >
-            {tabs.map((page) => {
-                const href = getPageHref(page);
-                const active = isPageActive(page, pathname);
+            {tabs.map((item) => {
+                const href = resolveTabPressHref(item);
+                const active = isBottomTabMenuItemActive(item, pathname);
+                const page = menuItemToPageItem(item) ?? iconStubForItem(item);
                 return (
                     <Pressable
-                        key={page.id ?? page.keyword}
+                        key={String(item.id)}
                         onPress={() => router.push(href)}
                         style={({ pressed }) => ({
                             flex: 1,
@@ -61,15 +84,11 @@ export function BottomNavigationTabs(): React.ReactElement | null {
                                 marginBottom: 4,
                             }}
                         />
-                        <Text
-                            style={{
-                                color: active ? colors.primaryStrong : colors.textFaint,
-                                fontWeight: '700',
-                                fontSize: 16,
-                            }}
-                        >
-                            {iconForPage(page)}
-                        </Text>
+                        <PageMenuIcon
+                            page={page}
+                            size={22}
+                            color={active ? colors.primaryStrong : colors.textFaint}
+                        />
                         <Text
                             numberOfLines={1}
                             style={{
@@ -79,7 +98,7 @@ export function BottomNavigationTabs(): React.ReactElement | null {
                                 marginTop: 2,
                             }}
                         >
-                            {getPageLabel(page)}
+                            {getNavigationItemLabel(item)}
                         </Text>
                     </Pressable>
                 );

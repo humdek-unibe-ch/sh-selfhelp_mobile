@@ -11,6 +11,6 @@ SPDX-License-Identifier: MPL-2.0
 import type { IStyleProps } from '@/components/renderer/types';
 
 export interface IFormBaseProps extends IStyleProps {
-    /** True for `form-log` (append-only), false for `form-record`. */
+    /** True for `form-log` (append-only), false for record forms. */
     isLog: boolean;
 }

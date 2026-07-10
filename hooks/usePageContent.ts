@@ -3,19 +3,17 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 /**
- * Fetch a page by keyword via TanStack Query. Cached per
- * (keyword, languageId, preview) so language switches and preview-mode
- * toggles refetch cleanly without poisoning the published-cache entry.
+ * Fetch public page content via TanStack Query.
  *
- * `preview` is gated on authentication (`resolvePreviewRequest`): the backend
- * rejects an anonymous draft request with 401, so the public home/login
- * screens must request published content, not the dev preview draft.
+ * Prefer `resolvePath` → `GET /pages/resolve` (parameterized routes + route_params).
+ * Fall back to keyword → `GET /pages/by-keyword/{keyword}` for static auth/shell
+ * pages that have no path yet (login, profile, …).
  */
 
 import { useQuery } from '@tanstack/react-query';
 import type { IPageContent } from '@selfhelp/shared';
 
-import { fetchPageByKeyword } from '@/services/pageService';
+import { fetchPageByKeyword, resolvePageByPath } from '@/services/pageService';
 import { resolvePreviewRequest } from '@/services/previewPolicy';
 import { useDevModeStore } from '@/stores/devModeStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -27,11 +25,23 @@ export const pageContentQueryKey = (
     keyword: string,
     languageId: number | null,
     preview: boolean,
-    authScope: 'auth' | 'anon'
+    authScope: 'auth' | 'anon',
+    resolvePath?: string | null,
 ): readonly unknown[] =>
-    ['page', serverUrl ?? 'no-server', keyword, languageId, preview ? 'preview' : 'published', authScope] as const;
+    [
+        'page',
+        serverUrl ?? 'no-server',
+        // Path-first cache identity when resolving by URL; keyword otherwise.
+        resolvePath && resolvePath.trim() !== '' ? `__path__:${resolvePath}` : keyword,
+        languageId,
+        preview ? 'preview' : 'published',
+        authScope,
+    ] as const;
 
-export function usePageContent(keyword: string): {
+export function usePageContent(
+    keyword: string,
+    resolvePath?: string | null,
+): {
     data: IPageContent | undefined;
     isLoading: boolean;
     error: Error | null;
@@ -47,15 +57,28 @@ export function usePageContent(keyword: string): {
     // Drafts require authentication: never request preview anonymously, or the
     // public home/login fetch 401s and the app cannot load / reach login.
     const preview = resolvePreviewRequest(previewMode, Boolean(accessToken));
+    const path = resolvePath?.trim() || null;
+    const canFetch = Boolean(serverUrl) && serverHydrated && bootstrapped
+        && (Boolean(path) || Boolean(keyword));
 
     const q = useQuery<IPageContent, Error>({
-        queryKey: pageContentQueryKey(serverUrl, keyword, languageId, preview, authScope),
-        queryFn: () =>
-            fetchPageByKeyword(keyword, {
-                languageId: languageId ?? undefined,
-                preview,
-            }),
-        enabled: Boolean(keyword) && Boolean(serverUrl) && serverHydrated && bootstrapped,
+        queryKey: pageContentQueryKey(serverUrl, keyword, languageId, preview, authScope, path),
+        queryFn: async () => {
+            const page = path
+                ? await resolvePageByPath(path, {
+                      languageId: languageId ?? undefined,
+                      preview,
+                  })
+                : await fetchPageByKeyword(keyword, {
+                      languageId: languageId ?? undefined,
+                      preview,
+                  });
+            if (page.page_surface === 'cms') {
+                throw new Error('CMS-surface pages are not available in the mobile public shell');
+            }
+            return page;
+        },
+        enabled: canFetch,
         // Preview content is short-lived: never cache it across mode flips.
         staleTime: preview ? 0 : 30 * 1000,
         gcTime: preview ? 0 : 5 * 60 * 1000,

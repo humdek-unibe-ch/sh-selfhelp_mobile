@@ -4,6 +4,158 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.33
+
+### Fixed
+- **`mailto:` / `tel:` / `sms:` links** — Button and Link open these schemes via
+  the OS (`Linking.openURL`) instead of treating them as in-app page paths.
+  CMS-in-CMS contact / team templates can dial and mail from native again.
+- **Drawer branding presentation** — the drawer header uses shared
+  `resolveBrandingPresentation` so `logo_size` / `logo_variant` match the web
+  header (including logo-only / name-only).
+- **`entry-table` edit affordance** — when `edit_url` is set, cards honour
+  `_can_edit` and navigate via `navigateToPage` after substituting `{record_id}`;
+  optional `add_url` shows an Add new control (desktop DataTable / CSV options
+  remain web-only).
+- **`form-record` / `entry-record-form` record-edit** — consumes backend-hydrated
+  `section_data` via shared `parseFormRecordPrefill` / flatten helper and sends
+  `update_based_on.record_id` on update (parity with web `FormStyle`). Create vs
+  edit for `entry-record-form` is entirely server-driven via `load_record_from`
+  hydration.
+- **Page fetch** — prefers shared `buildPagesResolveUrl` → `GET /pages/resolve`
+  when a public path is known; keyword fetch remains for static shell pages
+  (login, profile). Parameterized targets never keyword-fallback.
+- **CMS-surface pages** — rejected in the public mobile shell (backend is
+  authoritative; client guard is defensive).
+
+### Dependency
+- Pins `@selfhelp/shared` `1.21.6`. Registry pairing uses `supports.core`
+  `>=0.1.36` (package SemVer may remain `0.1.33`). Do not install shared `2.x` /
+  `3.x` tags from feature-branch staging.
+
+### User-owned option labels
+
+- Select, radio, combobox, and segmented-control renderers use the canonical
+  `@selfhelp/shared` option resolver. Stable codes remain the submitted values;
+  translated `option_labels` drive display text and legacy `text`/`label`
+  catalogs keep their labels.
+
+### Navigation overhaul — strict v2 contract (breaking)
+
+Adopts the strict navigation payload from core `0.1.33` and `@selfhelp/shared`
+`1.21.5` (wave previously staged as shared `2.0.0`; every menu-item key always
+present, `config` removed, typed `preset` / `max_depth` / `item_limit` on menus):
+
+- **Collapsible drawer** — `CmsDrawerContent` renders `mobile_drawer` as a
+  collapsible tree: parents get a chevron toggle, the active trail auto-expands
+  on navigation (`expandedIdsForActiveTrail`), group rows without a page toggle
+  on press, and active detection uses the shared `isMenuItemActiveOnMobile`.
+- **Bottom tabs item limit** — `getBottomTabMenuItems` slices to the menu's
+  `item_limit` (default 5) from the typed payload.
+- **De-duplicated helpers** — removed local `isNavigationItemActive`,
+  `getNavigationItemMobileRoute`, `flattenMenuPages`, and the deprecated
+  `getMenuTree` / `getTopLevelMenuPages`; hrefs and active states now come from
+  shared (`getNavigationItemMobileHref`, `isMenuItemActiveOnMobile`).
+- `menuItemToPageItem` reads `icon` / `mobile_icon` from the menu item (the
+  resolved page ref no longer carries icons).
+- **Horizontal underline branch tabs** — `MobileBranchNavigation` replaces the
+  stacked pill buttons with a Material-style top tab bar: tabs stretch evenly
+  when four or fewer fit, otherwise the bar scrolls horizontally and
+  auto-scrolls the active tab into view; the active tab gets a primary
+  underline + tinted label/icon.
+- **Swipe between sibling pages** — `CmsPageScreen` wraps the rendered page in
+  a horizontal pan gesture (react-native-gesture-handler): swiping left/right
+  (>60 px, vertical scroll unaffected) navigates to the next/previous page of
+  the same branch segment group.
+
+### CMS-in-CMS polish wave — entry-table rename (breaking, same release)
+
+Adopts the `show-user-input` → `entry-table` style rename from core `0.1.33`
+and `@selfhelp/shared` `1.21.5` (wave previously staged as shared `3.0.0`):
+
+- The renderer is `components/styles/forms/EntryTable.tsx` (+
+  `entryTableColumns.ts`), dispatched on `style_name: 'entry-table'` with the
+  shared `IEntryTableStyle` / `IEntryTableEntry` types. No alias is kept —
+  existing sections keep working because the backend renames the catalog row in
+  the same release.
+- The new server-computed `_can_edit` flag is treated as internal bookkeeping
+  (hidden from the data columns, like `_can_delete` / `record_id`); the delete
+  button keeps honouring `_can_delete`, and the Edit action appears when
+  `edit_url` is set and `_can_edit !== false`.
+
+Consumes `@selfhelp/shared` `1.21.5` (the DB-routing / CMS-apps / navigation /
+entry-binding wave previously staged as shared `2.0.0`–`3.0.1`). Raised
+`supports.core` through `>=0.1.36` for `load_record_from` + field-based entry
+binding while the **package version stays `0.1.33`** — that is intentional:
+mobile-preview image SemVer did not need a separate bump for every core minor
+in this wave; use `release-manifest.json` `supports.core` (not the package
+patch) to judge core pairing.
+
+## 0.1.32
+
+### Menu-builder navigation (breaking cleanup)
+
+Replaces the page-level `mobile_nav_render` / exclusive global shell model with
+first-class menus from `GET /cms-api/v1/navigation`:
+
+- **Drawer + bottom tabs** render independently when each menu has items (both
+  can appear together).
+- **`MobileBranchNavigation`** — automatic sibling/child segmented nav from
+  resolved menu trees (replaces `SegmentedChildPages` and per-page render modes).
+- **Modal vs route** — off-menu pages open as sheets; on-menu pages route
+  full-screen using URL-derived paths (`pageUrlToMobileRoute`), not keyword
+  guessing.
+- **Startup pages** — cold start respects configured guest/logged-in targets and
+  optional last-visited fallback from the navigation payload.
+- **Last visited** — records normal on-menu page visits via
+  `PUT /navigation/last-visited`.
+- **Holder pages** — tab pages without content auto-select the first visible
+  child; tab pages with content prepend a self segment.
+- Removed exclusive `globalNavRender` store, standalone `menu.tsx` route, and
+  `SegmentedChildPages`.
+
+Consumes `@selfhelp/shared` `1.21.0` (`INavigationPayload`, branch-nav helpers,
+`isOnAnyMobileMenuFromPayload`). Raised `supports.core` `>=0.1.31` → `>=0.1.32`.
+
+## 0.1.31
+
+### Navigation pages, nav rendering & page icons (host issue #30)
+
+Pages can act as navigation hubs with per-platform icons and render types.
+Mobile adds `lucide-react-native` and a `PageMenuIcon` component that draws the
+page's `mobile_icon` from the curated `MOBILE_ICON_SET` (`@selfhelp/shared`),
+with a text-glyph fallback, used by the drawer, bottom tabs, and segmented child
+pages. A mobile navigation renderer registry (`segmented-tabs` default,
+`bottom-tabs`, `drawer`, `hero-cards`) reads `mobile_nav_render` and a page with
+no body sections but menu-visible children auto-renders a virtual navigation
+block (`CmsPageScreen`); deeper levels drill down via the Expo Router stack. The
+global shell (bottom-tabs vs drawer) is configurable via `useMobileShellStore`
+(default `bottom-tabs`).
+
+Consumes `@selfhelp/shared >=1.19.0` (the `navigation` module +
+`mobile_icon`/`mobile_nav_render` on `IPageItem`/`IPageContent`; caret bumped
+`^1.18.0` → `^1.19.0`).
+
+The shared caret is further bumped `^1.19.0` → `^1.20.0` for the CMS-in-CMS modal
+contract (`IPageContent.modal_width`/`modal_height`). Those fields are **web
+only** — the mobile app opens an `open_in_modal` page as a normal screen — so this
+is a dependency-floor bump with **no mobile behavior change**.
+
+### DB-driven public routing for deep links (host issue #30)
+
+Public page resolution moves from client-side slug parsing to the host's new
+DB-driven resolver. `pageService` gains `resolvePageByPath(path)` which calls the
+open-access endpoint `GET /cms-api/v1/pages/resolve`, and the renderer threads the
+returned `route_params` into interpolation as `{{route.<snake_case>}}`. The
+validate screen now reads `route_params.user_id` / `route_params.token` from the
+resolver instead of parsing the URL, matching the parameterized reset/validate
+routes.
+
+Because public pages and deep links are now resolved through `/pages/resolve`,
+which first ships in core `0.1.31`, `supports.core` is raised `>=0.1.19` →
+`>=0.1.31`. Pairs with `@selfhelp/shared >=1.18.0` (route-metadata types +
+`PAGES.RESOLVE`).
+
 ## 0.1.30
 
 ### show-user-input headers honour the data-column display name (issue #56 v2)

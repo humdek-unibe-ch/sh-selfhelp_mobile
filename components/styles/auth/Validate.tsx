@@ -18,8 +18,15 @@ import { useAppColors } from '@/hooks/useAppColors';
 /**
  * `validate` finishes the registration flow: the user receives a
  * one-time link `/validate/{user_id}/{token}` and submits a password.
- * On mobile we expect the link to deep-link us into a screen which
- * mounts a page containing this style.
+ *
+ * Route params (issue #30): the `user_id` + `token` this screen reads are the
+ * resolved `page_routes` parameters. The deep-link handler (`native/deepLinks.ts`)
+ * classifies the incoming `/validate/{user_id}/{token}` link and pushes those
+ * snake_case values as Expo Router params, so `useLocalSearchParams` here is the
+ * concrete delivery of the page's `route_params` — the param names match the
+ * backend route pattern exactly. (For richer parameterized links the same
+ * handler calls `pageService.resolvePageByPath()` and forwards the resolved
+ * `route_params` the same way.)
  *
  * Built HeroUI-Native-first like `login`/`register`: title, inputs and submit
  * render through the adapter seam (`MobileText`/`MobileInput`/`MobileButton`)
@@ -38,6 +45,8 @@ export function Validate({ section, values }: IStyleProps): React.ReactElement {
     const sharedColor = readField<string>(section, 'btn_save_color');
     const accent = sharedColor ? resolveMantineVariant('filled', sharedColor).accent : colors.primary;
 
+    // Resolved page_routes params (`user_id`, `token`) delivered as Expo Router
+    // params by native/deepLinks.ts — see the file docblock (issue #30).
     const params = useLocalSearchParams<{ user_id?: string; token?: string }>();
     const [pw, setPw] = useState('');
     const [pw2, setPw2] = useState('');

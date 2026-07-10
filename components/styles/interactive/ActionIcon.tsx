@@ -9,6 +9,7 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
 import type { TMantineSize } from '@selfhelp/shared';
 import { mobileStyleProps, mobileIntentPalette } from '@/components/ui/mobileStyleProps';
+import { resolveGlyphIcon, looksLikeIconName } from '@/components/ui/glyphIcon';
 
 const SIZE_PX: Record<TMantineSize, { box: number; icon: number }> = {
     xs: { box: 24, icon: 12 },
@@ -30,6 +31,8 @@ export function ActionIcon({ section, values }: IStyleProps): React.ReactElement
     const ariaLabel = useInterpolatedField(section, 'aria_label', values) || undefined;
 
     const dims = SIZE_PX[size] ?? SIZE_PX.md;
+    const IconCmp = resolveGlyphIcon(icon);
+    const glyph = !IconCmp && looksLikeIconName(icon) ? '●' : icon;
 
     return (
         <Pressable
@@ -57,7 +60,11 @@ export function ActionIcon({ section, values }: IStyleProps): React.ReactElement
                 opacity: disabled ? 0.4 : 1,
             })}
         >
-            <Text style={{ color: v.foreground, fontSize: dims.icon, fontWeight: '600' }}>{icon}</Text>
+            {IconCmp ? (
+                <IconCmp size={dims.icon} color={v.foreground} />
+            ) : (
+                <Text style={{ color: v.foreground, fontSize: dims.icon, fontWeight: '600' }}>{glyph}</Text>
+            )}
         </Pressable>
     );
 }

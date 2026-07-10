@@ -30,7 +30,12 @@ type SelectOptionPair = { value: string; label: string };
 
 function buildItems(options: IMobileSelectProps['options'], textColor: string): React.ReactElement[] {
     return options.map((option) => (
-        <Select.Item key={option.value} value={option.value} label={option.label}>
+        <Select.Item
+            key={option.value}
+            value={option.value}
+            label={option.label}
+            disabled={option.disabled}
+        >
             <Select.ItemLabel style={{ color: textColor }} />
             <Select.ItemIndicator />
         </Select.Item>

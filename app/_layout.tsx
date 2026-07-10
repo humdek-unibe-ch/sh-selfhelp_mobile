@@ -46,8 +46,9 @@ import { AppProviders } from '@/providers/AppProviders';
 import { installDevWarningFilter } from '@/config/devWarnings';
 import { getWebPreviewRuntime } from '@/config/webPreview';
 import { useAppColors } from '@/hooks/useAppColors';
+import { useNavigation } from '@/hooks/useNavigation';
 import { usePages } from '@/hooks/usePages';
-import { isKeywordOnMenu } from '@/components/shell/navigationUtils';
+import { isKeywordOnResolvedMobileMenu } from '@/components/shell/navigationUtils';
 import { PageModalHost } from '@/components/shell/PageModalHost';
 import { usePageModalStore } from '@/stores/pageModalStore';
 import { FloatingDebugPanel } from '@/components/dev/FloatingDebugPanel';
@@ -86,6 +87,7 @@ function GateController(): null {
     const canSwitchServers = useServerStore((s) => s.canSwitchServers);
     const previewRoutedRef = useRef(false);
     const { data: pages } = usePages();
+    const { data: navigation } = useNavigation();
 
     useEffect(() => {
         lastRedirectRef.current = null;
@@ -127,18 +129,15 @@ function GateController(): null {
             return undefined;
         }
 
-        // auto: decide from the nav menu. The CMS normally passes an explicit
-        // on/off (it knows the page's nav position), so this is a standalone
-        // fallback. The GET-only preview token can fail to read the nav list
-        // (scope-bound to the session language) — so NEVER strand on home: if the
-        // nav list isn't available shortly, route full-screen to the keyword.
+        // auto: use resolved navigation payload membership. If pages are not
+        // loaded yet, fall back to routing full-screen after a short timeout.
         if (pages) {
-            present(!isKeywordOnMenu(pages, keyword));
+            present(!isKeywordOnResolvedMobileMenu(pages, keyword, navigation));
             return undefined;
         }
         const timer = setTimeout(() => present(false), 2500);
         return () => clearTimeout(timer);
-    }, [bootstrapped, pages, router, serverHydrated]);
+    }, [bootstrapped, pages, navigation, router, serverHydrated]);
 
     useEffect(() => {
         if (!navState?.key) return;

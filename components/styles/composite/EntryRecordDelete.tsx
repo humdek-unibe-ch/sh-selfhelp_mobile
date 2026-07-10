@@ -19,7 +19,9 @@ import { deleteFormRecord } from '@/services/formsService';
  * page query refetches.
  */
 export function EntryRecordDelete({ section, values }: IStyleProps): React.ReactElement {
-    const label = useInterpolatedField(section, 'label', values) || 'Delete';
+    // `label_delete` is the style's catalog field (the generic `label` field is
+    // not linked to entry-record-delete, so it can never carry CMS content here).
+    const label = useInterpolatedField(section, 'label_delete', values) || 'Delete';
     const confirmTitle = useInterpolatedField(section, 'confirmation_title', values) || 'Delete entry?';
     const confirmContinue = useInterpolatedField(section, 'confirmation_continue', values) || 'Delete';
     const confirmCancel = useInterpolatedField(section, 'confirmation_cancel', values) || 'Cancel';

@@ -63,7 +63,7 @@ import { Indicator } from './interactive/Indicator';
 import { ThemeIcon } from './interactive/ThemeIcon';
 import { Notification } from './interactive/Notification';
 
-import { FormLog, FormRecord } from './forms/FormUserInput/index';
+import { FormLog, FormRecord, FormEntryRecordForm } from './forms/FormUserInput/index';
 import { Input } from './forms/Input';
 import { TextInput } from './forms/TextInput';
 import { Textarea } from './forms/Textarea';
@@ -110,7 +110,7 @@ import { NoAccess, NotFound, Missing, Version } from './auth/SystemSurfaces';
 import { RefContainer } from './layout/RefContainer';
 import { DataContainer } from './layout/DataContainer';
 import { TimelineItem } from './composite/TimelineItem';
-import { ShowUserInput } from './forms/ShowUserInput';
+import { EntryTable } from './forms/EntryTable';
 
 export const styleImpls: TStyleImplMap = {
     // layout
@@ -164,6 +164,7 @@ export const styleImpls: TStyleImplMap = {
     // forms
     'form-log': FormLog,
     'form-record': FormRecord,
+    'entry-record-form': FormEntryRecordForm,
     input: Input,
     'text-input': TextInput,
     textarea: Textarea,
@@ -185,7 +186,7 @@ export const styleImpls: TStyleImplMap = {
     progress: Progress,
     'progress-root': ProgressRoot,
     'progress-section': ProgressSection,
-    'show-user-input': ShowUserInput,
+    'entry-table': EntryTable,
     // composite
     accordion: Accordion,
     'accordion-item': AccordionItem,

@@ -7,28 +7,9 @@ import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
 import { useAppColors } from '@/hooks/useAppColors';
-import { colorToHex } from '@selfhelp/shared';
+import { colorToHex, resolveOptions } from '@selfhelp/shared';
 import { useFieldBinding } from './_useFieldBinding';
 import { FieldShell } from './_FieldShell';
-
-interface IItem {
-    value: string;
-    label?: string;
-    text?: string;
-}
-
-function parseItems(raw: unknown): IItem[] {
-    if (!raw) return [];
-    if (Array.isArray(raw)) return raw as IItem[];
-    if (typeof raw === 'string') {
-        try {
-            return JSON.parse(raw) as IItem[];
-        } catch {
-            return [];
-        }
-    }
-    return [];
-}
 
 /**
  * Radio — OSS fallback: a stack of tappable RN radio rows. HeroUI Native **Pro**
@@ -41,8 +22,12 @@ export function Radio({ section, values }: IStyleProps): React.ReactElement {
     const label = useInterpolatedField(section, 'label', values);
     const description = useInterpolatedField(section, 'description', values);
     const required = readBooleanField(section, 'is_required', false);
+    const disabled = readBooleanField(section, 'disabled', false);
     const initial = readField<string>(section, 'value') ?? '';
-    const items = parseItems(readField(section, 'items') ?? readField(section, 'radio_options'));
+    const items = resolveOptions(
+        readField(section, 'items') ?? readField(section, 'radio_options'),
+        readField(section, 'option_labels'),
+    );
     const accent = colorToHex(readField<string>(section, 'color') ?? 'blue', 6) ?? colors.primary;
     const { value, error, setValue } = useFieldBinding(name, initial);
 
@@ -51,11 +36,19 @@ export function Radio({ section, values }: IStyleProps): React.ReactElement {
             <View style={{ gap: 6 }}>
                 {items.map((item) => {
                     const selected = value === item.value;
+                    const itemDisabled = disabled || item.disabled === true;
                     return (
                         <Pressable
                             key={item.value}
+                            disabled={itemDisabled}
+                            accessibilityState={{ disabled: itemDisabled, selected }}
                             onPress={() => setValue(item.value)}
-                            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 4 }}
+                            style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                paddingVertical: 4,
+                                opacity: itemDisabled ? 0.5 : 1,
+                            }}
                         >
                             <View
                                 style={{
@@ -71,7 +64,7 @@ export function Radio({ section, values }: IStyleProps): React.ReactElement {
                             >
                                 {selected ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: accent }} /> : null}
                             </View>
-                            <Text style={{ color: colors.text }}>{item.label ?? item.text ?? item.value}</Text>
+                            <Text style={{ color: colors.text }}>{item.label}</Text>
                         </Pressable>
                     );
                 })}

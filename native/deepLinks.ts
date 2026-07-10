@@ -6,58 +6,58 @@ SPDX-License-Identifier: MPL-2.0
  * Deep-link handling for the mobile app.
  *
  * Supported schemes:
- *   - Custom scheme: `selfhelp://<keyword>` (configurable via APP_SCHEME)
- *   - Universal links / app links: `https://<APP_UNIVERSAL_LINK_DOMAIN>/<keyword>`
+ *   - Custom scheme: `selfhelp://<path>` (configurable via APP_SCHEME)
+ *   - Universal links / app links: `https://<APP_UNIVERSAL_LINK_DOMAIN>/<path>`
  *
- * Both are normalised to a SelfHelp page-keyword and routed via
- * Expo Router. Auth tokens (from validate / reset-password emails)
- * are extracted from the path.
+ * The incoming URL is parsed to a path and classified by the pure
+ * `classifyDeepLink()` helper (see `deepLinkRouting.ts`). Auth flows and simple
+ * single-keyword links route locally (offline, no network). Anything
+ * parameterized or nested (`/team/{record_id}`, `/help/getting-started`) is
+ * resolved through `navigateToResolvedPath` → `GET /pages/resolve` so
+ * `route_params` hydrate entry-record / entry-record-form pages (issue #30).
+ * Parameterized resolve failures never keyword-fallback (that drops hydration).
  */
 
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 
-interface IParsedLink {
-    keyword?: string;
-    userId?: number;
-    token?: string;
-    raw: string;
-}
+import {
+    navigateToPage,
+    navigateToResolvedPath,
+} from '@/components/shell/usePageNavigation';
+import { classifyDeepLink } from './deepLinkRouting';
 
-function parseLink(url: string): IParsedLink {
+async function routeFromUrl(url: string): Promise<void> {
     const parsed = Linking.parse(url);
-    const path = (parsed.path ?? '').replace(/^\/+/, '');
-    const segments = path.split('/').filter(Boolean);
+    const plan = classifyDeepLink(parsed.path);
 
-    if (segments[0] === 'validate' && segments.length >= 3) {
-        return { keyword: 'validate', userId: Number(segments[1]), token: segments[2], raw: url };
-    }
-    if (segments[0] === 'reset-password' && segments.length >= 3) {
-        return { keyword: 'resetPassword', userId: Number(segments[1]), token: segments[2], raw: url };
-    }
-    return { keyword: segments[0], raw: url };
-}
+    switch (plan.kind) {
+        case 'none':
+            return;
 
-function routeFromLink(link: IParsedLink): void {
-    if (!link.keyword) return;
-    if (link.userId && link.token) {
-        router.push({
-            pathname: `/${link.keyword}`,
-            params: { user_id: String(link.userId), token: link.token },
-        });
-        return;
+        case 'auth':
+            router.push({ pathname: `/${plan.keyword}`, params: plan.routeParams });
+            return;
+
+        case 'keyword':
+            navigateToPage(`/${plan.keyword}`);
+            return;
+
+        case 'resolve':
+            // Path-first only — never keyword-fallback a multi-segment URL.
+            await navigateToResolvedPath(plan.path);
+            return;
     }
-    router.push(`/${link.keyword}`);
 }
 
 export async function consumeInitialLink(): Promise<void> {
     const initial = await Linking.getInitialURL();
-    if (initial) routeFromLink(parseLink(initial));
+    if (initial) await routeFromUrl(initial);
 }
 
 export function subscribeToLinks(): () => void {
     const sub = Linking.addEventListener('url', ({ url }) => {
-        routeFromLink(parseLink(url));
+        void routeFromUrl(url);
     });
     return () => sub.remove();
 }

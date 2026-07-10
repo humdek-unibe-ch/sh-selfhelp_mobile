@@ -6,6 +6,9 @@ name: plugin-mobile-check
 # Plugin mobile check.
 #
 # Validates the React Native plugin surface:
+#   - Sibling `@selfhelp/shared` is checked out, installed, and built so
+#     the file: link in package-lock resolves to a real `dist/` (required
+#     for lint + typecheck + registry parity).
 #   - Renderer helper unit tests + style registry parity, both via
 #     `node --test` (`npm test`): `__tests__/unit/*` covers the CMS field
 #     readers, `useInterpolatedField`, `buildSectionClasses`, and the
@@ -87,7 +90,20 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: sh-selfhelp_mobile/package-lock.json
+          cache-dependency-path: |
+            sh-selfhelp_mobile/package-lock.json
+            sh-selfhelp_shared/package-lock.json
+
+      # @selfhelp/shared is a sibling file: link (see package-lock
+      # node_modules/@selfhelp/shared → ../sh-selfhelp_shared). Lint and
+      # type-aware ESLint resolve exports under dist/; without a build the
+      # package is unresolved and cascades into ~1300 no-unsafe-* errors.
+      - name: Install and build shared
+        working-directory: sh-selfhelp_shared
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
 
       - name: Install dependencies
         working-directory: sh-selfhelp_mobile

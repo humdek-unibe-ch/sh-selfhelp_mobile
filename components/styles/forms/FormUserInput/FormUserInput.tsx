@@ -5,26 +5,26 @@ SPDX-License-Identifier: MPL-2.0
 /**
  * FormUserInput style — render-only file.
  *
- * The two CMS keywords `form-log` and `form-record` reuse the same
- * component (Mantine on web does the same). The only difference is
- * which submit endpoint runs (`submitForm` vs `updateForm`); that's
- * decided by the `isLog` prop wired from the registry.
- *
- * RF-21: this is a custom composite (not a 1:1 component map), so the mobile
- * form builds its own action row from the shared button knobs
- * (`buttons_*` / `btn_*_color`) that the web Mantine form also
- * reads — same authored config, native rendering.
+ * `form-log`, `form-record`, and `entry-record-form` reuse the same component.
+ * Submit mode is decided by `isLog`. Create vs edit for record forms is driven
+ * entirely by backend `section_data` hydration (`load_record_from` on
+ * `entry-record-form` leaves create routes empty and edit routes prefilled).
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
-import { colorToHex } from '@selfhelp/shared';
+import {
+    colorToHex,
+    flattenFormRecordPrefillValues,
+    parseFormRecordPrefill,
+} from '@selfhelp/shared';
 
 import type { IStyleProps } from '@/components/renderer/types';
 import { Children } from '@/components/renderer/Children';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
 import { useAppColors } from '@/hooks/useAppColors';
+import { useLanguageStore } from '@/stores/languageStore';
 
 import { FormContext } from '../FormContext';
 import type { IFormBaseProps } from './FormUserInput.types';
@@ -64,6 +64,7 @@ const POSITION_JUSTIFY: Record<string, 'flex-start' | 'center' | 'flex-end' | 's
 function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElement {
     const formName = readField<string>(section, 'name') ?? `form-${section.id}`;
     const saveLabel = useInterpolatedField(section, 'btn_save_label', values) || 'Submit';
+    const updateLabel = useInterpolatedField(section, 'btn_update_label', values) || saveLabel;
     const cancelLabel = useInterpolatedField(section, 'btn_cancel_label', values);
     const successMessage = useInterpolatedField(section, 'alert_success', values);
     const errorMessage = useInterpolatedField(section, 'alert_error', values);
@@ -97,11 +98,24 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
     // `PageRenderer` seeds it into the interpolation values (same as `register`).
     const pageId = typeof values.page_id === 'number' ? values.page_id : Number(values.page_id);
 
+    const languageId = useLanguageStore((s) => s.languageId);
+
+    const { recordId: existingRecordId, values: initialValues } = useMemo(() => {
+        const prefill = parseFormRecordPrefill(section as Parameters<typeof parseFormRecordPrefill>[0]);
+        return {
+            recordId: prefill.recordId,
+            values: flattenFormRecordPrefillValues(prefill.values, languageId),
+        };
+    }, [section, languageId]);
+    const hydrationKey = `${section.id}:${existingRecordId ?? 'create'}`;
+
     const { ctx, isSubmitting, resultMessage, resultIsError, onSubmit, onCancel } = useFormController({
         sectionId: section.id,
         pageId,
         formName,
         isLog,
+        existingRecordId,
+        initialValues,
         successMessage,
         errorMessage,
         cancelUrl,
@@ -134,7 +148,9 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
                 opacity: isSubmitting ? 0.6 : 1,
             }}
         >
-            <Text style={{ color: isFilled ? '#fff' : saveColor, fontWeight: '600', fontSize: pad.font }}>{saveLabel}</Text>
+            <Text style={{ color: isFilled ? '#fff' : saveColor, fontWeight: '600', fontSize: pad.font }}>
+                {!isLog && existingRecordId ? updateLabel : saveLabel}
+            </Text>
         </Pressable>
     );
 
@@ -158,7 +174,7 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
     const actionButtons = order === 'cancel-save' ? [cancelButton, submitButton] : [submitButton, cancelButton];
 
     return (
-        <View className={buildSectionClasses(section)}>
+        <View key={hydrationKey} className={buildSectionClasses(section)}>
             {(formTitle || formDescription) ? (
                 <View style={{ marginBottom: 12, gap: 4 }}>
                     {formTitle ? (
@@ -217,5 +233,11 @@ export function FormLog(props: IStyleProps): React.ReactElement {
 }
 
 export function FormRecord(props: IStyleProps): React.ReactElement {
+    return <FormBase {...props} isLog={false} />;
+}
+
+export function FormEntryRecordForm(props: IStyleProps): React.ReactElement {
+    // Prefill comes from backend `section_data` when `load_record_from` resolves
+    // a route record id; create routes arrive with empty `section_data`.
     return <FormBase {...props} isLog={false} />;
 }

@@ -4,14 +4,9 @@ SPDX-License-Identifier: MPL-2.0
 */
 /**
  * Hooks for the FormUserInput style: state + submit handler.
- *
- * `react-hook-form` is intentionally NOT used here — the schema is
- * dynamic, the children come from the CMS, and the field-set may
- * change at any time. Hand-rolling the bookkeeping is cheaper than
- * adapting RHF's registration flow to a CMS-driven form.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import type { IFormContext } from '../FormContext';
@@ -20,10 +15,11 @@ import { submitForm, updateForm, type TFormResult } from '@/services/formsServic
 
 interface IUseFormControllerArgs {
     sectionId: number;
-    /** CMS page the form lives on. The backend requires it to run the page-access check. */
     pageId: number;
     formName: string;
     isLog: boolean;
+    existingRecordId?: number | null;
+    initialValues?: Record<string, string>;
     successMessage?: string | null;
     errorMessage?: string | null;
     cancelUrl?: string | null;
@@ -38,14 +34,34 @@ export function useFormController(args: IUseFormControllerArgs): {
     onSubmit: () => Promise<void>;
     onCancel: () => void;
 } {
-    const { sectionId, pageId, formName, isLog, successMessage, errorMessage, cancelUrl, ajax } = args;
+    const {
+        sectionId,
+        pageId,
+        formName,
+        isLog,
+        existingRecordId = null,
+        initialValues = {},
+        successMessage,
+        errorMessage,
+        cancelUrl,
+        ajax,
+    } = args;
 
+    const hydrationKey = `${sectionId}:${existingRecordId ?? 'create'}`;
+    const initialValuesKey = JSON.stringify(initialValues);
     const queryClient = useQueryClient();
-    const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+    const [formValues, setFormValues] = useState<Record<string, unknown>>(() => initialValues);
     const [errors, setErrors] = useState<Record<string, string | undefined>>({});
     const [isSubmitting, setSubmitting] = useState(false);
     const [resultMessage, setResultMessage] = useState<string | null>(null);
     const [resultIsError, setResultIsError] = useState(false);
+
+    useEffect(() => {
+        setFormValues(initialValues);
+        setErrors({});
+        setResultMessage(null);
+        setResultIsError(false);
+    }, [hydrationKey, initialValuesKey, initialValues]);
 
     const ctx = useMemo<IFormContext>(
         () => ({
@@ -57,7 +73,7 @@ export function useFormController(args: IUseFormControllerArgs): {
             errors,
             setValue: (name, value) => setFormValues((prev) => ({ ...prev, [name]: value })),
         }),
-        [errors, formName, formValues, isLog, isSubmitting, sectionId]
+        [errors, formName, formValues, isLog, isSubmitting, sectionId],
     );
 
     const onSubmit = useCallback(async (): Promise<void> => {
@@ -65,12 +81,21 @@ export function useFormController(args: IUseFormControllerArgs): {
         setResultMessage(null);
         setErrors({});
 
-        const action = isLog ? submitForm : updateForm;
-        const result: TFormResult = await action({
+        const basePayload = {
             section_id: sectionId,
             page_id: pageId,
             form_data: formValues,
-        });
+        };
+
+        let result: TFormResult;
+        if (isLog || !existingRecordId) {
+            result = await submitForm(basePayload);
+        } else {
+            result = await updateForm({
+                ...basePayload,
+                update_based_on: { record_id: existingRecordId },
+            });
+        }
         setSubmitting(false);
 
         if (result.kind === 'validation') {
@@ -86,21 +111,31 @@ export function useFormController(args: IUseFormControllerArgs): {
         }
         setResultIsError(false);
         setResultMessage(successMessage || result.message || 'Saved');
-        if (isLog) setFormValues({});
+        if (isLog || !existingRecordId) {
+            setFormValues({});
+        }
 
-        // Refetch the page so a sibling show-user-input (and form-record values)
-        // reflects the new/updated submission immediately.
         void queryClient.invalidateQueries({ queryKey: ['page'] });
 
         if (!ajax && result.redirectUrl) {
             navigateToPage(result.redirectUrl);
         }
-    }, [ajax, errorMessage, formValues, isLog, pageId, queryClient, sectionId, successMessage]);
+    }, [
+        ajax,
+        errorMessage,
+        existingRecordId,
+        formValues,
+        isLog,
+        pageId,
+        queryClient,
+        sectionId,
+        successMessage,
+    ]);
 
     const onCancel = useCallback((): void => {
         if (cancelUrl) navigateToPage(cancelUrl);
-        else setFormValues({});
-    }, [cancelUrl]);
+        else setFormValues(initialValues);
+    }, [cancelUrl, initialValues]);
 
     return { ctx, isSubmitting, resultMessage, resultIsError, onSubmit, onCancel };
 }

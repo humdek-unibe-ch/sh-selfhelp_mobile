@@ -9,8 +9,9 @@ SPDX-License-Identifier: MPL-2.0
  * not manage open/closed state itself.
  *
  * Theme-aware colours come from `useAppColors()` (no hard-coded hexes). Reads
- * only cross-platform content fields: `label` and the optional `description`
- * subtitle. The web-only icon / value fields are intentionally not read here.
+ * cross-platform content fields: `label`, optional `description`, and the
+ * web-only `web_accordion_item_value` (interpolated per entry-list row) so each
+ * hydrated clone gets a unique accordion value — matching the web renderer.
  */
 
 import { Accordion as HeroAccordion } from 'heroui-native';
@@ -26,11 +27,19 @@ export function AccordionItem({ section, values }: IStyleProps): React.ReactElem
     const colors = useAppColors();
     const label = useInterpolatedField(section, 'label', values);
     const description = useInterpolatedField(section, 'description', values);
+    const configuredValue = useInterpolatedField(section, 'web_accordion_item_value', values);
     const disabled = readBooleanField(section, 'disabled', false);
+    const recordId = values?.record_id;
+    const itemValue =
+        (configuredValue && configuredValue.trim() !== '')
+            ? configuredValue
+            : recordId != null
+                ? `section-${section.id}-${String(recordId)}`
+                : String(section.id);
 
     return (
         <HeroAccordion.Item
-            value={String(section.id)}
+            value={itemValue}
             isDisabled={disabled}
             className={buildSectionClasses(section)}
         >

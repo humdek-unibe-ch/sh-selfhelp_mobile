@@ -8,30 +8,7 @@ import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
 import { useFieldBinding } from './_useFieldBinding';
 import { FieldShell } from './_FieldShell';
-
-interface IOption {
-    value: string;
-    text: string;
-}
-
-function parseOptions(raw: unknown): IOption[] {
-    if (!raw) return [];
-    if (Array.isArray(raw)) {
-        return raw.map((entry) => {
-            const obj = entry as Record<string, unknown>;
-            return { value: String(obj.value ?? ''), text: String(obj.text ?? obj.label ?? obj.value ?? '') };
-        });
-    }
-    if (typeof raw === 'string') {
-        try {
-            const parsed: unknown = JSON.parse(raw);
-            return parseOptions(parsed);
-        } catch {
-            return [];
-        }
-    }
-    return [];
-}
+import { resolveOptions } from '@selfhelp/shared';
 
 export function Select({ section, values }: IStyleProps): React.ReactElement {
     const name = readField<string>(section, 'name') ?? '';
@@ -42,7 +19,10 @@ export function Select({ section, values }: IStyleProps): React.ReactElement {
     const multiple = readBooleanField(section, 'is_multiple', false);
     // The `select` style stores its choices under `options`; the `combobox` style
     // (which reuses this component on mobile) stores them under `combobox_options`.
-    const options = parseOptions(readField(section, 'options') ?? readField(section, 'combobox_options'));
+    const options = resolveOptions(
+        readField(section, 'options') ?? readField(section, 'combobox_options'),
+        readField(section, 'option_labels'),
+    );
     const initial = readField<string>(section, 'value') ?? '';
     // mobile-only: how the option list opens (bottom-sheet | dialog | popover).
     // Empty falls back to the adapter default (bottom-sheet).
@@ -58,7 +38,11 @@ export function Select({ section, values }: IStyleProps): React.ReactElement {
             <MobileSelect
                 value={value}
                 onValueChange={setValue}
-                options={options.map((o) => ({ value: o.value, label: o.text }))}
+                options={options.map((o) => ({
+                    value: o.value,
+                    label: o.label,
+                    ...(o.disabled !== undefined ? { disabled: o.disabled } : {}),
+                }))}
                 placeholder={placeholder}
                 isDisabled={disabled}
                 multiple={multiple}
