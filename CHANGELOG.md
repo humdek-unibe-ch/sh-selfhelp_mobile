@@ -37,8 +37,8 @@ SPDX-License-Identifier: MPL-2.0
 ### Navigation overhaul — strict v2 contract (breaking)
 
 Adopts the strict navigation payload from core `0.1.33` and `@selfhelp/shared`
-`2.0.0` (major; every menu-item key always present, `config` removed, typed
-`preset` / `max_depth` / `item_limit` on menus):
+`1.21.5` (wave previously staged as shared `2.0.0`; every menu-item key always
+present, `config` removed, typed `preset` / `max_depth` / `item_limit` on menus):
 
 - **Collapsible drawer** — `CmsDrawerContent` renders `mobile_drawer` as a
   collapsible tree: parents get a chevron toggle, the active trail auto-expands
@@ -65,7 +65,7 @@ Adopts the strict navigation payload from core `0.1.33` and `@selfhelp/shared`
 ### CMS-in-CMS polish wave — entry-table rename (breaking, same release)
 
 Adopts the `show-user-input` → `entry-table` style rename from core `0.1.33`
-and `@selfhelp/shared` `3.0.0` (breaking major):
+and `@selfhelp/shared` `1.21.5` (wave previously staged as shared `3.0.0`):
 
 - The renderer is `components/styles/forms/EntryTable.tsx` (+
   `entryTableColumns.ts`), dispatched on `style_name: 'entry-table'` with the
@@ -77,9 +77,13 @@ and `@selfhelp/shared` `3.0.0` (breaking major):
   button keeps honouring `_can_delete`, and the Edit action appears when
   `edit_url` is set and `_can_edit !== false`.
 
-Consumes `@selfhelp/shared` `3.0.0` (pinned via `overrides` until the SurveyJS
-mobile package raises its peer range; `2.0.0` navigation contract adopted in
-the same wave). Raised `supports.core` `>=0.1.32` → `>=0.1.33`.
+Consumes `@selfhelp/shared` `1.21.5` (the DB-routing / CMS-apps / navigation /
+entry-binding wave previously staged as shared `2.0.0`–`3.0.1`). Raised
+`supports.core` through `>=0.1.36` for `load_record_from` + field-based entry
+binding while the **package version stays `0.1.33`** — that is intentional:
+mobile-preview image SemVer did not need a separate bump for every core minor
+in this wave; use `release-manifest.json` `supports.core` (not the package
+patch) to judge core pairing.
 
 ## 0.1.32
 
