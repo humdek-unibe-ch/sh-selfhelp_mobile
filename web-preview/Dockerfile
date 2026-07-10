@@ -30,7 +30,8 @@ ENV APP_WEB_PREVIEW=1
 ENV APP_INSTANCE_SLUG=preview
 
 # Install dependencies against the committed lockfile first (better layer cache).
-COPY package.json package-lock.json ./
+# `.npmrc` sets legacy-peer-deps=true so this matches local/CI installs.
+COPY package.json package-lock.json .npmrc ./
 RUN npm ci --no-audit --no-fund
 
 # App sources.

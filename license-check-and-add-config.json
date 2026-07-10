@@ -28,7 +28,7 @@
             "prepend": "/*",
             "append": "*/"
         },
-        "yml|yaml": {
+        "yml|yaml|npmrc": {
             "eachLine": {
                 "prepend": "# "
             }

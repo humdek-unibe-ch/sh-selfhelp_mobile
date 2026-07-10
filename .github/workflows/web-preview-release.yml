@@ -44,6 +44,9 @@ jobs:
           cache: npm
 
       - name: Install dependencies (npm ci)
+        # Lockfile is produced with legacy-peer-deps (see root .npmrc). Plain
+        # `npm ci` without that setting fails looking for obsolete peer pins
+        # such as @types/react-native@0.72.8.
         run: npm ci
 
       # --- BLOCKING: quality gate (headers + types + lint + tests) ---------
