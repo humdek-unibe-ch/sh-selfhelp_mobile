@@ -20,8 +20,8 @@ import assert from 'node:assert/strict';
 
 import {
     buildEntryTableColumns,
-    parseFieldMappings,
 } from '../../components/styles/forms/entryTableColumns.ts';
+import { parseFieldsMapCatalog } from '@selfhelp/shared';
 
 const SAMPLE = { record_id: 7, id_users: 3, _can_delete: true, entry_date: '2026-06-22', name: 'Ann', mood: 'ok' };
 
@@ -68,8 +68,8 @@ test('label falls back to the field name when field_new_name is blank', () => {
 });
 
 test('tolerates malformed / non-array fields_map JSON', () => {
-    assert.deepEqual(parseFieldMappings('not json'), []);
-    assert.deepEqual(parseFieldMappings('{"a":1}'), []);
+    assert.deepEqual(parseFieldsMapCatalog('not json'), []);
+    assert.deepEqual(parseFieldsMapCatalog('{"a":1}'), []);
     // malformed map → fall back to data keys, not a crash.
     assert.deepEqual(buildEntryTableColumns('not json', { name: 'x' }, false), [{ key: 'name', label: 'name' }]);
 });

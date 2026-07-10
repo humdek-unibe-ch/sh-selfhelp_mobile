@@ -12,11 +12,6 @@ SPDX-License-Identifier: MPL-2.0
 
 import { parseFieldsMapCatalog, parseFieldsMapLabels } from '@selfhelp/shared';
 
-export interface IFieldMapping {
-    field_name: string;
-    field_new_name: string;
-}
-
 export interface IEntryTableColumn {
     key: string;
     label: string;
@@ -43,11 +38,6 @@ function parseLegacyLabelOverrides(raw: string | undefined): Record<string, stri
     } catch {
         return {};
     }
-}
-
-/** @deprecated Use parseFieldsMapCatalog — kept for tests importing the legacy name. */
-export function parseFieldMappings(raw: string | undefined): IFieldMapping[] {
-    return parseFieldsMapCatalog(raw).map((field_name) => ({ field_name, field_new_name: '' }));
 }
 
 export function buildEntryTableColumns(

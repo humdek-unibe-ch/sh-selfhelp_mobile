@@ -5,15 +5,10 @@ SPDX-License-Identifier: MPL-2.0
 /**
  * FormUserInput style — render-only file.
  *
- * The two CMS keywords `form-log` and `form-record` reuse the same
- * component (Mantine on web does the same). The only difference is
- * which submit endpoint runs (`submitForm` vs `updateForm`); that's
- * decided by the `isLog` prop wired from the registry.
- *
- * RF-21: this is a custom composite (not a 1:1 component map), so the mobile
- * form builds its own action row from the shared button knobs
- * (`buttons_*` / `btn_*_color`) that the web Mantine form also
- * reads — same authored config, native rendering.
+ * `form-log`, `form-record`, and `entry-record-form` reuse the same component.
+ * Submit mode is decided by `isLog`. Create vs edit for record forms is driven
+ * entirely by backend `section_data` hydration (`load_record_from` on
+ * `entry-record-form` leaves create routes empty and edit routes prefilled).
  */
 
 import { useMemo, useState } from 'react';
@@ -62,7 +57,7 @@ const POSITION_JUSTIFY: Record<string, 'flex-start' | 'center' | 'flex-end' | 's
     'space-between': 'space-between',
 };
 
-function FormBase({ section, values, isLog, routeAware: _routeAware = false }: IFormBaseProps): React.ReactElement {
+function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElement {
     const formName = readField<string>(section, 'name') ?? `form-${section.id}`;
     const saveLabel = useInterpolatedField(section, 'btn_save_label', values) || 'Submit';
     const updateLabel = useInterpolatedField(section, 'btn_update_label', values) || saveLabel;
@@ -233,5 +228,7 @@ export function FormRecord(props: IStyleProps): React.ReactElement {
 }
 
 export function FormEntryRecordForm(props: IStyleProps): React.ReactElement {
-    return <FormBase {...props} isLog={false} routeAware />;
+    // Prefill comes from backend `section_data` when `load_record_from` resolves
+    // a route record id; create routes arrive with empty `section_data`.
+    return <FormBase {...props} isLog={false} />;
 }
