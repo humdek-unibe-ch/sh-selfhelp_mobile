@@ -230,11 +230,22 @@ export function PreviewSyncBridge(): null {
             return;
         }
         lastSentRef.current = keyword ?? null;
+        // Modal sheets are keyword-addressed; the underlay pathname is not the
+        // visible page and must not drive shell path-resolve (that desynced
+        // Live Preview). Only report a public path for full-screen routes.
+        const publicPath =
+            modalKeyword ||
+            typeof pathname !== 'string' ||
+            !pathname.startsWith('/') ||
+            pathname.includes('[')
+                ? null
+                : pathname.replace(/\/+$/, '') || '/';
         postToParent({
             type: PREVIEW_BRIDGE_MESSAGE.NAVIGATED,
             source: 'mobile',
             keyword,
             href: typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` : '',
+            ...(publicPath ? { path: publicPath } : {}),
             locale: localeRef.current,
         });
     }, [pathname, modalKeyword, postToParent]);

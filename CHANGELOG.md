@@ -18,14 +18,20 @@ SPDX-License-Identifier: MPL-2.0
   optional `add_url` shows an Add new control (desktop DataTable / CSV options
   remain web-only).
 - **`form-record` / `entry-record-form` record-edit** — consumes backend-hydrated
-  `section_data` for prefill and sends `update_based_on.record_id` on update
-  (parity with web `FormStyle`). Create vs edit for `entry-record-form` is
-  entirely server-driven via `load_record_from` hydration.
-- **Page fetch** — prefers `GET /pages/resolve` when a public path is known;
-  keyword fetch remains for static shell pages (login, profile).
+  `section_data` via shared `parseFormRecordPrefill` / flatten helper and sends
+  `update_based_on.record_id` on update (parity with web `FormStyle`). Create vs
+  edit for `entry-record-form` is entirely server-driven via `load_record_from`
+  hydration.
+- **Page fetch** — prefers shared `buildPagesResolveUrl` → `GET /pages/resolve`
+  when a public path is known; keyword fetch remains for static shell pages
+  (login, profile). Parameterized targets never keyword-fallback.
+- **CMS-surface pages** — rejected in the public mobile shell (backend is
+  authoritative; client guard is defensive).
 
 ### Dependency
-- Pins `@selfhelp/shared` `1.21.5`.
+- Pins `@selfhelp/shared` `1.21.6`. Registry pairing uses `supports.core`
+  `>=0.1.36` (package SemVer may remain `0.1.33`). Do not install shared `2.x` /
+  `3.x` tags from feature-branch staging.
 
 ### User-owned option labels
 

@@ -42,6 +42,7 @@ import {
     isParameterizedNavigationPath,
     normalizeNavigationTarget,
     resolvePageNavigation,
+    concretePathAfterResolve,
 } from '@/components/shell/navigationUtils';
 import { navigationQueryKey } from '@/hooks/useNavigation';
 import { pagesQueryKey } from '@/hooks/usePages';
@@ -84,6 +85,7 @@ function getCachedNavigation(): INavigationPayload | undefined {
 
 function pushResolvedPage(
     keyword: string,
+    /** Concrete public path (e.g. `/team-members/5`), never a `{param}` template. */
     resolvePath: string,
     routeParams: Record<string, string | number | undefined>,
 ): void {
@@ -99,6 +101,7 @@ function pushResolvedPage(
     }
 
     if (action.kind === 'modal') {
+        // Modal host fetches via resolvePath — must be the concrete URL.
         usePageModalStore.getState().open(keyword, resolvePath);
         return;
     }
@@ -106,6 +109,14 @@ function pushResolvedPage(
     router.push({ pathname: mobileRoute, params });
 }
 
+/**
+ * Path handed to modal / `usePageContent` after a successful `/pages/resolve`.
+ *
+ * Backend `canonical_url` and page `url` are often route *patterns*
+ * (`/team-members/{record_id}`). Those are not fetchable — using them made
+ * off-menu entry-record opens (Live Preview sync + in-app "Profil ansehen")
+ * look like a no-op. Always prefer the concrete path that just resolved.
+ */
 export async function navigateToResolvedPath(path: string): Promise<void> {
     const languageId = useLanguageStore.getState().languageId ?? undefined;
     const preview = resolvePreviewRequest(
@@ -114,9 +125,18 @@ export async function navigateToResolvedPath(path: string): Promise<void> {
     );
     try {
         const page = await resolvePageByPath(path, { languageId, preview });
-        const resolvePath = (page.canonical_url ?? page.url ?? path).replace(/\/+$/, '') || path;
+        if (page.page_surface === 'cms') {
+            // Backend already 404s for non-admin; defensive client guard.
+            return;
+        }
+        const resolvePath = concretePathAfterResolve(path, page);
         pushResolvedPage(page.keyword, resolvePath, page.route_params ?? {});
     } catch {
+        // Never keyword-fallback a parameterized path — that drops route_params
+        // and leaves entry-record / entry-record-form unhydrated.
+        if (isParameterizedNavigationPath(path)) {
+            return;
+        }
         const action = resolvePageNavigation(path, getCachedPages(), getCachedNavigation());
         if (action.kind === 'modal') {
             usePageModalStore.getState().open(action.keyword);

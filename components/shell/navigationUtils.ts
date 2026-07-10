@@ -249,4 +249,30 @@ export function isParameterizedNavigationPath(target: string): boolean {
     return segments.length > 1;
 }
 
+/**
+ * Path handed to modal / `usePageContent` after a successful `/pages/resolve`.
+ *
+ * Backend `canonical_url` and page `url` are often route *patterns*
+ * (`/team-members/{record_id}`). Those are not fetchable — using them made
+ * off-menu entry-record opens (Live Preview sync + in-app "Profil ansehen")
+ * look like a no-op. Prefer a non-template candidate, else the concrete
+ * requested path that just resolved.
+ */
+export function concretePathAfterResolve(
+    requestedPath: string,
+    page: {
+        canonical_url?: string | null;
+        url?: string | null;
+    },
+): string {
+    const requested = requestedPath.replace(/\/+$/, '') || '/';
+    for (const candidate of [page.canonical_url, page.url]) {
+        if (!candidate || candidate.includes('{')) {
+            continue;
+        }
+        return candidate.replace(/\/+$/, '') || requested;
+    }
+    return requested;
+}
+
 export { buildPublicPathFromRoute, getNavigationItemLabel };
