@@ -37,3 +37,44 @@ test('GLYPH_ICONS covers every MOBILE_ICON_SET name', () => {
         `GLYPH_ICONS is missing shared MOBILE_ICON_SET names: ${missing.join(', ')}`,
     );
 });
+
+/** TABLER_ALIASES map: Tabler stripped name → lucide GLYPH_ICONS key. */
+function parseTablerAliasTargets(source) {
+    const match = source.match(/const TABLER_ALIASES[^=]*=\s*\{([^}]+)\}/s);
+    assert.ok(match, 'TABLER_ALIASES object not found in glyphIcon.tsx');
+    return [...match[1].matchAll(/^\s*[A-Za-z0-9]+\s*:\s*'([A-Za-z0-9]+)'/gm)].map(
+        (m) => m[1],
+    );
+}
+
+test('TABLER_ALIASES targets are valid GLYPH_ICONS keys (no unsupported mapping)', () => {
+    const keys = new Set(parseGlyphIconKeys(glyphSource));
+    const targets = parseTablerAliasTargets(glyphSource);
+    const invalid = targets.filter((name) => !keys.has(name));
+    assert.deepEqual(
+        invalid,
+        [],
+        `TABLER_ALIASES maps to missing GLYPH_ICONS keys: ${invalid.join(', ')}`,
+    );
+});
+
+test('GLYPH_ICONS shorthand keys are imported (static Metro registry)', () => {
+    const keys = parseGlyphIconKeys(glyphSource);
+    const namedImport = glyphSource.match(
+        /import\s*\{([^}]+)\}\s*from\s*'lucide-react-native'/,
+    );
+    assert.ok(namedImport, 'lucide-react-native named import not found');
+    const imported = new Set(
+        namedImport[1]
+            .split(',')
+            .map((part) => part.trim())
+            .filter(Boolean)
+            .map((part) => part.split(/\s+as\s+/).pop().trim()),
+    );
+    const missingImports = keys.filter((name) => !imported.has(name));
+    assert.deepEqual(
+        missingImports,
+        [],
+        `GLYPH_ICONS keys lack lucide imports (unsupported mapping): ${missingImports.join(', ')}`,
+    );
+});
