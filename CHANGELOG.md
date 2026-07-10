@@ -6,6 +6,21 @@ SPDX-License-Identifier: MPL-2.0
 
 ## 0.1.33
 
+### Fixed
+- **`mailto:` / `tel:` / `sms:` links** — Button and Link open these schemes via
+  the OS (`Linking.openURL`) instead of treating them as in-app page paths.
+  CMS-in-CMS contact / team templates can dial and mail from native again.
+- **Drawer branding presentation** — the drawer header uses shared
+  `resolveBrandingPresentation` so `logo_size` / `logo_variant` match the web
+  header (including logo-only / name-only).
+- **`entry-table` edit affordance** — when `edit_url` is set, cards honour
+  `_can_edit` and navigate via `navigateToPage` after substituting `{record_id}`;
+  optional `add_url` shows an Add new control (desktop DataTable / CSV options
+  remain web-only).
+- **`form-record` record-edit** — consumes backend-hydrated `section_data` for
+  prefill and sends `update_based_on.record_id` on update (parity with web
+  `FormStyle`).
+
 ### User-owned option labels
 
 - Select, radio, combobox, and segmented-control renderers use the canonical
@@ -53,7 +68,8 @@ and `@selfhelp/shared` `3.0.0` (breaking major):
   the same release.
 - The new server-computed `_can_edit` flag is treated as internal bookkeeping
   (hidden from the data columns, like `_can_delete` / `record_id`); the delete
-  button keeps honouring `_can_delete`.
+  button keeps honouring `_can_delete`, and the Edit action appears when
+  `edit_url` is set and `_can_edit !== false`.
 
 Consumes `@selfhelp/shared` `3.0.0` (pinned via `overrides` until the SurveyJS
 mobile package raises its peer range; `2.0.0` navigation contract adopted in
