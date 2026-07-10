@@ -16,7 +16,12 @@ import { Image, Pressable, Text, View } from 'react-native';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import type { INavigationMenuItem } from '@selfhelp/shared';
-import { expandedIdsForActiveTrail, isMenuItemActiveOnMobile, resolveAssetUrl } from '@selfhelp/shared';
+import {
+    expandedIdsForActiveTrail,
+    isMenuItemActiveOnMobile,
+    resolveAssetUrl,
+    resolveBrandingPresentation,
+} from '@selfhelp/shared';
 
 import { useNavigation } from '@/hooks/useNavigation';
 import { useAppColors } from '@/hooks/useAppColors';
@@ -36,10 +41,15 @@ export function CmsDrawerContent(props: DrawerContentComponentProps): React.Reac
     const { data: navigation, isLoading, error } = useNavigation();
     const tree = getDrawerMenuItems(navigation);
 
-    // Global branding (Navigation → Settings): logo image + accessible name.
+    // Global branding (Navigation → Settings): shared presentation resolver
+    // keeps logo_size / logo_variant in lockstep with the web header.
     const branding = navigation?.branding ?? null;
+    const presentation = resolveBrandingPresentation(branding);
     const brandTitle = branding?.logo_alt?.trim() || 'Menu';
     const brandLogoUrl = branding?.logo_url ? resolveAssetUrl(branding.logo_url, baseUrl) : null;
+    const showLogo = presentation.showLogo && Boolean(brandLogoUrl);
+    const showName = presentation.showName;
+    const logoHeight = presentation.logoHeight;
 
     const activeTrailIds = useMemo(
         () => expandedIdsForActiveTrail(tree, pathname, 'mobile'),
@@ -90,15 +100,17 @@ export function CmsDrawerContent(props: DrawerContentComponentProps): React.Reac
                     gap: 10,
                 }}
             >
-                {brandLogoUrl ? (
+                {showLogo && brandLogoUrl ? (
                     <Image
                         source={{ uri: brandLogoUrl }}
                         accessibilityLabel={brandTitle}
-                        style={{ width: 32, height: 32, borderRadius: 6 }}
+                        style={{ width: logoHeight, height: logoHeight, borderRadius: 6 }}
                         resizeMode="contain"
                     />
                 ) : null}
-                <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>{brandTitle}</Text>
+                {showName ? (
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>{brandTitle}</Text>
+                ) : null}
             </View>
             {isLoading ? (
                 <Text style={{ paddingHorizontal: 16, color: colors.textFaint }}>Loading…</Text>

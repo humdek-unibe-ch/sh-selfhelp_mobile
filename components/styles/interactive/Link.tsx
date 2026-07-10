@@ -4,6 +4,7 @@ SPDX-License-Identifier: MPL-2.0
 */
 import { Linking, Pressable, Text } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
+import { isExternalNavigationUrl } from '@/components/shell/externalUrl';
 import { usePageNavigation } from '@/components/shell/usePageNavigation';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readBooleanField, readField, useInterpolatedField } from '@/components/renderer/useField';
@@ -29,7 +30,7 @@ export function Link({ section, values }: IStyleProps): React.ReactElement {
                 if (!url) return;
                 // External URLs open in the OS; internal targets go through the
                 // shared navigator so OFF-MENU pages open as a modal sheet.
-                if (openInNewTab || /^https?:\/\//.test(url)) void Linking.openURL(url);
+                if (openInNewTab || isExternalNavigationUrl(url)) void Linking.openURL(url);
                 else navigateToPage(url);
             }}
             accessibilityRole="link"

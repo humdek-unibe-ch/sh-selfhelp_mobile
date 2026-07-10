@@ -6,6 +6,7 @@ import { Linking } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
 import { MobileButton } from '@/components/ui/adapters';
 import { mobileStyleProps } from '@/components/ui/mobileStyleProps';
+import { isExternalNavigationUrl } from '@/components/shell/externalUrl';
 import { usePageNavigation } from '@/components/shell/usePageNavigation';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readBooleanField, readField, useInterpolatedField } from '@/components/renderer/useField';
@@ -32,7 +33,7 @@ export function Button({ section, values }: IStyleProps): React.ReactElement {
             return;
         }
         if (url) {
-            if (openInNewTab || /^https?:\/\//.test(url)) void Linking.openURL(url);
+            if (openInNewTab || isExternalNavigationUrl(url)) void Linking.openURL(url);
             else navigateToPage(url);
         }
     };
