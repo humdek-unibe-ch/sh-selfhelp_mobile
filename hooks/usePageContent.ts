@@ -63,17 +63,20 @@ export function usePageContent(
 
     const q = useQuery<IPageContent, Error>({
         queryKey: pageContentQueryKey(serverUrl, keyword, languageId, preview, authScope, path),
-        queryFn: () => {
-            if (path) {
-                return resolvePageByPath(path, {
-                    languageId: languageId ?? undefined,
-                    preview,
-                });
+        queryFn: async () => {
+            const page = path
+                ? await resolvePageByPath(path, {
+                      languageId: languageId ?? undefined,
+                      preview,
+                  })
+                : await fetchPageByKeyword(keyword, {
+                      languageId: languageId ?? undefined,
+                      preview,
+                  });
+            if (page.page_surface === 'cms') {
+                throw new Error('CMS-surface pages are not available in the mobile public shell');
             }
-            return fetchPageByKeyword(keyword, {
-                languageId: languageId ?? undefined,
-                preview,
-            });
+            return page;
         },
         enabled: canFetch,
         // Preview content is short-lived: never cache it across mode flips.

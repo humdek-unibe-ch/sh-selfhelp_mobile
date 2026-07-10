@@ -9,12 +9,13 @@ SPDX-License-Identifier: MPL-2.0
  * full URL path for parameterized deep links via the DB-driven `page_routes`
  * resolver (issue #30).
  *
- * `preview=true` is passed through so dev/preview builds can flip
- * between published and draft content via the debug panel.
+ * Resolve URLs are built exclusively through shared `buildPagesResolveUrl` so
+ * encoding matches frontend SSR and the browser client.
  */
 
 import {
     ENDPOINTS,
+    buildPagesResolveUrl,
     transformPagesData,
     type IGetPageResponse,
     type IGetPagesResponse,
@@ -44,25 +45,16 @@ export async function fetchPageByKeyword(keyword: string, options: IFetchPageOpt
 }
 
 /**
- * Resolve a full public URL path to its page content via the DB-driven
- * `page_routes` contract (issue #30). This is how parameterized deep links
- * (`/reset/{user_id}/{token}`, `/validate/{user_id}/{token}`, `/team/{record_id}`)
- * map to a page on mobile without hardcoding slug parsing: the resolved page
- * carries snake_case `route_params` (matching the Expo Router deep-link param
- * names) plus `matched_url_pattern` / `canonical_url`.
- *
- * The `path` is sent URL-encoded inside the endpoint URL; `language_id` /
- * `preview` ride along as query params, mirroring `fetchPageByKeyword`.
+ * Resolve a full public URL path via the shared resolve contract (issue #30).
  */
 export async function resolvePageByPath(path: string, options: IFetchPageOptions = {}): Promise<IPageContent> {
     const client = getApiClient();
-    const params: Record<string, string> = {};
-    if (options.languageId) params.language_id = String(options.languageId);
-    if (options.preview) params.preview = 'true';
-
-    const resp = await client.get<IResolvePageResponse>(ENDPOINTS.PAGES.RESOLVE(path), {
-        params: Object.keys(params).length ? params : undefined,
+    const url = buildPagesResolveUrl({
+        path,
+        languageId: options.languageId,
+        preview: options.preview,
     });
+    const resp = await client.get<IResolvePageResponse>(url);
     if (!resp.data.data?.page) throw new Error(resp.data.error ?? 'Page not found');
     return resp.data.data.page;
 }

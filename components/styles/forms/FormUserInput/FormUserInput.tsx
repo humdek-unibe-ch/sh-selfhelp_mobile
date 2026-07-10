@@ -13,19 +13,23 @@ SPDX-License-Identifier: MPL-2.0
 
 import { useMemo, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
-import { colorToHex } from '@selfhelp/shared';
+import {
+    colorToHex,
+    flattenFormRecordPrefillValues,
+    parseFormRecordPrefill,
+} from '@selfhelp/shared';
 
 import type { IStyleProps } from '@/components/renderer/types';
 import { Children } from '@/components/renderer/Children';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
 import { useAppColors } from '@/hooks/useAppColors';
+import { useLanguageStore } from '@/stores/languageStore';
 
 import { FormContext } from '../FormContext';
 import type { IFormBaseProps } from './FormUserInput.types';
 import { useFormController } from './FormUserInput.hooks';
 import { styles } from './FormUserInput.styles';
-import { parseFormRecordPrefill } from '../formRecordPrefill';
 
 /** Maps the shared size token to RN padding + font size. */
 const SIZE_PADDING: Record<string, { v: number; h: number; font: number }> = {
@@ -94,10 +98,15 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
     // `PageRenderer` seeds it into the interpolation values (same as `register`).
     const pageId = typeof values.page_id === 'number' ? values.page_id : Number(values.page_id);
 
-    const { recordId: existingRecordId, values: initialValues } = useMemo(
-        () => parseFormRecordPrefill(section as Parameters<typeof parseFormRecordPrefill>[0]),
-        [section],
-    );
+    const languageId = useLanguageStore((s) => s.languageId);
+
+    const { recordId: existingRecordId, values: initialValues } = useMemo(() => {
+        const prefill = parseFormRecordPrefill(section as Parameters<typeof parseFormRecordPrefill>[0]);
+        return {
+            recordId: prefill.recordId,
+            values: flattenFormRecordPrefillValues(prefill.values, languageId),
+        };
+    }, [section, languageId]);
     const hydrationKey = `${section.id}:${existingRecordId ?? 'create'}`;
 
     const { ctx, isSubmitting, resultMessage, resultIsError, onSubmit, onCancel } = useFormController({
