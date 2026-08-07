@@ -22,7 +22,9 @@ export function Title({ section, values }: IStyleProps): React.ReactElement {
     const order = readField<string>(section, 'title_order') ?? '2';
     const contentField = useInterpolatedField(section, 'content', values);
     const textField = useInterpolatedField(section, 'text', values);
-    const content = contentField || textField;
+    // Mirrors the web renderer's `|| 'Title'` fallback.
+    const resolvedContent = contentField || textField;
+    const content = resolvedContent.trim() === '' ? 'Title' : resolvedContent;
     const colors = useAppColors();
 
     // `color` (a Mantine palette name) drives the heading colour on both
