@@ -7,7 +7,7 @@ import { Pressable, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import type { IStyleProps } from '@/components/renderer/types';
-import { resolveMantineVariant } from '@selfhelp/shared';
+import { formatRateLimitMessage, resolveMantineVariant } from '@selfhelp/shared';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, useInterpolatedField } from '@/components/renderer/useField';
 import { login } from '@/services/authService';
@@ -39,6 +39,7 @@ export function Login({ section, values }: IStyleProps): React.ReactElement {
     const subtitle = useInterpolatedField(section, 'subtitle', values);
     const labelPwReset = useInterpolatedField(section, 'label_pw_reset', values) || 'Forgot password?';
     const labelRegister = useInterpolatedField(section, 'label_register', values) || 'Create account';
+    const alertRateLimited = useInterpolatedField(section, 'alert_rate_limited', values);
 
     // Configurable accent (`color`) — the SAME cross-platform field the web
     // renderer feeds into the Mantine button `color`. Web maps the full Mantine
@@ -74,6 +75,8 @@ export function Login({ section, values }: IStyleProps): React.ReactElement {
             router.replace(redirect && redirect !== '/login' ? redirect : '/');
         } else if (res.kind === '2fa') {
             router.replace({ pathname: '/two-factor', params: { user_id: String(res.userId) } });
+        } else if (res.kind === 'rate-limited') {
+            setError(formatRateLimitMessage(alertRateLimited, res.retryAfter));
         } else {
             setError(res.message);
         }
