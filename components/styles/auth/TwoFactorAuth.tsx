@@ -8,6 +8,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
+import { formatRateLimitMessage } from '@selfhelp/shared';
 import { useInterpolatedField } from '@/components/renderer/useField';
 import { verifyTwoFactor } from '@/services/authService';
 import { MobileButton, MobileInput, MobileText } from '@/components/ui/adapters';
@@ -26,6 +27,7 @@ export function TwoFactorAuth({ section, values }: IStyleProps): React.ReactElem
     const labelCode = useInterpolatedField(section, 'label_code', values) || 'Code';
     const labelSubmit = useInterpolatedField(section, 'label_submit', values) || 'Verify';
     const labelTitle = useInterpolatedField(section, 'title', values);
+    const alertRateLimited = useInterpolatedField(section, 'alert_rate_limited', values);
 
     const params = useLocalSearchParams<{ user_id?: string }>();
     const [code, setCode] = useState('');
@@ -42,6 +44,7 @@ export function TwoFactorAuth({ section, values }: IStyleProps): React.ReactElem
         const res = await verifyTwoFactor({ id_users: Number(params.user_id), code });
         setBusy(false);
         if (res.kind === 'ok') router.replace('/');
+        else if (res.kind === 'rate-limited') setErr(formatRateLimitMessage(alertRateLimited, res.retryAfter));
         else if (res.kind === 'error') setErr(res.message);
     };
 

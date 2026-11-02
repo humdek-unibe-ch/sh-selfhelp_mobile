@@ -29,7 +29,9 @@ const CIRCLE_DIAMETER: Record<'sm' | 'md' | 'lg', number> = { sm: 18, md: 22, lg
  * the OSS build keeps this fallback. Same CMS fields either way.
  */
 export function Badge({ section, values }: IStyleProps): React.ReactElement {
-    const label = useInterpolatedField(section, 'label', values);
+    // Mirrors the web renderer's `|| 'Badge'` fallback.
+    const interpolatedLabel = useInterpolatedField(section, 'label', values);
+    const label = interpolatedLabel.trim() === '' ? 'Badge' : interpolatedLabel;
     const resolved = mobileStyleProps(section);
     const { palette, variant } = mobileIntentPalette(section, 'light');
     const size = resolved.size ?? 'sm';

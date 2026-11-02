@@ -23,8 +23,8 @@ test('supports.core requires >=0.1.36 (authoritative vs package version)', () =>
     assert.equal(manifest.supports.core, '>=0.1.36 <0.2.0');
 });
 
-test('pins @selfhelp/shared to 1.21.7 (should_fallback; not staged 2.x/3.x)', () => {
-    assert.equal(pkg.dependencies['@selfhelp/shared'], '1.21.7');
+test('pins @selfhelp/shared to 1.22.0 (should_fallback; not staged 2.x/3.x)', () => {
+    assert.equal(pkg.dependencies['@selfhelp/shared'], '1.22.0');
     assert.notEqual(
         pkg.version,
         '0.1.36',
