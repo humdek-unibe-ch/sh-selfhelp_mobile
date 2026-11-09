@@ -3,7 +3,7 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 import axios from 'axios';
 
 import type { IStyleProps } from '@/components/renderer/types';
@@ -11,6 +11,8 @@ import {
     CLIENT_TYPE_MOBILE,
     ENDPOINTS,
     HEADER_CLIENT_TYPE,
+    formatRateLimitMessage,
+    getRateLimitRetryAfter,
     resolveMantineVariant,
     type IForgotPasswordRequest,
 } from '@selfhelp/shared';
@@ -36,15 +38,18 @@ export function ResetPassword({ section, values }: IStyleProps): React.ReactElem
     const labelEmail = useInterpolatedField(section, 'label_user', values) || 'Email';
     const labelSubmit = useInterpolatedField(section, 'label_submit', values) || 'Send reset link';
     const labelTitle = useInterpolatedField(section, 'label_title', values);
+    const alertRateLimited = useInterpolatedField(section, 'alert_rate_limited', values);
 
     const sharedColor = readField<string>(section, 'color');
     const accent = sharedColor ? resolveMantineVariant('filled', sharedColor).accent : colors.primary;
 
     const [email, setEmail] = useState('');
     const [busy, setBusy] = useState(false);
+    const [lockout, setLockout] = useState<string | null>(null);
 
     const onSubmit = async (): Promise<void> => {
         setBusy(true);
+        setLockout(null);
         const baseURL = useServerStore.getState().serverUrl;
         try {
             const payload: IForgotPasswordRequest = { email };
@@ -55,7 +60,10 @@ export function ResetPassword({ section, values }: IStyleProps): React.ReactElem
             );
             Alert.alert('Reset link sent', 'Check your email.');
         } catch (e) {
-            Alert.alert('Request failed', (e as Error).message);
+            // Same as web: a 429 shows the CMS alert_rate_limited text inline.
+            const retryAfter = getRateLimitRetryAfter(e);
+            if (retryAfter !== null) setLockout(formatRateLimitMessage(alertRateLimited, retryAfter));
+            else Alert.alert('Request failed', (e as Error).message);
         }
         setBusy(false);
     };
@@ -71,6 +79,11 @@ export function ResetPassword({ section, values }: IStyleProps): React.ReactElem
                 autoCapitalize="none"
                 accessibilityLabel={labelEmail}
             />
+            {lockout ? (
+                <Text accessibilityRole="alert" style={{ color: colors.danger, fontSize: 13 }}>
+                    {lockout}
+                </Text>
+            ) : null}
             <MobileButton
                 label={busy ? '…' : labelSubmit}
                 onPress={() => {
