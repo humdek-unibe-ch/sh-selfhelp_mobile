@@ -102,7 +102,11 @@ export function Login({ section, values }: IStyleProps): React.ReactElement {
                 isInvalid={!!error}
                 accessibilityLabel={labelPassword}
             />
-            {error ? <Text style={{ color: colors.danger, fontSize: 13 }}>{error}</Text> : null}
+            {error ? (
+                <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ color: colors.danger, fontSize: 13 }}>
+                    {error}
+                </Text>
+            ) : null}
             <MobileButton
                 label={busy ? '…' : labelLogin}
                 onPress={() => {

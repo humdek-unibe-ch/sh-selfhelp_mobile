@@ -60,7 +60,11 @@ export function TwoFactorAuth({ section, values }: IStyleProps): React.ReactElem
                 isInvalid={!!err}
                 accessibilityLabel={labelCode}
             />
-            {err ? <Text style={{ color: colors.danger, fontSize: 13 }}>{err}</Text> : null}
+            {err ? (
+                <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ color: colors.danger, fontSize: 13 }}>
+                    {err}
+                </Text>
+            ) : null}
             <MobileButton
                 label={busy ? '…' : labelSubmit}
                 onPress={() => {
