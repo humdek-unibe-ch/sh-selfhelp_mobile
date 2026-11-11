@@ -19,13 +19,12 @@ import type { INavigationMenuItem } from '@selfhelp/shared';
 import {
     expandedIdsForActiveTrail,
     isMenuItemActiveOnMobile,
-    resolveAssetUrl,
     resolveBrandingPresentation,
 } from '@selfhelp/shared';
 
 import { useNavigation } from '@/hooks/useNavigation';
 import { useAppColors } from '@/hooks/useAppColors';
-import { useServerStore } from '@/stores/serverStore';
+import { useAssetSource } from '@/components/renderer/useAssetSource';
 import {
     getDrawerMenuItems,
     getNavigationItemHref,
@@ -37,7 +36,6 @@ import { PageMenuIcon } from './PageMenuIcon';
 export function CmsDrawerContent(props: DrawerContentComponentProps): React.ReactElement {
     const pathname = usePathname();
     const colors = useAppColors();
-    const baseUrl = useServerStore((s) => s.serverUrl) ?? '';
     const { data: navigation, isLoading, error } = useNavigation();
     const tree = getDrawerMenuItems(navigation);
 
@@ -46,8 +44,8 @@ export function CmsDrawerContent(props: DrawerContentComponentProps): React.Reac
     const branding = navigation?.branding ?? null;
     const presentation = resolveBrandingPresentation(branding);
     const brandTitle = branding?.logo_alt?.trim() || 'Menu';
-    const brandLogoUrl = branding?.logo_url ? resolveAssetUrl(branding.logo_url, baseUrl) : null;
-    const showLogo = presentation.showLogo && Boolean(brandLogoUrl);
+    const brandLogo = useAssetSource(branding?.logo_url);
+    const showLogo = presentation.showLogo && Boolean(brandLogo);
     const showName = presentation.showName;
     const logoHeight = presentation.logoHeight;
 
@@ -100,9 +98,9 @@ export function CmsDrawerContent(props: DrawerContentComponentProps): React.Reac
                     gap: 10,
                 }}
             >
-                {showLogo && brandLogoUrl ? (
+                {showLogo && brandLogo ? (
                     <Image
-                        source={{ uri: brandLogoUrl }}
+                        source={brandLogo}
                         accessibilityLabel={brandTitle}
                         style={{ width: logoHeight, height: logoHeight, borderRadius: 6 }}
                         resizeMode="contain"

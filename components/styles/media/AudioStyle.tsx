@@ -8,8 +8,7 @@ import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readBooleanField, readField } from '@/components/renderer/useField';
-import { resolveAssetUrl } from '@selfhelp/shared';
-import { useServerStore } from '@/stores/serverStore';
+import { useAssetSource } from '@/components/renderer/useAssetSource';
 import { useAppColors } from '@/hooks/useAppColors';
 
 interface ISource {
@@ -18,10 +17,9 @@ interface ISource {
 }
 
 export function AudioStyle({ section }: IStyleProps): React.ReactElement | null {
-    const baseUrl = useServerStore((s) => s.serverUrl) ?? '';
     const colors = useAppColors();
     const sources = readField<ISource[]>(section, 'sources') ?? [];
-    const src = sources[0]?.src ? resolveAssetUrl(sources[0].src, baseUrl) : null;
+    const src = useAssetSource(sources[0]?.src);
 
     // Playback toggles (common fields, '0' | '1'); controls default ON.
     const controls = readBooleanField(section, 'has_controls', true);
