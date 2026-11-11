@@ -4,6 +4,25 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## Unreleased
+
+### Added
+- **Restricted assets load in the app.** Image, video, audio, avatar, card,
+  background and drawer-logo requests to the backend asset route
+  (`/cms-api/v1/assets/{uuid}`) carry the user's bearer token, so assets limited
+  to groups show for their members. Other hosts never receive the token.
+- **Login rate-limit message.** Login, 2FA and password reset show the CMS
+  `alert_rate_limited` text (`{minutes}` filled in) when the backend returns
+  `429`. Requires `@selfhelp/shared` 1.22.1.
+
+### Changed
+- **Title and Badge placeholders.** An empty or whitespace-only title or badge
+  label shows `Title` / `Badge`, like the web renderer.
+
+### Fixed
+- **Login and 2FA errors are announced** to screen readers
+  (`accessibilityRole="alert"`, polite live region), like password reset.
+
 ## 0.1.33
 
 ### Fixed
