@@ -5,7 +5,7 @@ SPDX-License-Identifier: MPL-2.0
 import { Text, View } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readBooleanField, useInterpolatedField } from '@/components/renderer/useField';
+import { readBooleanField, useInterpolatedField, withPlaceholder } from '@/components/renderer/useField';
 import { FONT_SIZE_PX } from '@selfhelp/shared';
 import { mobileStyleProps, mobileIntentPalette } from '@/components/ui/mobileStyleProps';
 
@@ -30,8 +30,7 @@ const CIRCLE_DIAMETER: Record<'sm' | 'md' | 'lg', number> = { sm: 18, md: 22, lg
  */
 export function Badge({ section, values }: IStyleProps): React.ReactElement {
     // Mirrors the web renderer's `|| 'Badge'` fallback.
-    const interpolatedLabel = useInterpolatedField(section, 'label', values);
-    const label = interpolatedLabel.trim() === '' ? 'Badge' : interpolatedLabel;
+    const label = withPlaceholder(useInterpolatedField(section, 'label', values), 'Badge');
     const resolved = mobileStyleProps(section);
     const { palette, variant } = mobileIntentPalette(section, 'light');
     const size = resolved.size ?? 'sm';

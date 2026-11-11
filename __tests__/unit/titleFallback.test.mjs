@@ -10,7 +10,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { renderHook } from '../support/renderMobile.ts';
-import { useInterpolatedField } from '../../components/renderer/useField.ts';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { useInterpolatedField, withPlaceholder } from '../../components/renderer/useField.ts';
+
+const titleSource = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../../components/styles/typography/Title.tsx'),
+    'utf8'
+);
 
 const section = (fields) => ({
     fields: Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, { content: v }])),
@@ -21,9 +29,12 @@ const readTitle = (sec, values = {}) => {
         content: useInterpolatedField(sec, 'content', values),
         text: useInterpolatedField(sec, 'text', values),
     }));
-    const resolved = content || text;
-    return resolved.trim() === '' ? 'Title' : resolved;
+    return withPlaceholder(content || text, 'Title');
 };
+
+test('Title renders its content through the shared placeholder helper', () => {
+    assert.match(titleSource, /withPlaceholder\(contentField \|\| textField, 'Title'\)/);
+});
 
 test('resolved content renders as-is', () => {
     assert.equal(readTitle(section({ content: 'Ada Lovelace' })), 'Ada Lovelace');

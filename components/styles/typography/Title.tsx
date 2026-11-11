@@ -6,7 +6,7 @@ import { Text } from 'react-native';
 import { resolveMantineVariant } from '@selfhelp/shared';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
-import { readField, useInterpolatedField } from '@/components/renderer/useField';
+import { readField, useInterpolatedField, withPlaceholder } from '@/components/renderer/useField';
 import { useAppColors } from '@/hooks/useAppColors';
 
 const ORDER_TO_GEOMETRY: Record<string, { fontSize: number; lineHeight: number; weight: '700' | '600'; letterSpacing: number; mt: number; mb: number }> = {
@@ -23,8 +23,7 @@ export function Title({ section, values }: IStyleProps): React.ReactElement {
     const contentField = useInterpolatedField(section, 'content', values);
     const textField = useInterpolatedField(section, 'text', values);
     // Mirrors the web renderer's `|| 'Title'` fallback.
-    const resolvedContent = contentField || textField;
-    const content = resolvedContent.trim() === '' ? 'Title' : resolvedContent;
+    const content = withPlaceholder(contentField || textField, 'Title');
     const colors = useAppColors();
 
     // `color` drives the heading colour on both platforms. A Mantine palette
