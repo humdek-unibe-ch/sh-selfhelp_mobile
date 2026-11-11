@@ -31,10 +31,10 @@ import {
     type ITwoFactorRequiredResponse,
     type ITwoFactorVerifyRequest,
     type ITwoFactorVerifySuccessResponse,
-    getRateLimitRetryAfter,
 } from '@selfhelp/shared';
 import axios from 'axios';
 
+import { authFailure, type TAuthFailure } from '@/services/authFailure';
 import { useServerStore } from '@/stores/serverStore';
 import { useAuthStore } from '@/stores/authStore';
 import { secureStore } from '@/services/secureStore';
@@ -52,9 +52,7 @@ import { fetchCurrentUser, userDataQueryKey } from '@/services/userService';
 export type TLoginResult =
     | { kind: 'ok' }
     | { kind: '2fa'; userId: number }
-    /** Backend 429 from the brute-force limiter; `retryAfter` in seconds. */
-    | { kind: 'rate-limited'; retryAfter: number }
-    | { kind: 'error'; message: string };
+    | TAuthFailure;
 
 export async function login(payload: ILoginRequest): Promise<TLoginResult> {
     const baseURL = useServerStore.getState().serverUrl;
@@ -76,9 +74,7 @@ export async function login(payload: ILoginRequest): Promise<TLoginResult> {
         return { kind: 'error', message: resp.data.error ?? 'Unknown error' };
     } catch (e) {
         debugLogger.warn(`login error: ${(e as Error).message}`, 'authService');
-        const retryAfter = getRateLimitRetryAfter(e);
-        if (retryAfter !== null) return { kind: 'rate-limited', retryAfter };
-        return { kind: 'error', message: (e as Error).message };
+        return authFailure(e);
     }
 }
 
@@ -98,9 +94,7 @@ export async function verifyTwoFactor(payload: ITwoFactorVerifyRequest): Promise
         }
         return { kind: 'error', message: resp.data.error ?? 'Unknown error' };
     } catch (e) {
-        const retryAfter = getRateLimitRetryAfter(e);
-        if (retryAfter !== null) return { kind: 'rate-limited', retryAfter };
-        return { kind: 'error', message: (e as Error).message };
+        return authFailure(e);
     }
 }
 
