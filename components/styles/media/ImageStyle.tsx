@@ -18,12 +18,15 @@ SPDX-License-Identifier: MPL-2.0
  * source can 404 around hydration and its cross-dissolve swaps the underlying
  * `<img>`), so we detect failure deterministically with `Image.prefetch`, which
  * rejects when the source can't load on both native and web — and, unlike
- * `fetch`, is not subject to CORS for cross-origin assets. It sends the same
- * auth header as the image itself, so a restricted asset is not mistaken for a
- * broken one. `onError` stays as a secondary trigger.
+ * `fetch`, is not subject to CORS for cross-origin assets. On native it sends
+ * the same auth header as the image itself, so a restricted asset is not
+ * mistaken for a broken one. The web build of `Image.prefetch` cannot send
+ * headers, so there the check is skipped for a request that needs one and
+ * `onError` is the only trigger.
  */
 
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { Image, type ImageContentFit } from 'expo-image';
 
 import type { IStyleProps } from '@/components/renderer/types';
@@ -62,6 +65,7 @@ export function ImageStyle({ section, values }: IStyleProps): React.ReactElement
         if (!fallback || !primary) return undefined;
         let cancelled = false;
         setErrored(false);
+        if (Platform.OS === 'web' && primary.headers) return undefined;
         Image.prefetch(primary.uri, { headers: primary.headers })
             .then((ok) => { if (!cancelled && ok === false) setErrored(true); })
             .catch(() => { if (!cancelled) setErrored(true); });
