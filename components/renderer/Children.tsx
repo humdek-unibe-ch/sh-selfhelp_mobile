@@ -4,8 +4,8 @@ SPDX-License-Identifier: MPL-2.0
 */
 /**
  * Helper used by container styles to render their children. Always
- * routes through `BasicStyle` so condition + debug + registry lookup
- * apply uniformly.
+ * routes through `BasicStyle` so platform targeting + debug + registry
+ * lookup apply uniformly.
  */
 
 import type { IPageSectionWithFields } from '@selfhelp/shared';

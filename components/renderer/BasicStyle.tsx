@@ -10,15 +10,18 @@ SPDX-License-Identifier: MPL-2.0
  * 3. Delegates rendering — each style component is responsible for its
  *    own children traversal (because some styles need wrapping props).
  *
+ * Conditions are NOT evaluated here. The backend removes a section whose
+ * condition fails for the signed-in user, so every section that arrives is
+ * to be shown; evaluating the condition again on the device would use other
+ * inputs (no user groups, the device clock, a locale string) and could hide
+ * what the server decided to show (concept rule 4.10, finding F11).
+ *
  * The registry-vs-impl map is enforced by `TStyleImplMap`, a non-`Partial`
  * `Record<TStyleRegistryKey, …>` — adding a new entry to the shared
  * `STYLE_REGISTRY` fails this compile until an impl is added below.
  */
 
-import { useMemo } from 'react';
-
-import { evaluateCondition, buildConditionContext } from '@selfhelp/shared';
-import type { TPlatform, TStylePlatform } from '@selfhelp/shared';
+import type { TStylePlatform } from '@selfhelp/shared';
 import { getStylePluginId, isKnownStyleName, isStyleSupportedOnPlatform } from '@selfhelp/shared/registry';
 
 import { DebugWrapper } from './DebugWrapper';
@@ -28,18 +31,7 @@ import { UnknownStyle } from './UnknownStyle';
 import { OpenOnWebFallback } from './OpenOnWebFallback';
 import type { IStyleProps } from './types';
 
-const PLATFORM: TPlatform = 'mobile';
-
 export function BasicStyle({ section, values }: IStyleProps): React.ReactElement | null {
-    const conditionOutcome = useMemo(() => {
-        const condition = (section as { condition?: string | null }).condition;
-        if (!condition) return { visible: true, condition: null as string | null };
-        const ctx = buildConditionContext(PLATFORM, values);
-        return { visible: evaluateCondition(condition, ctx).visible, condition };
-    }, [section, values]);
-
-    if (!conditionOutcome.visible) return null;
-
     const rawName = String(section.style_name ?? '');
 
     // Platform targeting: silently skip styles that do not target mobile
@@ -58,7 +50,7 @@ export function BasicStyle({ section, values }: IStyleProps): React.ReactElement
         const Impl = styleImpls[rawName];
         const Component = Impl ?? UnknownStyle;
         return (
-            <DebugWrapper section={section} conditionOutcome={conditionOutcome}>
+            <DebugWrapper section={section}>
                 <Component section={section} values={values} />
             </DebugWrapper>
         );
@@ -67,7 +59,7 @@ export function BasicStyle({ section, values }: IStyleProps): React.ReactElement
     const PluginImpl = registeredPluginStyleImpls[rawName];
     if (PluginImpl) {
         return (
-            <DebugWrapper section={section} conditionOutcome={conditionOutcome}>
+            <DebugWrapper section={section}>
                 <PluginImpl section={section} values={values} />
             </DebugWrapper>
         );
@@ -76,14 +68,14 @@ export function BasicStyle({ section, values }: IStyleProps): React.ReactElement
     const ownerPluginId = registeredPluginStyleOwners[rawName] ?? getStylePluginId(rawName);
     if (ownerPluginId) {
         return (
-            <DebugWrapper section={section} conditionOutcome={conditionOutcome}>
+            <DebugWrapper section={section}>
                 <OpenOnWebFallback section={section} values={values} pluginId={ownerPluginId} />
             </DebugWrapper>
         );
     }
 
     return (
-        <DebugWrapper section={section} conditionOutcome={conditionOutcome}>
+        <DebugWrapper section={section}>
             <UnknownStyle section={section} values={values} />
         </DebugWrapper>
     );
