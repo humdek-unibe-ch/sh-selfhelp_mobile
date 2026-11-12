@@ -7,7 +7,7 @@ SPDX-License-Identifier: MPL-2.0
 Audience: Mobile developers, technical operators, build maintainers.
 Status: active.
 Applies to: SelfHelp2 Expo/React Native mobile app (`sh-selfhelp_mobile`) `>=0.1.20`.
-Last verified: 2026-06-25.
+Last verified: 2026-11-11.
 Source of truth: `index.js`, `config/webPreviewBoot.ts`, `config/webPreviewContract.ts`, `config/webPreviewSession.ts`, `config/webPreview.ts`, `app/_layout.tsx`, `providers/I18nProvider.tsx`, `components/shell/LanguageSwitcher.tsx`, `components/shell/PageModalHost.tsx`, `components/shell/usePageNavigation.ts`, `components/preview/PreviewSyncBridge.tsx`, `components/preview/PreviewDraftBanner.tsx`, `components/dev/PhoneFrame.tsx`, `services/previewBridgeState.ts`, `services/previewPreferenceSync.ts`, `stores/pageModalStore.ts`, `components/shell/navigationUtils.ts`, `web-preview/server.mjs`, `web-preview/preview-plugins.json`, `web-preview/Dockerfile`, `scripts/plugins-sync.mjs`, `components/renderer/OpenOnWebFallback.tsx`, `.github/workflows/web-preview-release.yml`.
 
 The **mobile preview** is the Expo app built as a **web export** and served as a
@@ -248,10 +248,20 @@ A dependency-free Node server (built-ins only, so the image stays slim). It:
   prefix so the backend sees a normal `/cms-api/...` path. This mirrors the
   backend `MobilePreviewAccessGuard` (defense in depth):
   - **GET** allowlist: `/cms-api/v1/pages`, `/cms-api/v1/languages`,
-    `/cms-api/v1/plugins/manifest`, `/cms-api/v1/auth/user-data` (prefix match).
+    `/cms-api/v1/plugins/manifest`, `/cms-api/v1/auth/user-data` (prefix match),
+    `/cms-api/v1/navigation` (exactly this path; the drawer/bottom-tab menus
+    come from it) and `/cms-api/v1/assets/{uuid}` (UUID shape only: uploaded
+    images, video and audio — the app sends the previewed user's bearer token,
+    so a restricted asset reaches only a user who may see it).
   - **POST** allowlist: exactly `/cms-api/v1/mobile-preview/session/exchange`.
   - Everything else → `403`. No write/admin route is reachable through the proxy
     even with a valid scoped token.
+  - The backend guard has the last word. Its read list includes
+    `navigation_get_v1` and (since backend 0.1.43) `assets_serve_by_uuid_v1`,
+    so restricted images and audio show in the live preview; the asset's own
+    group check still decides who may see them.
+  - On the web, `expo-video` cannot send the bearer header, so a restricted
+    video does not play in the preview; images and audio send it.
 - **Exposes** `<base>/version.json` (image `version` + `mobileRendererVersion` +
   `bundledPlugins`) and `/healthz` (+ `<base>/healthz`) for the manager's health
   probe.
@@ -260,7 +270,8 @@ Env: `PORT` (default `8080`), `SELFHELP_BACKEND_INTERNAL_URL` (required to
 proxy), `SELFHELP_PREVIEW_BASE_URL` (default `/mobile-preview`),
 `SELFHELP_PREVIEW_DIST_DIR` (default `./dist`). The allowlist helpers
 (`isProxyAllowed`, `resolveBackendPath`, `ALLOWED_GET_PREFIXES`,
-`ALLOWED_POST_EXACT`) are exported for `node --test`.
+`ALLOWED_GET_EXACT`, `isAssetRoute`, `ALLOWED_POST_EXACT`) are exported for
+`node --test`.
 
 ## 5. Curated plugin bundling + web fallback
 

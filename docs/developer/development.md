@@ -37,7 +37,7 @@ Fast refresh is on by default. If a Reanimated worklet starts behaving oddly, hi
 - React DevTools: `npx react-devtools` after `npm run start`.
 - Network: `npx flipper` (Android) or Safari Web Inspector (iOS, macOS).
 - Sentry-style errors: not wired in v1; see [best-practices.md](./best-practices.md) for what to add when traffic warrants it.
-- `DebugWrapper` (auto, `__DEV__` only) — set `debug=1` on a CMS section and the renderer adds a bug badge. Tapping it opens a themed modal with the condition outcome, applied `css_mobile` classes, a filterable field list, and the **raw section as a collapsible JSON tree** (`components/dev/JsonTree.tsx` — tap any object/array node to expand, primitives are colour-coded by type). Mirrors the web frontend's section inspector. Useful for hunting why a section doesn't show up or why a Tailwind class isn't being honoured.
+- `DebugWrapper` (auto, `__DEV__` only) — set `debug=1` on a CMS section and the renderer adds a bug badge. Tapping it opens a themed modal with the condition outcome the server reported (`condition_debug`), applied `css_mobile` classes, a filterable field list, and the **raw section as a collapsible JSON tree** (`components/dev/JsonTree.tsx` — tap any object/array node to expand, primitives are colour-coded by type). Mirrors the web frontend's section inspector. Useful for hunting why a section doesn't show up or why a Tailwind class isn't being honoured.
 
 ## Web preview parity (HeroUI Native)
 
@@ -101,7 +101,7 @@ Trivial leaf components stay single-file (most current styles are already single
 - Avoid native modules outside what's already declared in `app.config.ts`.
 - Use `getApiClient()` rather than instantiating `axios` directly — it carries auth, refresh, and `X-Client-Type`.
 - Read CMS fields via the helpers in `components/renderer/useField.ts`. They handle interpolation, type coercion, and missing-field defaults.
-- Render children with the `<Children>` component, never `section.children.map(...)` — `<Children>` evaluates conditions and runs interpolation in one place.
+- Render children with the `<Children>` component, never `section.children.map(...)` — `<Children>` sends each child through `BasicStyle` (platform targeting, debug wrapper, style registry) in one place.
 
 ## Frequently used shortcuts
 
