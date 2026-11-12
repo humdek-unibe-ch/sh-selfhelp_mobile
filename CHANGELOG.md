@@ -4,7 +4,7 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
-## Unreleased
+## 0.1.34
 
 ### Added
 - **Restricted assets load in the app.** Image, video, audio, avatar, card,
@@ -18,10 +18,35 @@ SPDX-License-Identifier: MPL-2.0
 ### Changed
 - **Title and Badge placeholders.** An empty or whitespace-only title or badge
   label shows `Title` / `Badge`, like the web renderer.
+- **Conditions are no longer evaluated on the device.** The backend removes a
+  section whose condition fails for the signed-in user, so the app renders every
+  section it receives; evaluating the condition again used other inputs (no user
+  groups, the device clock, a locale string) and could hide what the server chose
+  to show. The debug panel shows the condition result the server reports
+  (`condition_debug`).
+- **Preview image forwards menus and uploaded assets.** The web-preview proxy now
+  also allows `GET /cms-api/v1/navigation` and `GET /cms-api/v1/assets/{uuid}`
+  (UUID shape only). For assets to show in the live preview the backend's
+  `MobilePreviewAccessGuard` must also list `assets_serve_by_uuid`.
+
+### Dependency
+- `release-manifest.json` `supports.core` is `>=0.1.43 <0.2.0`: the app sends
+  the bearer token with uploaded-asset requests, the behaviour core 0.1.43
+  ships with private uploads.
 
 ### Fixed
 - **Login and 2FA errors are announced** to screen readers
   (`accessibilityRole="alert"`, polite live region), like password reset.
+- **Restricted images no longer stay on the device after sign-out.** Logout, a
+  rejected refresh and a server switch now empty the device image cache (disk and
+  memory) together with the query cache. Each step runs even if another fails.
+- **Images, video and audio behind an expired token load again.** The access
+  token is renewed through `refreshAccessToken()` before the request, because the
+  native players cannot hand a 401 back for a retry. A token is renewed once, never
+  in a loop, and the web preview (short-lived token, no refresh token) is left alone.
+- **Web image fallback no longer fires for a restricted image.** The web build of
+  `Image.prefetch` cannot send the bearer header, so the pre-check is skipped there
+  for a request that needs one.
 
 ## 0.1.33
 
