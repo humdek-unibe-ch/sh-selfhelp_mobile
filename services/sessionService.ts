@@ -3,15 +3,22 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image } from 'expo-image';
 
 import { SECURE_STORE_KEYS } from '@/constants/secureStore';
 import { secureStore } from '@/services/secureStore';
 import { debugLogger } from '@/services/debugLogger';
 import { appQueryClient, QUERY_PERSIST_KEY } from '@/services/queryClient';
 import { clearPersistedAuthSession } from '@/services/authSessionPersistence';
+import { clearClientCaches } from '@/services/clientCaches';
 import { useAuthStore } from '@/stores/authStore';
 
 interface IClearAuthSessionOptions {
+    /**
+     * Also empty the client caches kept for the signed-in user: the query
+     * cache (memory and persisted) and the device image cache, which holds
+     * downloaded restricted assets.
+     */
     clearQueries?: boolean;
     /**
      * Reset the auth-bootstrap lifecycle flag so `AuthProvider` re-runs the
@@ -47,11 +54,14 @@ export async function clearAuthSession(options: IClearAuthSessionOptions = {}): 
     }
 
     if (options.clearQueries) {
-        appQueryClient.clear();
-        try {
-            await AsyncStorage.removeItem(QUERY_PERSIST_KEY);
-        } catch {
-            /* ignore */
+        const failed = await clearClientCaches({
+            queryMemory: () => appQueryClient.clear(),
+            queryStorage: () => AsyncStorage.removeItem(QUERY_PERSIST_KEY),
+            imageDisk: () => Image.clearDiskCache(),
+            imageMemory: () => Image.clearMemoryCache(),
+        });
+        if (failed.length > 0) {
+            debugLogger.warn(`client caches not fully cleared: ${failed.join(', ')}`, 'session');
         }
     }
 }
