@@ -18,20 +18,23 @@ SPDX-License-Identifier: MPL-2.0
  * source can 404 around hydration and its cross-dissolve swaps the underlying
  * `<img>`), so we detect failure deterministically with `Image.prefetch`, which
  * rejects when the source can't load on both native and web — and, unlike
- * `fetch`, is not subject to CORS for cross-origin assets. `onError` stays as a
- * secondary trigger.
+ * `fetch`, is not subject to CORS for cross-origin assets. On native it sends
+ * the same auth header as the image itself, so a restricted asset is not
+ * mistaken for a broken one. The web build of `Image.prefetch` cannot send
+ * headers, so there the check is skipped for a request that needs one and
+ * `onError` is the only trigger.
  */
 
 import { useEffect, useState } from 'react';
-import { Image as RNImage } from 'react-native';
+import { Platform } from 'react-native';
 import { Image, type ImageContentFit } from 'expo-image';
 
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readNumberField, useInterpolatedField } from '@/components/renderer/useField';
-import { RADIUS_PX, resolveAssetUrl } from '@selfhelp/shared';
+import { useAssetSource } from '@/components/renderer/useAssetSource';
+import { RADIUS_PX } from '@selfhelp/shared';
 import type { TCanonicalRadius } from '@selfhelp/shared';
-import { useServerStore } from '@/stores/serverStore';
 
 const FIT_MAP: Record<string, ImageContentFit> = {
     cover: 'cover',
@@ -42,7 +45,6 @@ const FIT_MAP: Record<string, ImageContentFit> = {
 };
 
 export function ImageStyle({ section, values }: IStyleProps): React.ReactElement | null {
-    const baseUrl = useServerStore((s) => s.serverUrl) ?? '';
     const src = useInterpolatedField(section, 'img_src', values);
     const alt = useInterpolatedField(section, 'alt', values);
     const fallback = useInterpolatedField(section, 'fallback_src', values);
@@ -53,24 +55,26 @@ export function ImageStyle({ section, values }: IStyleProps): React.ReactElement
     const height = readNumberField(section, 'web_height') ?? 200;
     const [errored, setErrored] = useState(false);
 
-    const resolvedSrc = src ? resolveAssetUrl(src, baseUrl) : '';
+    const primary = useAssetSource(src);
+    const fallbackSource = useAssetSource(fallback);
 
     // Only preflight when a fallback is configured. `Image.prefetch` resolves on
     // success and rejects when the asset can't load, so a 404 deterministically
     // flips to the fallback regardless of the expo-image/web onError quirks.
     useEffect(() => {
-        if (!fallback || !resolvedSrc) return undefined;
+        if (!fallback || !primary) return undefined;
         let cancelled = false;
         setErrored(false);
-        RNImage.prefetch(resolvedSrc)
+        if (Platform.OS === 'web' && primary.headers) return undefined;
+        Image.prefetch(primary.uri, { headers: primary.headers })
             .then((ok) => { if (!cancelled && ok === false) setErrored(true); })
             .catch(() => { if (!cancelled) setErrored(true); });
         return () => { cancelled = true; };
-    }, [resolvedSrc, fallback]);
+    }, [primary, fallback]);
 
-    if (!src) return null;
+    if (!primary) return null;
 
-    const activeSrc = errored && fallback ? fallback : src;
+    const activeSource = errored && fallbackSource ? fallbackSource : primary;
 
     return (
         <Image
@@ -78,7 +82,7 @@ export function ImageStyle({ section, values }: IStyleProps): React.ReactElement
             // doesn't keep the failed source's <img> lingering (hidden) in the DOM.
             key={errored && fallback ? 'fallback' : 'primary'}
             accessibilityLabel={alt}
-            source={{ uri: resolveAssetUrl(activeSrc, baseUrl) }}
+            source={activeSource}
             placeholder={blurhash ? { blurhash } : undefined}
             onError={() => { if (fallback && !errored) setErrored(true); }}
             contentFit={FIT_MAP[fit] ?? 'cover'}

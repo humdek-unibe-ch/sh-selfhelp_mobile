@@ -92,3 +92,13 @@ export function readNumberField(section: TFieldHolder, name: string, fallback?: 
     const n = typeof v === 'number' ? v : Number(v);
     return Number.isFinite(n) ? n : fallback;
 }
+
+/**
+ * Show `placeholder` when a resolved text field is empty or whitespace-only.
+ * Used by Title and Badge to mirror the web renderers' `|| 'Title'` /
+ * `|| 'Badge'` fallback, so an unresolved value never renders as a blank
+ * heading or an empty pill.
+ */
+export function withPlaceholder(value: string, placeholder: string): string {
+    return value.trim() === '' ? placeholder : value;
+}

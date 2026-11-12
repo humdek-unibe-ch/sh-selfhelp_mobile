@@ -8,7 +8,7 @@ Before returning anything print in chat `❤️AGENTS.md` so that we know the ru
 
 ## Project Overview
 
-This repository is the SelfHelp mobile frontend app. It displays end-user pages and forms that were already configured in the SelfHelp CMS/web system. Mobile users cannot create, configure, edit, or administer CMS pages from this app; all CMS authoring and configuration happens in the web/admin side of the SelfHelp system. The app talks to a Symfony backend through `/cms-api/v1/*`, fetches page payloads by CMS keyword, and relies on `@selfhelp/shared` for shared API endpoints, DTOs, CMS style types, registry keys, Tailwind/Mantine tokens, condition evaluation, and class allow-listing.
+This repository is the SelfHelp mobile frontend app. It displays end-user pages and forms that were already configured in the SelfHelp CMS/web system. Mobile users cannot create, configure, edit, or administer CMS pages from this app; all CMS authoring and configuration happens in the web/admin side of the SelfHelp system. The app talks to a Symfony backend through `/cms-api/v1/*`, fetches page payloads by CMS keyword, and relies on `@selfhelp/shared` for shared API endpoints, DTOs, CMS style types, registry keys, Tailwind/Mantine tokens, and class allow-listing.
 
 ## Tech Stack
 
@@ -26,7 +26,7 @@ This repository is the SelfHelp mobile frontend app. It displays end-user pages 
 ## Repository Structure
 
 - `app/`: Expo Router routes. `(app)` is the drawer-based authenticated shell, `(public)` contains login, `(dev)` contains the server picker.
-- `components/renderer/`: presentation renderer for CMS page payloads, condition handling, interpolation, debug wrapper, style dispatcher, child rendering helpers.
+- `components/renderer/`: presentation renderer for CMS page payloads, interpolation, asset sources, debug wrapper, style dispatcher, child rendering helpers.
 - `components/styles/`: mobile presentation implementations for CMS style payloads, grouped by layout, typography, media, interactive, forms, composite, and auth.
 - `components/shell/`: navigation header, drawer, bottom tabs, page-list helpers.
 - `components/feedback/`: loading and error screens.
@@ -62,8 +62,8 @@ These rules apply to every documentation change in active SelfHelp2 repositories
 - Treat this app as a mobile frontend for existing CMS content, not as a CMS editor/admin. Page creation, page configuration, style setup, and content authoring belong to the web/admin/backend side.
 - User form submissions are end-user data entry, not CMS page/content creation.
 - Dev/preview builds can switch backend servers at runtime. Production instance builds use the baked backend URL from Expo config.
-- Server switch and logout must clear auth state and auth-scoped query data.
-- The renderer pipeline is: condition evaluation for `platform: mobile`, interpolation, `css_mobile` allow-list/remap, Mantine token mapping, then dispatch through `styleImpls`.
+- Server switch and logout must clear auth state and every client cache kept for the user: the query cache (memory and persisted) and the device image cache, which holds downloaded restricted assets. `clearAuthSession({ clearQueries: true })` does all of it through `services/clientCaches.ts`; do not clear one cache on its own.
+- The renderer pipeline is: interpolation, `css_mobile` allow-list/remap, Mantine token mapping, then dispatch through `styleImpls`. The app never evaluates a CMS `condition`: the backend removes a section whose condition fails for the user, so every section that arrives is shown.
 - All CMS style implementations must be registered in `components/styles/index.ts`.
 - Render CMS children through `<Children>`, not by directly mapping `section.children`.
 - Unknown styles should fall back safely through `UnknownStyle`.
@@ -259,6 +259,7 @@ Do not hardcode enum string unions in plugin-related mobile components. Consume 
 - Login, logout, and refresh use raw axios only where the current services intentionally avoid interceptor loops.
 - All refresh-token exchanges must go through `refreshAccessToken()` in `services/tokenRefreshService.ts`.
 - Do not race refresh calls. The singleton exists because the backend rotates refresh tokens.
+- Image, video and audio requests do not go through `getApiClient()`. Read their source through `useAssetSource` (`components/renderer/`): it adds the bearer header for the backend asset route only, and renews an expiring access token through `refreshAccessToken()` before the request, because the players cannot hand a 401 back for a retry.
 - Guard native camera, microphone, image picker, and media-library access through `native/permissions.ts`.
 - Keep secret files ignored: `.env`, `.env.local`, signing keys, mobile provisioning files, and `secrets/`.
 

@@ -23,11 +23,15 @@ import { join } from 'node:path';
 import {
     isProxyAllowed,
     isPluginPublicRoute,
+    isAssetRoute,
     resolveBackendPath,
     createPreviewServer,
     DEFAULT_BASE_URL,
     ALLOWED_FORM_ROUTES,
+    ALLOWED_GET_EXACT,
 } from '../../web-preview/server.mjs';
+
+const ASSET_UUID = '3f2b8c1e-9a4d-4c7e-8b1a-2d5e6f7a8b9c';
 
 test('isProxyAllowed permits only allowlisted GET reads', () => {
     assert.equal(isProxyAllowed('GET', '/cms-api/v1/languages'), true);
@@ -44,6 +48,39 @@ test('isProxyAllowed refuses writes, admin reads, and prefix look-alikes', () =>
     // Prefix boundary: a path that merely starts with an allowed token must not slip through.
     assert.equal(isProxyAllowed('GET', '/cms-api/v1/pages-secret'), false);
     assert.equal(isProxyAllowed('GET', '/cms-api/v1/languages-internal'), false);
+});
+
+test('isProxyAllowed permits the navigation payload exactly as written', () => {
+    // The drawer/bottom-tab menus come from it; without it the shell is modal-only.
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/navigation'), true);
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/navigation?language_id=2'), true);
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/navigation/anything'), false);
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/navigation-secret'), false);
+    assert.equal(isProxyAllowed('POST', '/cms-api/v1/navigation'), false);
+    assert.deepEqual(ALLOWED_GET_EXACT, ['/cms-api/v1/navigation']);
+});
+
+test('isProxyAllowed permits the uploaded-asset route by UUID and nothing around it', () => {
+    // The app sends the previewed user's bearer token; the backend decides who sees a restricted asset.
+    assert.equal(isProxyAllowed('GET', `/cms-api/v1/assets/${ASSET_UUID}`), true);
+    assert.equal(isProxyAllowed('GET', `/cms-api/v1/assets/${ASSET_UUID}?v=2`), true);
+    assert.equal(isAssetRoute(`/cms-api/v1/assets/${ASSET_UUID}`), true);
+
+    // No listing, no other shape of id, no path tricks, no look-alikes.
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/assets'), false);
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/assets/'), false);
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/assets/not-a-uuid'), false);
+    assert.equal(isProxyAllowed('GET', `/cms-api/v1/assets/${ASSET_UUID}/extra`), false);
+    assert.equal(isProxyAllowed('GET', `/cms-api/v1/assets/${ASSET_UUID.toUpperCase()}`), false);
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/assets/../admin/pages'), false);
+    assert.equal(isProxyAllowed('GET', `/cms-api/v1/assets-secret/${ASSET_UUID}`), false);
+    assert.equal(isProxyAllowed('GET', `/cms-api/v1/admin/assets/${ASSET_UUID}`), false);
+    assert.equal(isAssetRoute('/cms-api/v1/assets'), false);
+
+    // Read only.
+    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+        assert.equal(isProxyAllowed(method, `/cms-api/v1/assets/${ASSET_UUID}`), false, method);
+    }
 });
 
 test('isProxyAllowed permits only the one-time-code exchange POST', () => {
@@ -105,8 +142,10 @@ test('resolveBackendPath strips the base/api prefix or returns null', () => {
 test('boot: static, version, health, allowlist proxy, and refusals', async () => {
     // --- Fake backend: records the paths it actually receives. ---
     const received = [];
+    let assetAuthorization = null;
     const backend = createServer((req, res) => {
         received.push(`${req.method} ${req.url}`);
+        if (req.url?.startsWith('/cms-api/v1/assets/')) assetAuthorization = req.headers.authorization ?? null;
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, path: req.url }));
     });
@@ -127,9 +166,9 @@ test('boot: static, version, health, allowlist proxy, and refusals', async () =>
     const origin = `http://127.0.0.1:${server.address().port}`;
 
     /** Minimal fetch-like helper over node:http. */
-    const call = (method, path) =>
+    const call = (method, path, headers) =>
         new Promise((resolvePromise, reject) => {
-            const req = createRequest(origin, method, path, resolvePromise, reject);
+            const req = createRequest(origin, method, path, resolvePromise, reject, headers);
             req.end();
         });
 
@@ -156,6 +195,18 @@ test('boot: static, version, health, allowlist proxy, and refusals', async () =>
         assert.equal(langs.status, 200);
         assert.equal(JSON.parse(langs.body).path, '/cms-api/v1/languages');
 
+        // The navigation payload is proxied so the menus render.
+        const navigation = await call('GET', '/mobile-preview/api/cms-api/v1/navigation?language_id=2');
+        assert.equal(navigation.status, 200);
+
+        // An uploaded asset is proxied WITH the caller's bearer token, so the
+        // backend can decide whether the previewed user may see it.
+        const asset = await call('GET', `/mobile-preview/api/cms-api/v1/assets/${ASSET_UUID}`, {
+            Authorization: 'Bearer preview-token',
+        });
+        assert.equal(asset.status, 200);
+        assert.equal(assetAuthorization, 'Bearer preview-token');
+
         // The exchange POST is proxied.
         const exchange = await call('POST', '/mobile-preview/api/cms-api/v1/mobile-preview/session/exchange');
         assert.equal(exchange.status, 200);
@@ -180,9 +231,17 @@ test('boot: static, version, health, allowlist proxy, and refusals', async () =>
         const write = await call('POST', '/mobile-preview/api/cms-api/v1/pages');
         assert.equal(write.status, 403);
 
+        // Assets are reachable by UUID only: a listing or another id shape is refused.
+        const assetListing = await call('GET', '/mobile-preview/api/cms-api/v1/assets');
+        assert.equal(assetListing.status, 403);
+        const assetOther = await call('GET', '/mobile-preview/api/cms-api/v1/assets/not-a-uuid');
+        assert.equal(assetOther.status, 403);
+
         // The backend only ever saw the allowed calls.
         assert.deepEqual(received, [
             'GET /cms-api/v1/languages',
+            'GET /cms-api/v1/navigation?language_id=2',
+            `GET /cms-api/v1/assets/${ASSET_UUID}`,
             'POST /cms-api/v1/mobile-preview/session/exchange',
             'POST /cms-api/v1/plugins/surveyjs/submit',
             'POST /cms-api/v1/forms/submit',
@@ -195,10 +254,10 @@ test('boot: static, version, health, allowlist proxy, and refusals', async () =>
 });
 
 /** Build a node:http client request that resolves to `{ status, body }`. */
-function createRequest(origin, method, path, resolvePromise, reject) {
+function createRequest(origin, method, path, resolvePromise, reject, headers) {
     const url = new URL(path, origin);
     const req = httpRequest(
-        { hostname: url.hostname, port: url.port, path: url.pathname + url.search, method },
+        { hostname: url.hostname, port: url.port, path: url.pathname + url.search, method, headers },
         (res) => {
             let body = '';
             res.on('data', (chunk) => {

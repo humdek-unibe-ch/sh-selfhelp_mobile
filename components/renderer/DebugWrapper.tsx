@@ -12,10 +12,11 @@ SPDX-License-Identifier: MPL-2.0
  *     itself is NOT decorated with borders — the badge alone is the
  *     indicator, so layouts stay clean.
  *   - Tapping the badge opens a modal with all the section's debug
- *     information: id, style name, section name, condition + result,
- *     css / css_mobile (raw + transformed via `cssMobileToUniwind`),
- *     and a full JSON tree of the section payload. The JSON is
- *     filterable through a search box.
+ *     information: id, style name, section name, condition + result
+ *     as the SERVER reported them (`condition_debug`; the device never
+ *     evaluates a condition itself), css / css_mobile (raw + transformed
+ *     via `cssMobileToUniwind`), and a full JSON tree of the section
+ *     payload. The JSON is filterable through a search box.
  *   - When the section's `condition_debug.result === false` the
  *     content is replaced with a "Condition Failed" placeholder so
  *     the editor can still inspect the section even though it would
@@ -43,11 +44,6 @@ import { useAppColors } from '@/hooks/useAppColors';
 import { JsonTree } from '@/components/dev/JsonTree';
 import type { TSectionLike } from './types';
 
-export interface IConditionOutcome {
-    visible: boolean;
-    condition: string | null;
-}
-
 interface ISectionDebugMeta {
     debug?: number | null;
     css?: string | null;
@@ -66,21 +62,15 @@ interface ISectionDebugMeta {
 interface IDebugWrapperProps {
     section: TSectionLike;
     children: ReactNode;
-    conditionOutcome?: IConditionOutcome;
 }
 
-export function DebugWrapper({
-    section,
-    children,
-    conditionOutcome,
-}: IDebugWrapperProps): React.ReactElement {
+export function DebugWrapper({ section, children }: IDebugWrapperProps): React.ReactElement {
     const meta = section as TSectionLike & ISectionDebugMeta;
     const debugEnabled = meta.debug === 1;
 
-    const conditionFailed = Boolean(
-        (meta.condition_debug?.result === false) ||
-            (conditionOutcome?.condition && conditionOutcome.visible === false)
-    );
+    // The server keeps a section whose condition failed only when debugging it,
+    // and says so in `condition_debug`.
+    const conditionFailed = meta.condition_debug?.result === false;
 
     const [modalOpen, setModalOpen] = useState(false);
 
@@ -109,7 +99,6 @@ export function DebugWrapper({
                 visible={modalOpen}
                 onClose={() => setModalOpen(false)}
                 section={meta}
-                conditionOutcome={conditionOutcome}
                 conditionFailed={conditionFailed}
             />
         </View>
@@ -132,7 +121,6 @@ interface ISectionDebugModalProps {
     visible: boolean;
     onClose: () => void;
     section: TSectionLike & ISectionDebugMeta;
-    conditionOutcome?: IConditionOutcome;
     conditionFailed: boolean;
 }
 
@@ -140,7 +128,6 @@ function SectionDebugModal({
     visible,
     onClose,
     section,
-    conditionOutcome,
     conditionFailed,
 }: ISectionDebugModalProps): React.ReactElement {
     const [search, setSearch] = useState('');
@@ -149,8 +136,8 @@ function SectionDebugModal({
     const cssMobile = section.css_mobile ?? null;
     const cssMobileTransformed = useMemo(() => cssMobileToUniwind(cssMobile), [cssMobile]);
 
-    const condition = section.condition_debug?.condition ?? conditionOutcome?.condition ?? null;
-    const conditionResult = section.condition_debug?.result ?? conditionOutcome?.visible;
+    const condition = section.condition_debug?.condition ?? null;
+    const conditionResult = section.condition_debug?.result;
     const conditionErrors = section.condition_debug?.error ?? [];
 
     const fieldsSnapshot = useMemo(

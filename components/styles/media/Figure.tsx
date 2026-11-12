@@ -8,8 +8,7 @@ import type { IStyleProps } from '@/components/renderer/types';
 import { Children } from '@/components/renderer/Children';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, useInterpolatedField } from '@/components/renderer/useField';
-import { resolveAssetUrl } from '@selfhelp/shared';
-import { useServerStore } from '@/stores/serverStore';
+import { useAssetSource } from '@/components/renderer/useAssetSource';
 import { useAppColors } from '@/hooks/useAppColors';
 
 export function Figure({ section, values }: IStyleProps): React.ReactElement {
@@ -17,16 +16,15 @@ export function Figure({ section, values }: IStyleProps): React.ReactElement {
     const caption = useInterpolatedField(section, 'caption', values);
     // Optional built-in image: render automatically when set, without a child
     // image section. Never auto-creates a section.
-    const baseUrl = useServerStore((s) => s.serverUrl) ?? '';
-    const imgSrc = readField<string>(section, 'img_src');
+    const image = useAssetSource(readField<string>(section, 'img_src'));
     const alt = useInterpolatedField(section, 'alt', values);
     const colors = useAppColors();
     return (
         <View className={buildSectionClasses(section)} style={{ marginVertical: 8 }}>
-            {imgSrc ? (
+            {image ? (
                 <Image
                     accessibilityLabel={alt}
-                    source={{ uri: resolveAssetUrl(imgSrc, baseUrl) }}
+                    source={image}
                     contentFit="cover"
                     transition={150}
                     cachePolicy="memory-disk"

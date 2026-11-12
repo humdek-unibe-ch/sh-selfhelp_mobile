@@ -8,15 +8,12 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readBooleanField, readField } from '@/components/renderer/useField';
-import { resolveAssetUrl } from '@selfhelp/shared';
-import { useServerStore } from '@/stores/serverStore';
+import { useAssetSource } from '@/components/renderer/useAssetSource';
 import { useAppColors } from '@/hooks/useAppColors';
 
 export function VideoStyle({ section }: IStyleProps): React.ReactElement | null {
-    const baseUrl = useServerStore((s) => s.serverUrl) ?? '';
     const colors = useAppColors();
-    const rawSrc = readField<string>(section, 'video_src');
-    const src = rawSrc ? resolveAssetUrl(rawSrc, baseUrl) : null;
+    const src = useAssetSource(readField<string>(section, 'video_src'));
 
     // Playback toggles (common fields, '0' | '1'); controls default ON.
     const controls = readBooleanField(section, 'has_controls', true);
@@ -25,7 +22,7 @@ export function VideoStyle({ section }: IStyleProps): React.ReactElement | null 
     // Browsers/OS require muted for autoplay, so force it on when autoplay is set.
     const muted = readBooleanField(section, 'media_muted', false) || autoplay;
 
-    const player = useVideoPlayer(src ?? '', (p) => {
+    const player = useVideoPlayer(src ?? null, (p) => {
         if (!src) return;
         p.loop = loop;
         p.muted = muted;

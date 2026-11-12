@@ -16,9 +16,12 @@ SPDX-License-Identifier: MPL-2.0
  *      core form submit/update/delete routes so a previewed page's forms can be
  *      tested); plugin PUBLIC runtime routes (`/cms-api/v{n}/plugins/...`) are
  *      forwarded for any method so embedded plugin styles (e.g. SurveyJS) can
- *      load and submit. This mirrors the backend `MobilePreviewAccessGuard`
- *      (defense in depth: even a leaked scoped token cannot reach a non-form
- *      core write or any admin route here).
+ *      load and submit. Reads also cover the navigation payload and the
+ *      access-checked uploaded-asset route, so menus and images render. This
+ *      mirrors the backend `MobilePreviewAccessGuard` (defense in depth: even a
+ *      leaked scoped token cannot reach a non-form core write or any admin
+ *      route here). The guard is what finally decides: it must list
+ *      `assets_serve_by_uuid` for the asset route to answer a preview token.
  *   3. Expose `BASE_URL/version.json` (image version + mobileRendererVersion +
  *      bundledPlugins) and `BASE_URL/healthz` for the orchestrator probe.
  *
@@ -52,6 +55,29 @@ export const ALLOWED_GET_PREFIXES = [
     '/cms-api/v1/plugins/manifest',
     '/cms-api/v1/auth/user-data',
 ];
+
+/**
+ * Backend GET paths forwarded only as written (no sub-paths): the navigation
+ * payload (drawer/bottom-tab menus and startup pages). Without it the preview
+ * shell falls back to modal-only rendering.
+ */
+export const ALLOWED_GET_EXACT = ['/cms-api/v1/navigation'];
+
+/**
+ * The access-checked uploaded-asset route, `/cms-api/v1/assets/{uuid}`. The app
+ * sends the previewed user's bearer token with it, so an asset restricted to
+ * groups is returned only when that user may see it. Only the UUID shape is
+ * forwarded, never a listing or any other path under `assets/`.
+ */
+const ASSET_ROUTE = /^\/cms-api\/v1\/assets\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/**
+ * @param {string} backendPath path beginning with `/cms-api/...` (may include `?query`)
+ * @returns {boolean}
+ */
+export function isAssetRoute(backendPath) {
+    return ASSET_ROUTE.test(String(backendPath).split('?')[0]);
+}
 
 /** The single POST the proxy allows: the one-time preview-code exchange. */
 export const ALLOWED_POST_EXACT = ['/cms-api/v1/mobile-preview/session/exchange'];
@@ -133,7 +159,11 @@ export function isProxyAllowed(method, backendPath) {
         return true;
     }
     if (method === 'GET') {
-        return ALLOWED_GET_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
+        return (
+            ALLOWED_GET_EXACT.includes(path) ||
+            isAssetRoute(path) ||
+            ALLOWED_GET_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`))
+        );
     }
     if (method === 'POST') {
         return ALLOWED_POST_EXACT.includes(path);

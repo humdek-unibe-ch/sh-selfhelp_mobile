@@ -14,11 +14,9 @@ SPDX-License-Identifier: MPL-2.0
 import type { IUserData } from '@selfhelp/shared';
 
 import { SECURE_STORE_KEYS } from '@/constants/secureStore';
+import { ACCESS_TOKEN_EXPIRY_SKEW_MS, getAccessTokenExpiresAt } from '@/services/accessTokenExpiry';
 import { debugLogger } from '@/services/debugLogger';
 import { secureStore } from '@/services/secureStore';
-
-const ACCESS_TOKEN_EXPIRY_SKEW_MS = 60_000;
-const JWT_BASE64URL_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 export interface IPersistedAuthSession {
     accessToken: string;
@@ -99,47 +97,6 @@ export async function loadPersistedAuthSession(serverUrl: string): Promise<IPers
 
 export async function clearPersistedAuthSession(): Promise<void> {
     await secureStore.remove(SECURE_STORE_KEYS.AUTH_SESSION);
-}
-
-export function getAccessTokenExpiresAt(accessToken: string): number | null {
-    const payload = decodeJwtPayload(accessToken);
-    const exp = payload?.exp;
-    return typeof exp === 'number' && Number.isFinite(exp) ? exp * 1000 : null;
-}
-
-function decodeJwtPayload(token: string): { exp?: unknown } | null {
-    const payloadPart = token.split('.')[1];
-    if (!payloadPart) return null;
-
-    try {
-        return JSON.parse(base64UrlDecode(payloadPart)) as { exp?: unknown };
-    } catch {
-        return null;
-    }
-}
-
-function base64UrlDecode(value: string): string {
-    const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
-    let output = '';
-    let buffer = 0;
-    let bits = 0;
-
-    for (const char of padded) {
-        if (char === '=') break;
-        const index = JWT_BASE64URL_CHARS.indexOf(char);
-        if (index < 0) throw new Error('Invalid base64url character');
-
-        buffer = (buffer << 6) | index;
-        bits += 6;
-
-        if (bits >= 8) {
-            bits -= 8;
-            output += String.fromCharCode((buffer >> bits) & 0xff);
-        }
-    }
-
-    return output;
 }
 
 function isPersistedSessionShape(value: unknown): value is IPersistedAuthSession {

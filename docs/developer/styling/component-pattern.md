@@ -70,7 +70,7 @@ Most current styles are single-file because the mobile body is ~20 lines and sty
 
 ## Children
 
-Always render children with `<Children>` (from `components/renderer/Children.tsx`). It evaluates conditions and runs interpolation in one place. Don't iterate `section.children.map(...)` directly.
+Always render children with `<Children>` (from `components/renderer/Children.tsx`). It sends each child through `BasicStyle` (platform targeting, debug wrapper, style registry) in one place. Don't iterate `section.children.map(...)` directly, and never evaluate a CMS `condition` yourself: the backend already removed the sections that fail it.
 
 ## Field access
 

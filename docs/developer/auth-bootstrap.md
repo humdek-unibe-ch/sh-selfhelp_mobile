@@ -7,7 +7,7 @@ SPDX-License-Identifier: MPL-2.0
 Audience: Developers and technical operators.
 Status: active.
 Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
-Last verified: 2026-06-03.
+Last verified: 2026-11-11.
 Source of truth: Runtime code, configuration, and tests in this repository.
 
 ## Boot Order
@@ -113,6 +113,30 @@ All API requests go through `services/apiClient.ts`:
 - Several parallel 401s collapse into a single refresh because of the
   `inFlight` singleton.
 - Credential rejection clears the auth session once.
+
+## Asset Requests (Images, Video, Audio)
+
+Uploaded assets are served by `GET /cms-api/v1/assets/{uuid}`, which returns
+an asset restricted to groups only to a member. Images, video and audio are
+loaded by native players, not by `getApiClient()`, so they do not get the
+interceptor's header or its 401 retry. `useAssetSource(src)`
+(`components/renderer/useAssetSource.ts`) covers that:
+
+- It resolves the URL and adds `Authorization: Bearer <token>` — for the
+  backend asset route only, never for another host.
+- A player cannot hand a 401 back for a retry. The hook therefore reads the
+  token's `exp` claim (`services/accessTokenExpiry.ts`); when the token is
+  expired or about to expire (60 s skew) it calls `refreshAccessToken()` first
+  and withholds the source until the fresh token is in the auth store.
+- A renewal that does not help (offline, or a token that still looks old) lets
+  the request go out as it is, and one stale token is renewed once, never in a
+  loop.
+- The web preview is left alone: it holds a short-lived scoped token without a
+  refresh token.
+- On Expo Web, `expo-image` and `expo-audio` send the header; `expo-video`
+  cannot, so a restricted video does not play in the web build or the web
+  preview. `Image.prefetch` cannot send it either, so the image fallback
+  pre-check is skipped there for a request that needs the header.
 
 ## Login and Menu Refresh
 
@@ -227,6 +251,7 @@ not-yet-allow-listed dev preview).
 | `sh.device_token` (push)         | `expo-secure-store` | `localStorage` (unused on web) |
 | `sh.dev_mode`                    | `expo-secure-store` | `localStorage` |
 | Persisted React Query cache (`sh.rq`) | `@react-native-async-storage/async-storage` (encrypted only on iOS by default) | not persisted (in-memory only) |
+| Downloaded images (`expo-image` cache, restricted assets included) | device disk + memory cache, emptied on logout / server switch / rejected refresh | no image cache of its own |
 | Access token (in-memory only)    | `useAuthStore` (Zustand)  — never persisted | same |
 | Authenticated user object        | `useAuthStore` (Zustand) + `['user-data', serverUrl]` cache entry | same |
 | Selected server URL (in-memory)  | `useServerStore` (Zustand), backed by `secureStore` for durability | same |
@@ -253,7 +278,11 @@ Implementation details:
 - Logout, server-switch, and credential rejection all call
   `clearAuthSession({ clearQueries: true, reason: '<who>' })`. That
   clears: in-memory auth store + persisted refresh token + persisted
-  query cache + AsyncStorage entry for the React Query persister.
+  query cache + AsyncStorage entry for the React Query persister + the
+  `expo-image` disk and memory caches, which hold downloaded restricted
+  assets. The cache steps live in `services/clientCaches.ts`; every step
+  runs even when another one fails, and a failing step never stops the
+  sign-out.
 
 ### Inspecting the storage at runtime
 
@@ -282,6 +311,11 @@ to inspect the SecureStore artefact.
 - `services/authService.ts` — login / 2FA / logout helpers.
 - `services/sessionService.ts` — `clearAuthSession`,
   `removeAuthScopedQueries`, `invalidateAuthScopedQueries`.
+- `services/clientCaches.ts` — empties the query cache (memory +
+  persisted) and the image caches together.
+- `services/accessTokenExpiry.ts` — reads a JWT access token's `exp`.
+- `components/renderer/useAssetSource.ts` — bearer header and token
+  renewal for image / video / audio requests.
 - `services/secureStore.ts` — cross-platform persistent KV.
 - `services/debugLogger.ts` — in-memory log buffer + console mirror.
 - `providers/ServerProvider.tsx` — server URL hydration.

@@ -15,7 +15,7 @@ Project-specific dos and don'ts. Cross-cutting RN best practices (keys in lists,
 ## Do
 
 - **Read CMS fields via helpers** in `components/renderer/useField.ts`. They handle missing fields, type coercion, and translation defaults.
-- **Render children with `<Children>`**. It runs condition evaluation + interpolation in the right order.
+- **Render children with `<Children>`**. It applies platform targeting, the debug wrapper and the style registry in the right order. Do not evaluate a CMS `condition` in a style: the backend already removed the sections that fail it.
 - **Use `getApiClient()`** for every backend call. The interceptor handles auth, refresh, and `X-Client-Type`.
 - **Use the shared package for all types and endpoints**. Don't duplicate `IUserData` or hardcode `/cms-api/v1/auth/login`.
 - **Persist secrets in SecureStore**. Memory for access tokens, SecureStore for refresh tokens.
