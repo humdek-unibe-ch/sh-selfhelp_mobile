@@ -1,0 +1,267 @@
+[
+  {
+    "name": "@gorhom/bottom-sheet",
+    "version": "5.2.14",
+    "license": "MIT"
+  },
+  {
+    "name": "@hookform/resolvers",
+    "version": "5.4.0",
+    "license": "MIT"
+  },
+  {
+    "name": "@react-native-async-storage/async-storage",
+    "version": "2.2.0",
+    "license": "MIT"
+  },
+  {
+    "name": "@react-navigation/drawer",
+    "version": "7.12.8",
+    "license": "MIT"
+  },
+  {
+    "name": "@selfhelp/sh2-shp-survey-js-mobile",
+    "version": "0.3.3",
+    "license": "MPL-2.0"
+  },
+  {
+    "name": "@selfhelp/shared",
+    "version": "1.23.0",
+    "license": "MPL-2.0"
+  },
+  {
+    "name": "@tanstack/query-async-storage-persister",
+    "version": "5.101.2",
+    "license": "MIT"
+  },
+  {
+    "name": "@tanstack/react-query",
+    "version": "5.101.2",
+    "license": "MIT"
+  },
+  {
+    "name": "@tanstack/react-query-persist-client",
+    "version": "5.101.2",
+    "license": "MIT"
+  },
+  {
+    "name": "axios",
+    "version": "1.18.1",
+    "license": "MIT"
+  },
+  {
+    "name": "expo",
+    "version": "55.0.27",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-asset",
+    "version": "55.0.17",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-audio",
+    "version": "55.0.15",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-camera",
+    "version": "55.0.20",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-constants",
+    "version": "55.0.16",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-device",
+    "version": "55.0.18",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-image",
+    "version": "55.0.11",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-image-picker",
+    "version": "55.0.21",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-linking",
+    "version": "55.0.16",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-localization",
+    "version": "55.0.16",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-media-library",
+    "version": "55.0.18",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-notifications",
+    "version": "55.0.24",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-router",
+    "version": "55.0.16",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-secure-store",
+    "version": "55.0.15",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-splash-screen",
+    "version": "55.0.22",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-status-bar",
+    "version": "55.0.6",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-system-ui",
+    "version": "55.0.19",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-updates",
+    "version": "55.0.25",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-video",
+    "version": "55.0.18",
+    "license": "MIT"
+  },
+  {
+    "name": "heroui-native",
+    "version": "1.0.5",
+    "license": "Apache-2.0"
+  },
+  {
+    "name": "i18next",
+    "version": "26.3.6",
+    "license": "MIT"
+  },
+  {
+    "name": "lucide-react-native",
+    "version": "1.24.0",
+    "license": "ISC"
+  },
+  {
+    "name": "react",
+    "version": "19.2.0",
+    "license": "MIT"
+  },
+  {
+    "name": "react-dom",
+    "version": "19.2.0",
+    "license": "MIT"
+  },
+  {
+    "name": "react-hook-form",
+    "version": "7.81.0",
+    "license": "MIT"
+  },
+  {
+    "name": "react-i18next",
+    "version": "17.0.9",
+    "license": "MIT"
+  },
+  {
+    "name": "react-native",
+    "version": "0.83.6",
+    "license": "MIT"
+  },
+  {
+    "name": "react-native-gesture-handler",
+    "version": "2.30.1",
+    "license": "MIT"
+  },
+  {
+    "name": "react-native-markdown-display",
+    "version": "7.0.2",
+    "license": "MIT"
+  },
+  {
+    "name": "react-native-reanimated",
+    "version": "4.2.1",
+    "license": "MIT"
+  },
+  {
+    "name": "react-native-render-html",
+    "version": "6.3.4",
+    "license": "BSD-2-Clause"
+  },
+  {
+    "name": "react-native-safe-area-context",
+    "version": "5.6.2",
+    "license": "MIT"
+  },
+  {
+    "name": "react-native-screens",
+    "version": "4.23.0",
+    "license": "MIT"
+  },
+  {
+    "name": "react-native-sse",
+    "version": "1.2.1",
+    "license": "MIT"
+  },
+  {
+    "name": "react-native-svg",
+    "version": "15.15.3",
+    "license": "MIT"
+  },
+  {
+    "name": "react-native-web",
+    "version": "0.21.2",
+    "license": "MIT"
+  },
+  {
+    "name": "react-native-webview",
+    "version": "13.16.0",
+    "license": "MIT"
+  },
+  {
+    "name": "react-native-worklets",
+    "version": "0.7.4",
+    "license": "MIT"
+  },
+  {
+    "name": "tailwind-merge",
+    "version": "3.6.0",
+    "license": "MIT"
+  },
+  {
+    "name": "tailwind-variants",
+    "version": "3.2.2",
+    "license": "MIT"
+  },
+  {
+    "name": "uniwind",
+    "version": "1.10.0",
+    "license": "MIT"
+  },
+  {
+    "name": "zod",
+    "version": "4.4.3",
+    "license": "MIT"
+  },
+  {
+    "name": "zustand",
+    "version": "5.0.14",
+    "license": "MIT"
+  }
+]

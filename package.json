@@ -31,6 +31,8 @@
     "instance:add": "node scripts/add-instance.mjs",
     "instance:validate": "node scripts/validate-instance.mjs",
     "plugins:sync": "node scripts/plugins-sync.mjs",
+    "generate:app-libraries": "node scripts/generate-app-libraries.mjs",
+    "check:app-libraries": "node scripts/generate-app-libraries.mjs --check",
     "test": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./__tests__/support/register.mjs --test \"__tests__/**/*.test.mjs\"",
     "test:renderer": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./__tests__/support/register.mjs --test \"__tests__/unit/**/*.test.mjs\"",
     "test:e2e": "maestro test e2e",
