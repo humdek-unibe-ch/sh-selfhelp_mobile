@@ -104,7 +104,8 @@ import { Validate } from './auth/Validate';
 import { ResetPassword } from './auth/ResetPassword';
 import { TwoFactorAuth } from './auth/TwoFactorAuth';
 import { Profile } from './auth/Profile';
-import { NoAccess, NotFound, Missing, Version } from './auth/SystemSurfaces';
+import { NoAccess, NotFound, Missing } from './auth/SystemSurfaces';
+import { Version } from './auth/Version';
 
 // established catalog styles that were missing from the mobile registry
 import { RefContainer } from './layout/RefContainer';
