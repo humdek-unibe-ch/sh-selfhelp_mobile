@@ -14,6 +14,21 @@ SPDX-License-Identifier: MPL-2.0
 - **Login rate-limit message.** Login, 2FA and password reset show the CMS
   `alert_rate_limited` text (`{minutes}` filled in) when the backend returns
   `429`. Requires `@selfhelp/shared` 1.22.1.
+- **About this platform.** The `version` style draws one designed card from the
+  backend `about` block: title and product badge, a segmented control per
+  non-empty group with counts, a filter input, and rows with name, licence badge
+  and version. The app's own libraries sit under `label_app`. Exact versions show
+  only when the backend reports `about.detail`; otherwise names and licences
+  only. Headings and filter labels (`label_filter`, `label_no_match`) are
+  translatable style fields. Before, `version` drew nothing on the device. A
+  backend that sends no `about` still draws nothing. Requires
+  `@selfhelp/shared` 1.23.0.
+- **The app's own library list.** `scripts/generate-app-libraries.mjs` writes
+  `config/appLibraries.generated.json` from the `dependencies` in `package.json`
+  and the installed packages (version and licence). The file is committed, so EAS
+  and web-preview builds need no extra step; `npm test` and
+  `npm run check:app-libraries` fail when it is out of date. After changing
+  dependencies run `npm run generate:app-libraries` and commit the result.
 
 ### Changed
 - **Title and Badge placeholders.** An empty or whitespace-only title or badge
@@ -33,6 +48,9 @@ SPDX-License-Identifier: MPL-2.0
 - `release-manifest.json` `supports.core` is `>=0.1.43 <0.2.0`: the app sends
   the bearer token with uploaded-asset requests, the behaviour core 0.1.43
   ships with private uploads.
+- `@selfhelp/shared` is pinned to `1.23.0` (dependencies and overrides in
+  `package.json`): the `version` style carries `about` and its heading fields.
+  The `supports.*` ranges in `release-manifest.json` are unchanged.
 
 ### Fixed
 - **Login and 2FA errors are announced** to screen readers
