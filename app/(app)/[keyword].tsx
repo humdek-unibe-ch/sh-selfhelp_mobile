@@ -8,7 +8,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
 import { LoadingScreen } from '@/components/feedback/LoadingScreen';
 import { CmsPageScreen } from '@/components/renderer/CmsPageScreen';
-import { isKeywordOnResolvedMobileMenu } from '@/components/shell/navigationUtils';
+import { isKeywordOnResolvedMobileMenu, stringParams } from '@/components/shell/navigationUtils';
 import { getWebPreviewRuntime } from '@/config/webPreview';
 import { useNavigation } from '@/hooks/useNavigation';
 import { usePages } from '@/hooks/usePages';
@@ -27,7 +27,7 @@ import { usePageModalStore } from '@/stores/pageModalStore';
  * on/off/auto mode, so the route must not second-guess them.
  */
 export default function PageByKeywordScreen(): React.ReactElement | null {
-    const { keyword } = useLocalSearchParams<{ keyword: string }>();
+    const { keyword, ...search } = useLocalSearchParams<{ keyword: string }>();
     const router = useRouter();
     const { data: pages } = usePages();
     const { data: navigation } = useNavigation();
@@ -42,9 +42,10 @@ export default function PageByKeywordScreen(): React.ReactElement | null {
     useEffect(() => {
         if (handledRef.current || !offMenu) return;
         handledRef.current = true;
-        usePageModalStore.getState().open(keyword);
+        // The page sheet receives what the link carried (an entry list's page, search, filters, open record).
+        usePageModalStore.getState().open(keyword, null, stringParams(search));
         router.replace('/(app)/');
-    }, [offMenu, keyword, router]);
+    }, [offMenu, keyword, router, search]);
 
     if (!keyword) return <ErrorScreen title="Missing keyword" />;
     // Off-menu: the root modal host renders it over home; show a brief loader for

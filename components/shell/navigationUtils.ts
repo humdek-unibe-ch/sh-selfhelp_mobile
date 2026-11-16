@@ -120,9 +120,72 @@ export function isKeywordOnResolvedMobileMenu(
     return isOnAnyMobileMenuFromPayload(navigation, pageId);
 }
 
-/** Normalise an internal target ("/impressum", "impressum", "/") to a URL path. */
-export function normalizeNavigationTarget(target: string): string {
+/** Query parameters of a link or of a route: only text, the first value of a repeated key. */
+export function stringParams(value: Readonly<Record<string, unknown>> | null | undefined): Record<string, string> {
+    const params: Record<string, string> = {};
+    for (const [key, raw] of Object.entries(value ?? {})) {
+        const first: unknown = Array.isArray(raw) ? (raw as unknown[])[0] : raw;
+        if (typeof first === 'string') {
+            params[key] = first;
+        } else if (typeof first === 'number' || typeof first === 'boolean') {
+            params[key] = String(first);
+        }
+    }
+    return params;
+}
+
+function decodeQueryPart(part: string): string | null {
+    try {
+        return decodeURIComponent(part.replace(/\+/g, ' '));
+    } catch {
+        return null;
+    }
+}
+
+/** The parameters of a query string ("a=1&b=2", without the "?"); the first value of a repeated key wins. */
+export function parseQueryString(query: string): Record<string, string> {
+    const params: Record<string, string> = {};
+    for (const pair of query.split('&')) {
+        if (pair === '') {
+            continue;
+        }
+        const eq = pair.indexOf('=');
+        const key = decodeQueryPart(eq === -1 ? pair : pair.slice(0, eq));
+        const value = decodeQueryPart(eq === -1 ? '' : pair.slice(eq + 1));
+        // A malformed escape makes the parameter unreadable: it is left out, like a browser would not match it.
+        if (key !== null && value !== null && key !== '' && !(key in params)) {
+            params[key] = value;
+        }
+    }
+    return params;
+}
+
+export interface INavigationTarget {
+    /** The page path, without query or fragment. */
+    path: string;
+    /** The query parameters of the target ("/events?events.page=2" → `{ "events.page": "2" }`). */
+    params: Record<string, string>;
+}
+
+/**
+ * Split an internal target into the page it names and the query it carries. A
+ * page that keeps its state in the link (an entry list: page, search, sort,
+ * filters, open record) is reached with its query, not only by its path.
+ */
+export function splitNavigationTarget(target: string): INavigationTarget {
     const trimmed = target.trim();
+    const hash = trimmed.indexOf('#');
+    const withoutHash = hash === -1 ? trimmed : trimmed.slice(0, hash);
+    const question = withoutHash.indexOf('?');
+    return {
+        path: normalizeNavigationTarget(question === -1 ? withoutHash : withoutHash.slice(0, question)),
+        params: question === -1 ? {} : parseQueryString(withoutHash.slice(question + 1)),
+    };
+}
+
+/** Normalise an internal target ("/impressum", "impressum", "/") to a URL path; a query or fragment is not part of it. */
+export function normalizeNavigationTarget(target: string): string {
+    const trimmed = target.trim().split(/[?#]/)[0] ?? '';
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
         try {
             return new URL(trimmed).pathname || '/';

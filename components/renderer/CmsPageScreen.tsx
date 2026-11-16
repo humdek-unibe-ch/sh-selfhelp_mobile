@@ -29,16 +29,28 @@ import { useNavigation } from '@/hooks/useNavigation';
 import { recordLastVisited } from '@/services/navigationService';
 import { findPageByKeyword } from '@/components/shell/navigationUtils';
 import { PageRenderer } from './PageRenderer';
+import { RouteParamsContext } from './RouteParamsContext';
 import { MobileBranchNavigation } from './MobileBranchNavigation';
 
 interface ICmsPageScreenProps {
     keyword: string;
     /** When set, fetch page content via `GET /pages/resolve` (parameterized routes). */
     resolvePath?: string | null;
+    /**
+     * The route and query parameters of the page when it is not a route screen
+     * (a page sheet): the screen's own search parameters belong to the route
+     * underneath, not to this page.
+     */
+    routeParams?: Record<string, string>;
 }
 
-export function CmsPageScreen({ keyword, resolvePath: resolvePathProp }: ICmsPageScreenProps): React.ReactElement {
-    const routeParams = useLocalSearchParams<Record<string, string>>();
+export function CmsPageScreen({
+    keyword,
+    resolvePath: resolvePathProp,
+    routeParams: routeParamsProp,
+}: ICmsPageScreenProps): React.ReactElement {
+    const searchParams = useLocalSearchParams<Record<string, string>>();
+    const routeParams = routeParamsProp ?? searchParams;
     const { t } = useTranslation();
     const colors = useAppColors();
     const { data: pages } = usePages();
@@ -227,7 +239,10 @@ export function CmsPageScreen({ keyword, resolvePath: resolvePathProp }: ICmsPag
             {branchNav}
             <GestureDetector gesture={swipeGesture}>
                 <View style={{ flex: 1 }} collapsable={false}>
-                    <PageRenderer page={data} />
+                    {/* The link's parameters (a list's `<key>.record`, `<key>.q`, ...) reach the styles that read them. */}
+                    <RouteParamsContext.Provider value={routeParams}>
+                        <PageRenderer page={data} />
+                    </RouteParamsContext.Provider>
                 </View>
             </GestureDetector>
         </SafeAreaView>

@@ -20,9 +20,10 @@ SPDX-License-Identifier: MPL-2.0
 
 import { type ReactNode } from 'react';
 import { Platform } from 'react-native';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { defaultShouldDehydrateQuery, QueryClientProvider, type Query } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 
+import { isFormListQueryKey } from '@/services/formListQueryKeys';
 import { appQueryClient, QUERY_CACHE_BUSTER, queryPersister } from '@/services/queryClient';
 
 interface IQueryProviderProps {
@@ -33,6 +34,12 @@ const PERSIST_OPTIONS = {
     persister: queryPersister,
     maxAge: 24 * 60 * 60_000,
     buster: QUERY_CACHE_BUSTER,
+    dehydrateOptions: {
+        // The rows of a list are the records of one person at one moment: they are read again on every launch and
+        // are never restored from storage (the same URL shows other records to other people).
+        shouldDehydrateQuery: (query: Query): boolean =>
+            defaultShouldDehydrateQuery(query) && !isFormListQueryKey(query.queryKey),
+    },
 } as const;
 
 export function QueryProvider({ children }: IQueryProviderProps): ReactNode {

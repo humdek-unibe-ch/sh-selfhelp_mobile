@@ -41,9 +41,9 @@ import {
 
 import {
     isParameterizedNavigationPath,
-    normalizeNavigationTarget,
     resolvePageNavigation,
     concretePathAfterResolve,
+    splitNavigationTarget,
 } from '@/components/shell/navigationUtils';
 import { navigationQueryKey } from '@/hooks/useNavigation';
 import { pagesQueryKey } from '@/hooks/usePages';
@@ -84,6 +84,15 @@ function getCachedNavigation(): INavigationPayload | undefined {
     );
 }
 
+/** Open a page as a route screen, with its query parameters when it has any. */
+function pushRoute(href: string, params: Record<string, string>): void {
+    if (Object.keys(params).length === 0) {
+        router.push(href);
+        return;
+    }
+    router.push({ pathname: href, params });
+}
+
 function pushResolvedPage(
     keyword: string,
     /** Concrete public path (e.g. `/team-members/5`), never a `{param}` template. */
@@ -103,7 +112,7 @@ function pushResolvedPage(
 
     if (action.kind === 'modal') {
         // Modal host fetches via resolvePath — must be the concrete URL.
-        usePageModalStore.getState().open(keyword, resolvePath);
+        usePageModalStore.getState().open(keyword, resolvePath, params);
         return;
     }
     usePageModalStore.getState().close();
@@ -118,7 +127,7 @@ function pushResolvedPage(
  * off-menu entry-record opens (Live Preview sync + in-app "Profil ansehen")
  * look like a no-op. Always prefer the concrete path that just resolved.
  */
-export async function navigateToResolvedPath(path: string): Promise<void> {
+export async function navigateToResolvedPath(path: string, queryParams: Record<string, string> = {}): Promise<void> {
     const languageId = useLanguageStore.getState().languageId ?? undefined;
     const preview = resolvePreviewRequest(
         useDevModeStore.getState().previewMode,
@@ -131,7 +140,8 @@ export async function navigateToResolvedPath(path: string): Promise<void> {
             return;
         }
         const resolvePath = concretePathAfterResolve(path, page);
-        pushResolvedPage(page.keyword, resolvePath, page.route_params ?? {});
+        // The page's own route parameters win over what the link's query says.
+        pushResolvedPage(page.keyword, resolvePath, { ...queryParams, ...(page.route_params ?? {}) });
     } catch (error) {
         // Never keyword-fallback a parameterized path — that drops route_params
         // and leaves entry-record / entry-record-form unhydrated.
@@ -145,27 +155,35 @@ export async function navigateToResolvedPath(path: string): Promise<void> {
         }
         const action = resolvePageNavigation(path, getCachedPages(), getCachedNavigation());
         if (action.kind === 'modal') {
-            usePageModalStore.getState().open(action.keyword);
+            usePageModalStore.getState().open(action.keyword, null, queryParams);
             return;
         }
         usePageModalStore.getState().close();
-        router.push(action.href);
+        pushRoute(action.href, queryParams);
     }
 }
 
-export function navigateToPage(target: string): void {
-    if (isParameterizedNavigationPath(target)) {
-        void navigateToResolvedPath(normalizeNavigationTarget(target));
+/**
+ * Go to a page. The target may carry a query (`/events?events.page=2&events.q=ana`):
+ * a page that keeps its state in the link, like an entry list, opens in that
+ * state. `extraParams` are query parameters that did not come in the target
+ * itself (the query of a deep link).
+ */
+export function navigateToPage(target: string, extraParams: Record<string, string> = {}): void {
+    const { path, params: targetParams } = splitNavigationTarget(target);
+    const params = { ...targetParams, ...extraParams };
+    if (isParameterizedNavigationPath(path)) {
+        void navigateToResolvedPath(path, params);
         return;
     }
 
-    const action = resolvePageNavigation(target, getCachedPages(), getCachedNavigation());
+    const action = resolvePageNavigation(path, getCachedPages(), getCachedNavigation());
     if (action.kind === 'modal') {
-        usePageModalStore.getState().open(action.keyword);
+        usePageModalStore.getState().open(action.keyword, null, params);
         return;
     }
     usePageModalStore.getState().close();
-    router.push(action.href);
+    pushRoute(action.href, params);
 }
 
 export function usePageNavigation(): (target: string) => void {

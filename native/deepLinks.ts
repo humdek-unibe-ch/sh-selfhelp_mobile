@@ -16,11 +16,15 @@ SPDX-License-Identifier: MPL-2.0
  * resolved through `navigateToResolvedPath` → `GET /pages/resolve` so
  * `route_params` hydrate entry-record / entry-record-form pages (issue #30).
  * Parameterized resolve failures never keyword-fallback (that drops hydration).
+ *
+ * The query of a link travels with it (`selfhelp://events?events.page=2&events.q=ana`):
+ * a page that keeps its state in the link, like an entry list, opens in that state.
  */
 
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 
+import { stringParams } from '@/components/shell/navigationUtils';
 import {
     navigateToPage,
     navigateToResolvedPath,
@@ -30,6 +34,8 @@ import { classifyDeepLink } from './deepLinkRouting';
 async function routeFromUrl(url: string): Promise<void> {
     const parsed = Linking.parse(url);
     const plan = classifyDeepLink(parsed.path);
+    // The link's query is part of where it leads: an entry list opens on its page, search, filters or record.
+    const query = stringParams(parsed.queryParams);
 
     switch (plan.kind) {
         case 'none':
@@ -40,12 +46,12 @@ async function routeFromUrl(url: string): Promise<void> {
             return;
 
         case 'keyword':
-            navigateToPage(`/${plan.keyword}`);
+            navigateToPage(`/${plan.keyword}`, query);
             return;
 
         case 'resolve':
             // Path-first only — never keyword-fallback a multi-segment URL.
-            await navigateToResolvedPath(plan.path);
+            await navigateToResolvedPath(plan.path, query);
             return;
     }
 }
