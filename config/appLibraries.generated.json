@@ -26,7 +26,7 @@
   },
   {
     "name": "@selfhelp/shared",
-    "version": "1.23.0",
+    "version": "1.24.0",
     "license": "MPL-2.0"
   },
   {
@@ -80,6 +80,11 @@
     "license": "MIT"
   },
   {
+    "name": "expo-file-system",
+    "version": "55.0.23",
+    "license": "MIT"
+  },
+  {
     "name": "expo-image",
     "version": "55.0.11",
     "license": "MIT"
@@ -117,6 +122,11 @@
   {
     "name": "expo-secure-store",
     "version": "55.0.15",
+    "license": "MIT"
+  },
+  {
+    "name": "expo-sharing",
+    "version": "55.0.21",
     "license": "MIT"
   },
   {

@@ -252,6 +252,7 @@ not-yet-allow-listed dev preview).
 | `sh.dev_mode`                    | `expo-secure-store` | `localStorage` |
 | Persisted React Query cache (`sh.rq`) | `@react-native-async-storage/async-storage` (encrypted only on iOS by default) | not persisted (in-memory only) |
 | Downloaded images (`expo-image` cache, restricted assets included) | device disk + memory cache, emptied on logout / server switch / rejected refresh | no image cache of its own |
+| Files of earlier versions of a list entry, and current list-file downloads from `__links` (`selfhelp-history-files` in the app cache, `services/formListFileDownload.ts`) | device cache folder, emptied on logout / server switch / rejected refresh (a private copy must not outlive the session that was allowed to read it) | not downloaded (the share sheet is native only) |
 | Access token (in-memory only)    | `useAuthStore` (Zustand)  — never persisted | same |
 | Authenticated user object        | `useAuthStore` (Zustand) + `['user-data', serverUrl]` cache entry | same |
 | Selected server URL (in-memory)  | `useServerStore` (Zustand), backed by `secureStore` for durability | same |
@@ -280,7 +281,8 @@ Implementation details:
   clears: in-memory auth store + persisted refresh token + persisted
   query cache + AsyncStorage entry for the React Query persister + the
   `expo-image` disk and memory caches, which hold downloaded restricted
-  assets. The cache steps live in `services/clientCaches.ts`; every step
+  assets + the files of earlier entry versions the person downloaded
+  (`historyFiles` step). The cache steps live in `services/clientCaches.ts`; every step
   runs even when another one fails, and a failing step never stops the
   sign-out.
 
@@ -312,7 +314,12 @@ to inspect the SecureStore artefact.
 - `services/sessionService.ts` — `clearAuthSession`,
   `removeAuthScopedQueries`, `invalidateAuthScopedQueries`.
 - `services/clientCaches.ts` — empties the query cache (memory +
-  persisted) and the image caches together.
+  persisted), the image caches and the downloaded files of earlier entry
+  versions together.
+- `services/formListFileDownload.ts` — reads a file of an earlier entry
+  version with the session, keeps it in the app cache and opens the share
+  sheet; `services/formListFiles.ts` holds the pure parts (request, names,
+  meaning of a refusal).
 - `services/accessTokenExpiry.ts` — reads a JWT access token's `exp`.
 - `components/renderer/useAssetSource.ts` — bearer header and token
   renewal for image / video / audio requests.
