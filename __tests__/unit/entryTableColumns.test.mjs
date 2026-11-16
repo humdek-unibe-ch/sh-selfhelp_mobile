@@ -25,6 +25,16 @@ import { parseFieldsMapCatalog } from '@selfhelp/shared';
 
 const SAMPLE = { record_id: 7, id_users: 3, _can_delete: true, entry_date: '2026-06-22', name: 'Ann', mood: 'ok' };
 
+test('the version of a row is bookkeeping for a delete, never a column', () => {
+    const entry = { ...SAMPLE, _version: 4, _can_edit: true };
+    // Without a map every non-bookkeeping key is a column: the version must not be one of them.
+    assert.deepEqual(
+        buildEntryTableColumns(undefined, entry, false).map((column) => column.key),
+        ['name', 'mood'],
+    );
+    assert.deepEqual(buildEntryTableColumns(JSON.stringify(['mood']), entry, false), [{ key: 'mood', label: 'mood' }]);
+});
+
 test('uses fields_map catalog + fields_map_labels to select and relabel columns', () => {
     const map = JSON.stringify(['mood']);
     const labels = JSON.stringify({ mood: 'How are you?' });

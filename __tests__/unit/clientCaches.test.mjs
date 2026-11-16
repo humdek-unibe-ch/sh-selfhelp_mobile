@@ -19,7 +19,7 @@ import { clearClientCaches } from '../../services/clientCaches.ts';
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (path) => readFileSync(join(here, '../..', path), 'utf8');
 
-/** Four steps that record when they ran; `overrides` replaces single steps. */
+/** Five steps that record when they ran; `overrides` replaces single steps. */
 function steps(calls, overrides = {}) {
     return {
         queryMemory: () => {
@@ -36,15 +36,18 @@ function steps(calls, overrides = {}) {
             calls.push('imageMemory');
             return true;
         },
+        historyFiles: async () => {
+            calls.push('historyFiles');
+        },
         ...overrides,
     };
 }
 
-test('every cache is emptied: queries (memory and persisted) and images (disk and memory)', async () => {
+test('every cache is emptied: queries (memory and persisted), images (disk and memory) and downloaded history files', async () => {
     const calls = [];
     const failed = await clearClientCaches(steps(calls));
 
-    assert.deepEqual([...calls].sort(), ['imageDisk', 'imageMemory', 'queryMemory', 'queryStorage']);
+    assert.deepEqual([...calls].sort(), ['historyFiles', 'imageDisk', 'imageMemory', 'queryMemory', 'queryStorage']);
     assert.deepEqual(failed, []);
 });
 
@@ -59,7 +62,7 @@ test('a step that throws does not stop the others and is reported', async () => 
         }),
     );
 
-    assert.deepEqual([...calls].sort(), ['imageDisk', 'imageMemory', 'queryMemory', 'queryStorage']);
+    assert.deepEqual([...calls].sort(), ['historyFiles', 'imageDisk', 'imageMemory', 'queryMemory', 'queryStorage']);
     assert.deepEqual(failed, ['queryMemory']);
 });
 
@@ -72,7 +75,7 @@ test('a step that rejects does not stop the others and failures are listed in a 
         }),
     );
 
-    assert.deepEqual([...calls].sort(), ['imageDisk', 'queryMemory']);
+    assert.deepEqual([...calls].sort(), ['historyFiles', 'imageDisk', 'queryMemory']);
     assert.deepEqual(failed, ['queryStorage', 'imageMemory']);
 });
 
@@ -85,9 +88,10 @@ test('signing out never throws, even when every cache step fails', async () => {
         queryStorage: fail,
         imageDisk: fail,
         imageMemory: fail,
+        historyFiles: fail,
     });
 
-    assert.deepEqual(failed, ['queryMemory', 'queryStorage', 'imageDisk', 'imageMemory']);
+    assert.deepEqual(failed, ['queryMemory', 'queryStorage', 'imageDisk', 'imageMemory', 'historyFiles']);
 });
 
 test('a cache that reports false (the web build cannot clear the image cache) is not a failure', async () => {
@@ -132,6 +136,8 @@ test('clearAuthSession feeds the image caches into the cache step', () => {
     assert.match(source, /queryStorage: \(\) => AsyncStorage\.removeItem\(QUERY_PERSIST_KEY\)/);
     assert.match(source, /imageDisk: \(\) => Image\.clearDiskCache\(\)/);
     assert.match(source, /imageMemory: \(\) => Image\.clearMemoryCache\(\)/);
+    // A downloaded file of an earlier record version is a private copy on the device too.
+    assert.match(source, /historyFiles: \(\) => clearHistoricalFiles\(\)/);
 });
 
 test('logout, a rejected refresh and a server switch all clear the caches', () => {

@@ -38,6 +38,25 @@ test('non-asset backend paths get no header', () => {
     assert.deepEqual(assetSource('/assets/logo.png', BASE, 'tok'), { uri: `${BASE}/assets/logo.png` });
 });
 
+test('a section-scoped list file URL carries the bearer token (F165)', () => {
+    const path = '/cms-api/v1/lists/12/records/34/files/portrait?page_id=5&index=0';
+    assert.deepEqual(assetSource(path, BASE, 'tok'), {
+        uri: `${BASE}${path}`,
+        headers: { Authorization: 'Bearer tok' },
+    });
+    const historical = '/cms-api/v1/lists/12/records/34/versions/2/files/portrait';
+    assert.deepEqual(assetSource(historical, BASE, 'tok'), {
+        uri: `${BASE}${historical}`,
+        headers: { Authorization: 'Bearer tok' },
+    });
+});
+
+test('a list state path without /files/ gets no header', () => {
+    assert.deepEqual(assetSource('/cms-api/v1/lists/12/state', BASE, 'tok'), {
+        uri: `${BASE}/cms-api/v1/lists/12/state`,
+    });
+});
+
 test('an empty reference yields no source', () => {
     assert.equal(assetSource('', BASE, 'tok'), null);
     assert.equal(assetSource(undefined, BASE, 'tok'), null);
