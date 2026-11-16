@@ -112,6 +112,7 @@ import { RefContainer } from './layout/RefContainer';
 import { DataContainer } from './layout/DataContainer';
 import { TimelineItem } from './composite/TimelineItem';
 import { EntryTable } from './forms/EntryTable';
+import { FormList } from './composite/FormList';
 
 export const styleImpls: TStyleImplMap = {
     // layout
@@ -188,6 +189,8 @@ export const styleImpls: TStyleImplMap = {
     'progress-root': ProgressRoot,
     'progress-section': ProgressSection,
     'entry-table': EntryTable,
+    'entry-form-list': FormList,
+    'data-view': FormList,
     // composite
     accordion: Accordion,
     'accordion-item': AccordionItem,

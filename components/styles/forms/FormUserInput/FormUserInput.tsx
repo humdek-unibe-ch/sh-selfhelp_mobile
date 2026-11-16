@@ -9,6 +9,11 @@ SPDX-License-Identifier: MPL-2.0
  * Submit mode is decided by `isLog`. Create vs edit for record forms is driven
  * entirely by backend `section_data` hydration (`load_record_from` on
  * `entry-record-form` leaves create routes empty and edit routes prefilled).
+ *
+ * Inside an `entry-form-list` the list decides instead (`FormListFormContext`):
+ * which record is edited (or that a new one is created), the values the server
+ * sent for it and the version the save is based on. The form still draws its
+ * own inputs and sends the ordinary form requests.
  */
 
 import { useMemo, useState } from 'react';
@@ -27,6 +32,8 @@ import { useAppColors } from '@/hooks/useAppColors';
 import { useLanguageStore } from '@/stores/languageStore';
 
 import { FormContext } from '../FormContext';
+import { useFormListForm } from '../FormListFormContext';
+import { collectFormFields } from '../formFields';
 import type { IFormBaseProps } from './FormUserInput.types';
 import { useFormController } from './FormUserInput.hooks';
 import { styles } from './FormUserInput.styles';
@@ -100,13 +107,63 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
 
     const languageId = useLanguageStore((s) => s.languageId);
 
-    const { recordId: existingRecordId, values: initialValues } = useMemo(() => {
+    // Inside a list the list decides which record is edited and what it starts
+    // with; the values it sends replace whatever the page payload would prefill.
+    const listForm = useFormListForm();
+    const insideList = listForm !== null;
+    const listRecordId = listForm?.recordId ?? null;
+    const listPrefill = listForm?.prefill ?? null;
+
+    const { recordId: existingRecordId, recordVersion: existingRecordVersion, values: initialValues } = useMemo(() => {
+        if (insideList) {
+            if (listRecordId === null) {
+                return { recordId: null, recordVersion: null, values: {} };
+            }
+            const sectionData = Array.isArray(listPrefill)
+                ? listPrefill
+                : listPrefill && typeof listPrefill === 'object'
+                  ? [{ record_id: listRecordId, id_languages: languageId ?? 1, ...listPrefill }]
+                  : [];
+            const fromList = parseFormRecordPrefill({
+                ...(section as object),
+                section_data: sectionData,
+            });
+            const flat =
+                fromList.recordId === listRecordId
+                    ? flattenFormRecordPrefillValues(fromList.values, languageId)
+                    : {};
+            // File cells are omitted by flatten; keep a non-empty name so required
+            // checks and FileInput can show the stored file (contract 4).
+            if (fromList.recordId === listRecordId) {
+                for (const [key, value] of Object.entries(fromList.values)) {
+                    if (value && typeof value === 'object' && !Array.isArray(value) && 'files' in value) {
+                        const files = (value as { files: { name?: string }[] }).files;
+                        if (Array.isArray(files) && files[0]?.name) {
+                            flat[key] = files[0].name;
+                        }
+                    }
+                }
+            }
+            return {
+                recordId: listRecordId,
+                // A list names the version itself (`listForm.expectedVersion`).
+                recordVersion: null,
+                values: flat,
+            };
+        }
         const prefill = parseFormRecordPrefill(section as Parameters<typeof parseFormRecordPrefill>[0]);
         return {
             recordId: prefill.recordId,
+            // The version the page was built with: a save of this record names it.
+            recordVersion: prefill.version ?? null,
             values: flattenFormRecordPrefillValues(prefill.values, languageId),
         };
-    }, [section, languageId]);
+    }, [section, languageId, insideList, listRecordId, listPrefill]);
+    const fields = useMemo(
+        () => collectFormFields((section as { children?: unknown }).children),
+        [section],
+    );
+    const updatesRecord = existingRecordId !== null && (insideList || !isLog);
     const hydrationKey = `${section.id}:${existingRecordId ?? 'create'}`;
 
     const { ctx, isSubmitting, resultMessage, resultIsError, onSubmit, onCancel } = useFormController({
@@ -115,11 +172,14 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
         formName,
         isLog,
         existingRecordId,
+        existingRecordVersion,
         initialValues,
         successMessage,
         errorMessage,
         cancelUrl,
         ajax,
+        fields,
+        listForm,
     });
 
     const pad = SIZE_PADDING[size] ?? SIZE_PADDING.sm;
@@ -138,7 +198,12 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
                 }
             }}
             disabled={isSubmitting}
+            accessibilityRole="button"
+            accessibilityLabel={updatesRecord ? updateLabel : saveLabel}
+            accessibilityState={{ disabled: isSubmitting, busy: isSubmitting }}
             style={{
+                minHeight: 44,
+                justifyContent: 'center',
                 paddingVertical: pad.v,
                 paddingHorizontal: pad.h,
                 borderRadius: br,
@@ -149,7 +214,7 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
             }}
         >
             <Text style={{ color: isFilled ? '#fff' : saveColor, fontWeight: '600', fontSize: pad.font }}>
-                {!isLog && existingRecordId ? updateLabel : saveLabel}
+                {updatesRecord ? updateLabel : saveLabel}
             </Text>
         </Pressable>
     );
@@ -158,7 +223,11 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
         <Pressable
             key="cancel"
             onPress={onCancel}
+            accessibilityRole="button"
+            accessibilityLabel={cancelLabel}
             style={{
+                minHeight: 44,
+                justifyContent: 'center',
                 paddingVertical: pad.v,
                 paddingHorizontal: pad.h,
                 borderRadius: br,
@@ -193,7 +262,11 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
             <View style={[styles.actions, { justifyContent }]}>{actionButtons}</View>
 
             {resultMessage ? (
-                <View style={{ marginTop: 8, gap: 2 }}>
+                <View
+                    style={{ marginTop: 8, gap: 2 }}
+                    accessibilityRole={resultIsError ? 'alert' : undefined}
+                    accessibilityLiveRegion="polite"
+                >
                     <Text style={[styles.resultBase, resultIsError ? styles.resultError : styles.resultSuccess, { fontWeight: '700' }]}>
                         {resultIsError ? alertErrorTitle : alertSuccessTitle}
                     </Text>

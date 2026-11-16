@@ -31,12 +31,15 @@ SPDX-License-Identifier: MPL-2.0
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, View, Text } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
+import { asRecordVersion } from '@selfhelp/shared';
 import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readBooleanField, readField, useInterpolatedField } from '@/components/renderer/useField';
 import { useAppColors } from '@/hooks/useAppColors';
 import { navigateToPage } from '@/components/shell/usePageNavigation';
 import { deleteFormRecord } from '@/services/formsService';
+import { describeFormFailure } from '@/services/formResults';
+import { useWritePreview } from '@/hooks/useWritePreview';
 import { buildEntryTableColumns, type IEntryTableColumn } from './entryTableColumns';
 import { resolveEntryTableEditUrl } from './entryTableEditUrl';
 
@@ -45,6 +48,8 @@ interface IUserInputEntry {
     id_users: number;
     _can_delete?: boolean;
     _can_edit?: boolean;
+    /** The version of the record when the page was built; a delete names it, the server refuses an old one. */
+    _version?: number | string;
     [key: string]: unknown;
 }
 
@@ -89,22 +94,34 @@ export function EntryTable({ section, values }: IStyleProps): React.ReactElement
     // The backend delete requires `page_id`; `PageRenderer` seeds it into values.
     const pageId = typeof values.page_id === 'number' ? values.page_id : Number(values.page_id);
     const [busyId, setBusyId] = useState<number | null>(null);
+    // The delete acts on the page version the person looks at (the draft only in preview mode).
+    const preview = useWritePreview();
 
-    const runDelete = async (recordId: number): Promise<void> => {
+    const runDelete = async (recordId: number, version: number): Promise<void> => {
         setBusyId(recordId);
-        const result = await deleteFormRecord({ section_id: section.id, page_id: pageId, record_id: recordId });
+        const result = await deleteFormRecord({
+            section_id: section.id,
+            page_id: pageId,
+            record_id: recordId,
+            expected_version: version,
+            ...(preview ? { preview: true } : {}),
+        });
         setBusyId(null);
         if (result.kind === 'ok') {
             void queryClient.invalidateQueries({ queryKey: ['page'] });
         } else {
-            Alert.alert('Error', result.message || 'Failed to delete entry.');
+            Alert.alert('Error', describeFormFailure(result, 'Failed to delete entry.'));
+            if (result.kind === 'stale') {
+                // Nothing was deleted; read the page again so the row shows what is there now.
+                void queryClient.invalidateQueries({ queryKey: ['page'] });
+            }
         }
     };
 
-    const confirmDelete = (recordId: number): void => {
+    const confirmDelete = (recordId: number, version: number): void => {
         Alert.alert(deleteTitle, deleteBody, [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Delete', style: 'destructive', onPress: () => { void runDelete(recordId); } },
+            { text: 'Delete', style: 'destructive', onPress: () => { void runDelete(recordId, version); } },
         ]);
     };
 
@@ -148,7 +165,9 @@ export function EntryTable({ section, values }: IStyleProps): React.ReactElement
             {header}
             {entries.map((entry) => {
                 const canEdit = editUrl !== '' && entry._can_edit !== false;
-                const canDelete = deleteEnabled && Boolean(entry._can_delete);
+                // The server refuses a delete that names no version: a row the page gave none for cannot be deleted from here.
+                const version = asRecordVersion(entry._version);
+                const canDelete = deleteEnabled && Boolean(entry._can_delete) && version !== null;
                 return (
                     <View
                         key={entry.record_id}
@@ -188,7 +207,7 @@ export function EntryTable({ section, values }: IStyleProps): React.ReactElement
                                 ) : null}
                                 {canDelete ? (
                                     <Pressable
-                                        onPress={() => confirmDelete(entry.record_id)}
+                                        onPress={() => confirmDelete(entry.record_id, version)}
                                         disabled={busyId === entry.record_id}
                                         accessibilityRole="button"
                                         accessibilityLabel={`Delete entry ${entry.record_id}`}
