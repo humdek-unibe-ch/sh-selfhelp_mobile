@@ -32,7 +32,7 @@ test('pins @selfhelp/shared to 1.24.0 (entry-list styles + DTOs + strict record 
     );
     assert.notEqual(
         pkg.version,
-        '0.1.36',
+        '0.1.44',
         'package SemVer need not match core; supports.core is authoritative',
     );
 });
@@ -48,8 +48,8 @@ test('names the same shared version in the lockfile as in package.json', () => {
     );
 });
 
-test('mobile package 0.1.35 + supports.core accepts core 0.1.44 and rejects 0.1.43', () => {
-    assert.equal(pkg.version, '0.1.35');
+test('mobile package 0.1.36 + supports.core accepts core 0.1.44 and rejects 0.1.43', () => {
+    assert.equal(pkg.version, '0.1.36');
     const range = manifest.supports.core;
     assert.equal(semver.satisfies('0.1.44', range, { includePrerelease: true }), true);
     assert.equal(semver.satisfies('0.1.43', range, { includePrerelease: true }), false);
