@@ -4,6 +4,19 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.37
+
+**Entry List with Form is its own form** (pairs with core `0.1.45`, shared
+`1.25.0`, frontend `0.1.72`): when `list.form_section_id` equals the list
+section id, create/edit draw the list's input children through `FormUserInput`
+with `section_id = <list id>` (`resolveListFormSection`). A `data-view` or a
+list with a foreign `data_table` still has no form. Nested form children are
+not used. Pins `@selfhelp/shared` 1.25.0 in `package.json` /
+`config/appLibraries.generated.json`; `release-manifest.json` `supports.core`
+is `>=0.1.45 <0.2.0`. The lockfile stays on published 1.24.0 until 1.25.0 is
+on npm (F151); verify consumers with the packed artifact
+(`npm install --no-save`).
+
 ## 0.1.36
 
 **List-file download errors (F178):** a failed press on a public `__links`
