@@ -3,15 +3,15 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 /**
- * What an `entry-form-list` hands to its inline form (`form-log`, `form-record`
- * or `entry-record-form` inside the list).
+ * What an `entry-form-list` hands to its form when the list is the form
+ * (`form_section_id` equals the list section id; inputs are direct children).
  *
  * Inside a list the list decides which record is edited (or that a new one is
  * created), which values the form starts with, which version a save is based
  * on, and what happens after the save. The form keeps drawing its own inputs
- * and sends the ordinary form requests (`POST` submit, `PUT` update): a list
- * never has write routes of its own. Outside a list the context is absent and
- * the form behaves as it always did.
+ * and sends the ordinary form requests (`POST` submit, `PUT` update) with
+ * `section_id = <list id>`: a list never has write routes of its own. Outside
+ * a list the context is absent and the form behaves as it always did.
  */
 import { createContext, useContext } from 'react';
 import type { IFormStaleVersionData } from '@selfhelp/shared';
