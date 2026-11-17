@@ -17,7 +17,10 @@ SPDX-License-Identifier: MPL-2.0
  * renderer. Plain runs render as bare strings so there is no per-character View
  * overhead.
  */
-import { Text, Linking, type StyleProp, type TextStyle } from 'react-native';
+import { Alert, Text, Linking, type StyleProp, type TextStyle } from 'react-native';
+import { downloadCurrentFile } from '@/services/formListFileDownload';
+import { messageForFileDownloadFailure } from '@/services/formListFiles';
+import { parseListFileHref } from '@/services/listFileLink';
 import type { IInlineNode } from './sanitizeContent';
 
 interface IInlineTextProps {
@@ -39,6 +42,24 @@ function runStyle(node: IInlineNode, linkColor?: string): TextStyle | undefined 
     return Object.keys(style).length > 0 ? style : undefined;
 }
 
+/**
+ * Press handler for an inline link: section-scoped list-file URLs download with
+ * the visitor's session; every other href keeps Linking.openURL. A failed
+ * list-file download is reported like FormList history (no unhandled rejection).
+ */
+export async function openInlineHref(href: string, linkText = 'file'): Promise<void> {
+    const target = parseListFileHref(href);
+    if (target !== null) {
+        try {
+            await downloadCurrentFile(target, linkText || 'file');
+        } catch (error: unknown) {
+            Alert.alert(messageForFileDownloadFailure(error));
+        }
+        return;
+    }
+    await Linking.openURL(href);
+}
+
 export function InlineText({ nodes, style, className, numberOfLines, linkColor }: IInlineTextProps): React.ReactElement {
     return (
         <Text style={style} className={className} numberOfLines={numberOfLines}>
@@ -46,8 +67,15 @@ export function InlineText({ nodes, style, className, numberOfLines, linkColor }
                 const rs = runStyle(node, linkColor);
                 if (node.href) {
                     const href = node.href;
+                    const label = node.text;
                     return (
-                        <Text key={index} style={rs} onPress={() => { void Linking.openURL(href); }}>
+                        <Text
+                            key={index}
+                            style={rs}
+                            onPress={() => {
+                                void openInlineHref(href, label);
+                            }}
+                        >
                             {node.text}
                         </Text>
                     );

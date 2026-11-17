@@ -15,10 +15,23 @@ SPDX-License-Identifier: MPL-2.0
 import { resolveAssetUrl } from '@selfhelp/shared';
 
 const ASSET_ROUTE = '/cms-api/v1/assets/';
+/** Section-scoped current / historical list files (F165) also need the session. */
+const LIST_FILES_ROUTE = '/cms-api/v1/lists/';
 
 export interface IAssetSource {
     uri: string;
     headers?: Record<string, string>;
+}
+
+function needsBearer(uri: string, base: string): boolean {
+    if (base === '' || !uri.startsWith(base)) {
+        return false;
+    }
+    if (uri.startsWith(`${base}${ASSET_ROUTE}`)) {
+        return true;
+    }
+    // `/cms-api/v1/lists/{section}/records/{id}/files/...` and `.../versions/{v}/files/...`
+    return uri.startsWith(`${base}${LIST_FILES_ROUTE}`) && uri.includes('/files/');
 }
 
 export function assetSource(
@@ -30,7 +43,7 @@ export function assetSource(
 
     const uri = resolveAssetUrl(src, baseUrl);
     const base = baseUrl.replace(/\/+$/, '');
-    if (accessToken && base !== '' && uri.startsWith(`${base}${ASSET_ROUTE}`)) {
+    if (accessToken && needsBearer(uri, base)) {
         return { uri, headers: { Authorization: `Bearer ${accessToken}` } };
     }
 

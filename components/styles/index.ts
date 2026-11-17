@@ -104,13 +104,15 @@ import { Validate } from './auth/Validate';
 import { ResetPassword } from './auth/ResetPassword';
 import { TwoFactorAuth } from './auth/TwoFactorAuth';
 import { Profile } from './auth/Profile';
-import { NoAccess, NotFound, Missing, Version } from './auth/SystemSurfaces';
+import { NoAccess, NotFound, Missing } from './auth/SystemSurfaces';
+import { Version } from './auth/Version';
 
 // established catalog styles that were missing from the mobile registry
 import { RefContainer } from './layout/RefContainer';
 import { DataContainer } from './layout/DataContainer';
 import { TimelineItem } from './composite/TimelineItem';
 import { EntryTable } from './forms/EntryTable';
+import { FormList } from './composite/FormList';
 
 export const styleImpls: TStyleImplMap = {
     // layout
@@ -187,6 +189,8 @@ export const styleImpls: TStyleImplMap = {
     'progress-root': ProgressRoot,
     'progress-section': ProgressSection,
     'entry-table': EntryTable,
+    'entry-form-list': FormList,
+    'data-view': FormList,
     // composite
     accordion: Accordion,
     'accordion-item': AccordionItem,

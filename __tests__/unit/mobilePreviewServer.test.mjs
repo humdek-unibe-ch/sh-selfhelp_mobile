@@ -118,6 +118,17 @@ test('isProxyAllowed permits core form routes only with their declared methods',
     });
 });
 
+test('isProxyAllowed permits entry-list / data-view reads and writes', () => {
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/lists/21/state?page_id=11'), true);
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/lists/21/records/4/history'), true);
+    assert.equal(isProxyAllowed('GET', '/cms-api/v1/lists/21/records/4/files/photo'), true);
+    assert.equal(isProxyAllowed('POST', '/cms-api/v1/lists/21/records/4/actions/publish'), true);
+    assert.equal(isProxyAllowed('POST', '/cms-api/v1/lists/21/records/4/restore'), true);
+    assert.equal(isProxyAllowed('POST', '/cms-api/v1/lists/21/state'), false);
+    assert.equal(isProxyAllowed('PUT', '/cms-api/v1/lists/21/records/4/restore'), false);
+    assert.equal(isProxyAllowed('POST', '/cms-api/v1/lists/21/records/4/actions/Bad-Id'), false);
+});
+
 test('isPluginPublicRoute matches public plugin routes but never admin plugin routes', () => {
     assert.equal(isPluginPublicRoute('/cms-api/v1/plugins/surveyjs/submit'), true);
     assert.equal(isPluginPublicRoute('/cms-api/v1/plugins/manifest'), true);

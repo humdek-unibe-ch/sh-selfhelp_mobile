@@ -51,6 +51,7 @@ test('every media style reads its source through the hook', () => {
         'components/styles/media/Figure.tsx',
         'components/styles/media/VideoStyle.tsx',
         'components/styles/media/AudioStyle.tsx',
+        'components/styles/composite/FormList/FormListCell.tsx',
     ]) {
         assert.match(read(path), /useAssetSource\(/, `${path} must use useAssetSource`);
     }

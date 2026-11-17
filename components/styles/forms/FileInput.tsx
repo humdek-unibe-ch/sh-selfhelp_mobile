@@ -9,6 +9,7 @@ import type { IStyleProps } from '@/components/renderer/types';
 import { buildSectionClasses } from '@/styles/sectionClasses';
 import { readField, readBooleanField, readNumberField, useInterpolatedField } from '@/components/renderer/useField';
 import { useFieldBinding } from './_useFieldBinding';
+import { useFormContextSafe } from './FormContext';
 import { FieldShell } from './_FieldShell';
 import { validateFile } from './_fileValidation';
 import { useAppColors } from '@/hooks/useAppColors';
@@ -20,6 +21,10 @@ import { useAppColors } from '@/hooks/useAppColors';
  * rendering plan 11.6), then stores the picked asset URI as the field value.
  * (Generic non-image documents are a follow-up once `expo-document-picker` is
  * added; the validation contract is shared and already covers them.)
+ *
+ * The picked file is also handed to the surrounding form (`setFile`), which
+ * uploads it with the save as a multipart file part; the field value alone
+ * (the local URI) is never sent as text.
  */
 export function FileInput({ section, values }: IStyleProps): React.ReactElement {
     const colors = useAppColors();
@@ -31,7 +36,8 @@ export function FileInput({ section, values }: IStyleProps): React.ReactElement 
     const disabled = readBooleanField(section, 'disabled', false);
     const accept = readField<string>(section, 'web_file_input_accept');
     const maxSizeBytes = readNumberField(section, 'web_file_input_max_size');
-    const { value, error, setValue } = useFieldBinding(name);
+    const { value, error, setValue } = useFieldBinding(name, '', { sendDefault: false });
+    const form = useFormContextSafe();
 
     const [fileName, setFileName] = useState<string | null>(null);
     const [localError, setLocalError] = useState<string | null>(null);
@@ -56,11 +62,19 @@ export function FileInput({ section, values }: IStyleProps): React.ReactElement 
             setLocalError(check.error ?? 'This file is not allowed.');
             return;
         }
-        setFileName(asset.fileName ?? asset.uri.split('/').pop() ?? 'file');
+        const pickedName = asset.fileName ?? asset.uri.split('/').pop() ?? 'file';
+        setFileName(pickedName);
         setValue(asset.uri);
+        form?.setFile(name, {
+            uri: asset.uri,
+            name: pickedName,
+            mimeType: asset.mimeType ?? undefined,
+            size: asset.fileSize ?? undefined,
+        });
     }
 
     const shownName = fileName ?? (value ? value.split('/').pop() : '');
+    const showingStored = !fileName && !!shownName;
 
     return (
         <FieldShell
@@ -87,13 +101,16 @@ export function FileInput({ section, values }: IStyleProps): React.ReactElement 
             >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Text style={{ color: shownName ? colors.text : colors.textFaint, flexShrink: 1 }} numberOfLines={1}>
-                        {shownName || placeholder}
+                        {showingStored ? `Current: ${shownName} (tap to replace)` : shownName || placeholder}
                     </Text>
                     {shownName ? (
                         <Pressable
                             onPress={() => {
                                 setFileName(null);
                                 setValue('');
+                                form?.setFile(name, null);
+                                // Explicit clear of a stored file on update (contract 4).
+                                form?.setValue(name, JSON.stringify({ remove: true }));
                             }}
                             accessibilityRole="button"
                             accessibilityLabel="Remove file"

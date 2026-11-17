@@ -9,7 +9,7 @@ SPDX-License-Identifier: MPL-2.0
  * form-log/form-record).
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useFormContextSafe } from './FormContext';
 
 export interface IFieldBinding {
@@ -18,9 +18,28 @@ export interface IFieldBinding {
     setValue: (next: string) => void;
 }
 
-export function useFieldBinding(name: string, initial = ''): IFieldBinding {
+export interface IFieldBindingOptions {
+    /**
+     * Whether the value the input shows before it is touched is also what the
+     * form sends for it (the default). A file input sends a file, not text.
+     */
+    sendDefault?: boolean;
+}
+
+export function useFieldBinding(name: string, initial = '', options: IFieldBindingOptions = {}): IFieldBinding {
     const ctx = useFormContextSafe();
     const [local, setLocal] = useState<string>(initial);
+    const registerDefault = ctx?.registerDefault;
+    const sendDefault = options.sendDefault !== false;
+
+    // What an input shows before it is touched is what the form sends for it,
+    // the way a browser form sends the value of every field it holds.
+    useEffect(() => {
+        if (!registerDefault || !sendDefault || !name) {
+            return undefined;
+        }
+        return registerDefault(name, initial);
+    }, [registerDefault, sendDefault, name, initial]);
 
     if (!ctx || !name) {
         return { value: local, error: undefined, setValue: setLocal };

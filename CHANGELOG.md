@@ -4,6 +4,142 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.36
+
+**List-file download errors (F178):** a failed press on a public `__links`
+list-file href is caught and shown with the same messages as FormList history
+(`You may not…` / `no longer available` / `could not be downloaded`); no
+unhandled rejection.
+
+## 0.1.35
+
+**CMS app media and publish (F165):** list `file`/`image` cells use the server
+`{ files: [...] }` shape (section-scoped URLs); `image` columns load thumbnails
+through `useAssetSource` (bearer on list file routes); FileInput shows a stored
+file with replace/remove (`{ remove: true }` on update); history downloads use
+the historical-file route. A press on a public `__links` `/lists/…/files/…`
+href downloads through the authenticated current-file route and the share sheet
+(F178); other links still use `Linking.openURL`.
+
+### Added
+- **Entry lists on the phone.** The `entry-form-list` and `data-view` styles draw
+  the list the server computed (`GET /lists/{section_id}/state`): search, sort,
+  filter controls with counts, paging, a reset, and a readable error state when
+  the list refuses or fails. The author's layout decides the rows: cards, or
+  dense rows under a sort bar (`table`), or for a data view the layout the author
+  built from sections (`custom`, below). A `data-view` is read only and shows no
+  add, edit or delete control; a row opens a detail page only when the author
+  configured one. Both styles sit in `components/styles/composite/FormList/`.
+- **A data view lays each record out with sections.** With the `custom` layout
+  the author builds the layout of one record from ordinary sections (headings,
+  text, links, images, badges); the server fills it with the values of every
+  record and sends the result in `rows[].sections`. The phone draws those
+  sections with the same renderer as any other page, inside the row; the row
+  still opens the detail page when the author configured one, and the quick
+  actions stay below it. `row_css` is a web-only list of classes and is ignored
+  here, because the sections carry their own `css_mobile`. A `custom` layout with
+  no sections is drawn as cards. `listDrawing(list)` in `FormList.logic.ts`
+  decides between the three drawings.
+- **The list state is the link.** Page, search, sort, filters and the open
+  record travel as `<key>.page`, `<key>.q`, `<key>.sort`, `<key>.f.<id>`,
+  `<key>.record` and `<key>.mode`, the same grammar as the web. Typing or turning
+  a page never pushes a navigation entry; a new link to the open screen replaces
+  the state. Two lists on one page keep separate state.
+- **Participants add, view, edit and delete their own entries.** The form of the
+  list opens in a full-screen sheet or in place (`form_presentation`). Required
+  fields are checked before anything is sent; a picked image is uploaded with the
+  save (multipart); leaving a changed form asks first, also for the Android Back
+  button. Deleting asks first. Quick actions ask for confirmation when the author
+  configured one. Entries show only the person's own records unless the author
+  turned `own_entries_only` off; the CMS administration of lists stays on the web.
+- **History and restore.** An entry with history shows its versions, one
+  version in full, a comparison with the current one, and a restore that first
+  says what it would change and which fields it cannot write back.
+- **Files of earlier versions can be downloaded.** A file an entry held in an
+  earlier version (in a version, in a change, in a comparison) has a "Download"
+  button while the file still exists. The app reads it with the person's
+  session (the server checks the access to the history), keeps it in its cache
+  and opens the system share sheet ("save to Files", "open with ..."); a refused,
+  missing or failed download says so in words. The downloaded copies are removed
+  on logout, server switch and a rejected refresh with the other client caches.
+  Needs `expo-file-system` and `expo-sharing` (new dependencies, see below).
+- **A stale save is not lost.** When someone else changed the entry (HTTP 409
+  `stale_version`) nothing is written, what the person typed stays in the form,
+  and the screen offers to review the change, to keep their own version and save
+  over the other, or to load the latest version. Delete, quick action and
+  restore are protected the same way.
+- **Deep links keep their query.** `selfhelp://events?events.page=2&events.q=ana`
+  opens the page in that state, cold or warm, also when the page opens as a sheet
+  over home. `navigateToPage(target, extraParams)` and the page sheet carry the
+  parameters.
+- **A Maestro flow** `e2e/golden/form-list.yaml` for the release tier (add,
+  search, quick action, edit, delete, and the public list without management
+  controls).
+
+### Changed
+- **A list knows which record the page shows.** A page with a declared route
+  (`/team/{record_id}`) repeats its route parameters in the list request, and
+  they are part of the cache key: the layout of a record can read
+  `{{route.record_id}}`, so another record is another list state. The draft of
+  the page and the published page never share a cached list (or history) either,
+  and rows of one are never shown in place of the other while a list loads.
+- **A data view draws, per record, the sections the server chose.** A section of
+  the record layout can depend on the values of its own record, on the visitor
+  and on the page's route; the server decides and sends each record its own
+  sections, and the app draws them without evaluating any condition.
+- **Preview mode reaches every write.** Save, delete, quick action, restore and
+  the history reads act on the draft of the page when the person looks at the
+  draft (the same rule the page read uses), and on the published page otherwise.
+- **List rows are never restored from storage.** The rows of a list are the
+  records of one person at one moment: they are read again on every launch, are
+  cleared with the rest of the user's caches on logout, server switch and a
+  rejected refresh, and are read again when the person's groups change. A
+  refusal (sign-in expired, access revoked, list gone) hides the rows that were
+  cached; any other failed refresh keeps them with a notice that they may be old.
+- **A tap on a button or a list control while the keyboard is open** is
+  delivered at once on every CMS page (`keyboardShouldPersistTaps="handled"`).
+
+### Fixed
+- **The older record styles name the version they act on.** `form-record`,
+  `entry-record-form`, `entry-table` and `entry-record-delete` send the version of
+  the record the page was built with (a save also the one the previous save
+  returned) and refuse to send an update or delete without one; a delete or a
+  save that someone else overtook (409) writes nothing and says so. The version
+  of a table row is bookkeeping and never a column.
+- **`form-record`, `entry-record-form` and `entry-table` saved and deleted with
+  the wrong verb.** The backend answers a `POST` to update or delete with 405;
+  the app now sends `PUT /forms/update` and `DELETE /forms/delete`, with the
+  record's version, and shows the server's reason instead of a generic message.
+- **Picked files were never uploaded and required fields were never checked.**
+  A file picked in a form is sent with the save; a required field that is empty
+  stops the save with the message on the field.
+- **Inputs the person did not touch were not sent.** A select, radio or text
+  field with a default value that was left alone is now part of the save, like on
+  the web, so a list never gets a record without its default status.
+- **An error message stays only as long as it is true.** Typing in a field
+  removes that field's error, and the "required fields" banner disappears when
+  none is left.
+
+### Dependency
+- New runtime dependencies `expo-file-system` (~55.0.23, already installed
+  transitively, now declared) and `expo-sharing` (~55.0.21) for the download of
+  earlier-version files. Both ship with Expo Go; a production store build needs
+  a new native build (an over-the-air update cannot add native modules).
+- `release-manifest.json` `supports.core` is `>=0.1.44 <0.2.0`: the lists read
+  `GET /lists/{section_id}/state` and the save, delete and restore calls send
+  `expected_version`, which core 0.1.44 ships.
+- Requires `@selfhelp/shared` 1.24.0 (the list types, the URL grammar and the
+  error helpers). `package.json` (dependencies), the lockfile and
+  `config/appLibraries.generated.json` name 1.24.0; the `overrides` entry now
+  follows the dependency (`"$@selfhelp/shared"`), because a literal version
+  there makes npm refuse a packed artifact (`EOVERRIDE`). A registry-backed `npm ci`
+  therefore needs 1.24.0 to be published first (order of the release: shared,
+  then the consumers, then the tags); until then the build is verified against
+  the local packed artifact described in the shared repository
+  (`docs/developer/release-and-versioning.md`), and `npm run
+  generate:app-libraries` is run after that install, because the committed list
+  names the installed version (`appLibraries.test.mjs` checks it).
+
 ## 0.1.34
 
 ### Added
@@ -14,6 +150,21 @@ SPDX-License-Identifier: MPL-2.0
 - **Login rate-limit message.** Login, 2FA and password reset show the CMS
   `alert_rate_limited` text (`{minutes}` filled in) when the backend returns
   `429`. Requires `@selfhelp/shared` 1.22.1.
+- **About this platform.** The `version` style draws one designed card from the
+  backend `about` block: title and product badge, a segmented control per
+  non-empty group with counts, a filter input, and rows with name, licence badge
+  and version. The app's own libraries sit under `label_app`. Exact versions show
+  only when the backend reports `about.detail`; otherwise names and licences
+  only. Headings and filter labels (`label_filter`, `label_no_match`) are
+  translatable style fields. Before, `version` drew nothing on the device. A
+  backend that sends no `about` still draws nothing. Requires
+  `@selfhelp/shared` 1.23.0.
+- **The app's own library list.** `scripts/generate-app-libraries.mjs` writes
+  `config/appLibraries.generated.json` from the `dependencies` in `package.json`
+  and the installed packages (version and licence). The file is committed, so EAS
+  and web-preview builds need no extra step; `npm test` and
+  `npm run check:app-libraries` fail when it is out of date. After changing
+  dependencies run `npm run generate:app-libraries` and commit the result.
 
 ### Changed
 - **Title and Badge placeholders.** An empty or whitespace-only title or badge
@@ -33,6 +184,9 @@ SPDX-License-Identifier: MPL-2.0
 - `release-manifest.json` `supports.core` is `>=0.1.43 <0.2.0`: the app sends
   the bearer token with uploaded-asset requests, the behaviour core 0.1.43
   ships with private uploads.
+- `@selfhelp/shared` is pinned to `1.23.0` (dependencies and overrides in
+  `package.json`): the `version` style carries `about` and its heading fields.
+  The `supports.*` ranges in `release-manifest.json` are unchanged.
 
 ### Fixed
 - **Login and 2FA errors are announced** to screen readers

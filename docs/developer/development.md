@@ -7,7 +7,7 @@ SPDX-License-Identifier: MPL-2.0
 Audience: Developers and technical operators.
 Status: active.
 Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
-Last verified: 2026-06-19.
+Last verified: 2026-11-14.
 Source of truth: Runtime code, configuration, and tests in this repository.
 
 Day-to-day workflow for working on the mobile app.
@@ -38,6 +38,17 @@ Fast refresh is on by default. If a Reanimated worklet starts behaving oddly, hi
 - Network: `npx flipper` (Android) or Safari Web Inspector (iOS, macOS).
 - Sentry-style errors: not wired in v1; see [best-practices.md](./best-practices.md) for what to add when traffic warrants it.
 - `DebugWrapper` (auto, `__DEV__` only) — set `debug=1` on a CMS section and the renderer adds a bug badge. Tapping it opens a themed modal with the condition outcome the server reported (`condition_debug`), applied `css_mobile` classes, a filterable field list, and the **raw section as a collapsible JSON tree** (`components/dev/JsonTree.tsx` — tap any object/array node to expand, primitives are colour-coded by type). Mirrors the web frontend's section inspector. Useful for hunting why a section doesn't show up or why a Tailwind class isn't being honoured.
+
+## Native end-to-end flows (Maestro)
+
+`e2e/golden/*.yaml` are [Maestro](https://maestro.mobile.dev) flows of the release tier (`npm run test:e2e` is `maestro test e2e`). They need a native target, a prepared QA backend (`composer test:reset-db` seeds the fixtures, among them the pages `qa-entries` and `qa-events` of `form-list.yaml`) and are not part of `plugin-mobile-check.yml`.
+
+- **Name the device**: `maestro --device <id> test ...`. `adb devices` also lists a physical phone when one is plugged in; never run a flow without `--device`.
+- **Parameters**: pass them with `-e`. Maestro lets the `env:` block of a flow win over `-e`, so that block holds constants only; a parameter that has a default gets it from a script step (see the header of the flow).
+- **Against a build** (`com.selfhelp.dev`; the flow clears the app's state): `maestro --device <id> test e2e/golden/form-list.yaml -e APP_ID=com.selfhelp.dev -e QA_PASSWORD=<password> -e QA_SERVER_URL=<backend url>`.
+- **Inside Expo Go on an Android emulator** (`APP_ID=host.exp.exponent`): start Metro with `npx expo start --offline --port <p>` (online mode asks for an Expo login; without `--localhost`, so that it listens on IPv4 and `adb reverse` reaches it), then `adb -s <id> reverse tcp:<p> tcp:<p>` and the same for the backend port, and pass `-e EXPO_GO_URL=exp://127.0.0.1:<p>` and `-e LINK_BASE=exp://127.0.0.1:<p>/--/` besides the parameters above (the flow then opens the project in Expo Go instead of clearing the state, and deep links go through Expo Go). `QA_SERVER_URL` is typed into the server picker's custom URL field; use `http://localhost:<backend port>`, which the reverse forwards.
+- **Expo Go on Android cannot start the app as it is**: the app imports `expo-notifications` at startup (`native/notifications.ts`), and that module throws on import in Expo Go for Android (remote push is not available there). A development build does not have the problem. For a one-off run in Expo Go, replace `node_modules/expo-notifications/build/index.js` with a stub that exports no-op versions of the functions the app calls, keep the original, and restore it afterwards; nothing of that is in the repository.
+- **Not automated**: the stale-save conflict (it needs a second client) and the file upload (the system photo picker, `expo-image-picker`, is outside the app; it grants access to the picked photo only, so there is nothing to grant or to revoke in the Android settings from version 14 on). Check them by hand: put two pictures in `/sdcard/Pictures` with `adb push` (on Windows with Git Bash set `MSYS_NO_PATHCONV=1`), pick one, save, and compare the hash of the stored file with the source; change the entry and compare the history: the file of the earlier version opens through the share sheet.
 
 ## Web preview parity (HeroUI Native)
 

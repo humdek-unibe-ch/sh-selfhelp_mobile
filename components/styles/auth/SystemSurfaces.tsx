@@ -3,19 +3,16 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 /**
- * System / error surfaces: `no-access`, `not-found`, `missing`, `version`.
+ * System / error surfaces: `no-access`, `not-found`, `missing`.
  *
- * `no-access` / `not-found` / `missing` render an accessible message card from
- * the section's `title` / `message` content fields (interpolated against the
- * page values), matching the shared `INoAccessStyle` / `INotFoundStyle` /
- * `IMissingStyle` contracts. The corner radius honours `radius`. The
- * presentation fields (`color` / `web_shadow` / `variant` button
- * variant) are not read on mobile; a plain accessible RN surface is the
- * documented fallback.
+ * They render an accessible message card from the section's `title` /
+ * `message` content fields (interpolated against the page values), matching
+ * the shared `INoAccessStyle` / `INotFoundStyle` / `IMissingStyle` contracts.
+ * The corner radius honours `radius`. The presentation fields (`color` /
+ * `web_shadow` / `variant` button variant) are not read on mobile; a plain
+ * accessible RN surface is the documented fallback.
  *
- * `version` is a build/version diagnostic surface with no content fields, so it
- * renders nothing visible on mobile (the web renderer owns the version display).
- * It is kept as a real impl to satisfy the non-Partial registry contract.
+ * The `version` style ("about the platform") lives in `./Version.tsx`.
  */
 import { View, Text } from 'react-native';
 import type { IStyleProps } from '@/components/renderer/types';
@@ -67,8 +64,4 @@ export function NotFound(props: IStyleProps): React.ReactElement {
 
 export function Missing(props: IStyleProps): React.ReactElement {
     return <SystemSurface {...props} defaultTitle="Content unavailable" />;
-}
-
-export function Version(): React.ReactElement | null {
-    return null;
 }

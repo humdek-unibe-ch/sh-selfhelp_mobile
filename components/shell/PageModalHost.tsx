@@ -32,6 +32,7 @@ import { usePageModalStore } from '@/stores/pageModalStore';
 export function PageModalHost(): React.ReactElement | null {
     const keyword = usePageModalStore((s) => s.keyword);
     const resolvePath = usePageModalStore((s) => s.resolvePath);
+    const params = usePageModalStore((s) => s.params);
     const close = usePageModalStore((s) => s.close);
     const colors = useAppColors();
     const { data: pages } = usePages();
@@ -91,7 +92,7 @@ export function PageModalHost(): React.ReactElement | null {
                         </Pressable>
                     </View>
                     <View style={{ flex: 1 }}>
-                        <CmsPageScreen keyword={keyword} resolvePath={resolvePath} />
+                        <CmsPageScreen keyword={keyword} resolvePath={resolvePath} routeParams={params} />
                     </View>
                 </SafeAreaView>
             </View>

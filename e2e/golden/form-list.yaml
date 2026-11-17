@@ -1,0 +1,195 @@
+# SPDX-FileCopyrightText: 2026 Humdek, University of Bern
+# SPDX-License-Identifier: MPL-2.0
+#
+# Golden workflow (mobile): a participant works with an entry list on the
+# phone -- adds, finds, completes with a quick action, edits and deletes an
+# entry -- and the same app shows a public read-only list (data view) as a
+# guest page sheet without any management control. The web counterpart is
+# `frontend e2e/golden/form-list.spec.ts`; both drive the QA data seeded by
+# the backend `QaFormListFixture` (pages `qa-entries` and `qa-events`).
+#
+# What the flow proves on a native target:
+#   * the list renders from the server state and every write goes through the
+#     ordinary form endpoints (create, update, delete) and the quick-action
+#     endpoint, with a confirmation before the destructive steps;
+#   * search and the page parameter of a deep link set the state of the list
+#     (`entries.q`, `events.page`); a list of another key on the same page is
+#     not touched;
+#   * a public data view offers no add, edit or delete control.
+#
+# Not covered here (a second client or the system picker is needed): the
+# stale-save conflict and the file upload. They were verified by hand on an
+# emulator (a second API client, the Android photo picker); see the task report.
+#
+# RELEASE TIER ONLY -- runs on a self-hosted runner with a built app and a
+# prepared QA stack (`composer test:reset-db` seeds the fixture). It is NOT part
+# of `plugin-mobile-check.yml` (no simulator there).
+#
+# Parameters (pass them with -e). Maestro lets the `env:` block of a flow win
+# over -e, so that block holds constants only and the parameters have no
+# default there:
+#   APP_ID        required  application id (`com.selfhelp.dev`, or `host.exp.exponent` for Expo Go)
+#   QA_PASSWORD   required  password of the QA persona
+#   QA_EMAIL      default qa.user@selfhelp.test
+#   QA_SERVER_URL default http://127.0.0.1:8000 (typed when a clean session has no backend yet)
+#   LINK_BASE     default selfhelp:// (the prefix of deep links)
+#   EXPO_GO_URL   default empty (the Metro URL of the project; set it to run inside Expo Go)
+#
+# Run against a build of the app (a clean session on every run):
+#   maestro --device <id> test e2e/golden/form-list.yaml \
+#     -e APP_ID=com.selfhelp.dev -e QA_PASSWORD=<password> \
+#     -e QA_SERVER_URL=http://127.0.0.1:8000
+#
+# Run inside Expo Go (no build of the app needed). Metro of this project must
+# serve it and the QA backend must be reachable from the device, for example
+# with `adb reverse tcp:8099 tcp:8099` and `adb reverse tcp:8123 tcp:8123`.
+# Expo Go keeps its own data, so the flow does not clear it: start from a
+# signed-out session of the app (a signed-in session skips the login step):
+#   maestro --device <id> test e2e/golden/form-list.yaml \
+#     -e APP_ID=host.exp.exponent -e QA_PASSWORD=<password> \
+#     -e EXPO_GO_URL=exp://127.0.0.1:8099 -e LINK_BASE=exp://127.0.0.1:8099/--/
+#
+# Every identifier is env-driven (no developer-machine specifics) and the QA
+# data carries the QA prefix. Selectors use the `testID`s of the list (stable)
+# and fall back to visible text of the app's own screens (account sheet, login).
+appId: ${APP_ID}
+env:
+  QA_ENTRIES_KEYWORD: qa-entries
+  QA_EVENTS_KEYWORD: qa-events
+  QA_ENTRY_TITLE: "qa-native-entry"
+  QA_ENTRY_TITLE_EDITED: "qa-native-entry-edited"
+  QA_SAVE_LABEL: "Save"
+  QA_UPDATE_LABEL: "Update"
+tags:
+  - golden
+  - release
+---
+# 0. Parameters that have a default (see the header).
+- evalScript: "${output.linkBase = typeof LINK_BASE === 'undefined' ? 'selfhelp://' : LINK_BASE}"
+- evalScript: "${output.expoGoUrl = typeof EXPO_GO_URL === 'undefined' ? '' : EXPO_GO_URL}"
+- evalScript: "${output.serverUrl = typeof QA_SERVER_URL === 'undefined' ? 'http://127.0.0.1:8000' : QA_SERVER_URL}"
+- evalScript: "${output.email = typeof QA_EMAIL === 'undefined' ? 'qa.user@selfhelp.test' : QA_EMAIL}"
+
+# 1. Cold start. A build of the app starts from a clean session; Expo Go is
+#    opened on the project link.
+- runFlow:
+    when:
+      true: ${output.expoGoUrl == ''}
+    commands:
+      - launchApp:
+          clearState: true
+- runFlow:
+    when:
+      true: ${output.expoGoUrl != ''}
+    commands:
+      - launchApp
+      - openLink: ${output.expoGoUrl}
+      # Expo Go may still show the page sheet a previous run ended on: close it.
+      - runFlow:
+          when:
+            visible: "Close page"
+          commands:
+            - tapOn: "Close page"
+- extendedWaitUntil:
+    visible: "Settings and sign in|Account menu|Pick a backend"
+    timeout: 180000
+
+# 1a. A clean session has no backend yet: choose it with the custom URL field.
+- runFlow:
+    when:
+      visible: "Pick a backend"
+    commands:
+      - tapOn: "Hide options"
+      - tapOn: "http://127.0.0.1:8000"
+      - inputText: ${output.serverUrl}
+      - hideKeyboard
+      - tapOn: "Use custom URL"
+      - extendedWaitUntil:
+          visible: "Settings and sign in|Account menu"
+          timeout: 60000
+
+# 1b. Log in through the account sheet and the CMS Login style (skipped when signed in).
+- runFlow:
+    when:
+      visible: "Settings and sign in"
+    commands:
+      - tapOn: "Settings and sign in"
+      - tapOn: "Log in"
+      - tapOn:
+          text: ".*([Ee]-?[Mm]ail|[Uu]sername|Benutzername).*"
+          index: 1
+      - inputText: ${output.email}
+      - tapOn:
+          text: ".*([Pp]assword|Passwort).*"
+          index: 1
+      - inputText: ${QA_PASSWORD}
+      - hideKeyboard
+      - tapOn: "Sign in|Anmelden"
+- extendedWaitUntil:
+    visible: "Account menu"
+    timeout: 60000
+
+# 2. Open the entries page by deep link: the list of the participant (own entries only).
+- openLink: ${output.linkBase}${QA_ENTRIES_KEYWORD}
+- extendedWaitUntil:
+    visible:
+      id: "form-list-entries"
+    timeout: 60000
+
+# 3. Add an entry (the form of the list opens in a sheet; the title is required).
+- tapOn:
+    id: "form-list-add"
+    index: 0
+- tapOn: "Title"
+- inputText: ${QA_ENTRY_TITLE}
+- hideKeyboard
+- tapOn: ${QA_SAVE_LABEL}
+- assertVisible: ${QA_ENTRY_TITLE}
+
+# 4. Search finds it (the state of the list, not a navigation).
+- tapOn:
+    id: "form-list-search"
+    index: 0
+- inputText: ${QA_ENTRY_TITLE}
+- hideKeyboard
+- assertVisible: ".*1 entry.*"
+
+# 5. Quick action with confirmation: the open entry is marked done.
+- tapOn:
+    id: "form-list-action-done-.*"
+- tapOn:
+    id: "form-list-confirm-ok"
+- assertVisible: "done"
+
+# 6. Edit: the title changes and the list shows the saved value.
+- tapOn:
+    id: "form-list-edit-.*"
+- tapOn: "Title"
+- inputText: "-edited"
+- hideKeyboard
+- tapOn: ${QA_UPDATE_LABEL}
+- assertVisible: ${QA_ENTRY_TITLE_EDITED}
+
+# 7. Delete asks first; Cancel keeps the entry, Delete removes it.
+- tapOn:
+    id: "form-list-delete-.*"
+- tapOn:
+    id: "form-list-confirm-cancel"
+- assertVisible: ${QA_ENTRY_TITLE_EDITED}
+- tapOn:
+    id: "form-list-delete-.*"
+- tapOn:
+    id: "form-list-confirm-ok"
+- assertNotVisible: ${QA_ENTRY_TITLE_EDITED}
+
+# 8. A public list opens as a page sheet in the state its link names; it has no management control.
+- openLink: ${output.linkBase}${QA_EVENTS_KEYWORD}?events.page=2
+- assertVisible:
+    id: "form-list-events"
+- assertVisible: ".*6-10 of 12.*"
+- assertNotVisible:
+    id: "form-list-add"
+- assertNotVisible:
+    id: "form-list-edit-.*"
+- assertNotVisible:
+    id: "form-list-delete-.*"

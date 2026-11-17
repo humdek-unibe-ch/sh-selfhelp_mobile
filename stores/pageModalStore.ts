@@ -13,6 +13,9 @@ SPDX-License-Identifier: MPL-2.0
  *
  * Parameterized public URLs (`/team-members/5`) also carry `resolvePath` so the
  * modal fetches via `GET /pages/resolve` and hydrates route params correctly.
+ * A link that carries a query (`/events?events.page=2`, an entry list's state)
+ * hands it to the page as `params`, the way a route screen receives its search
+ * parameters.
  *
  * The CMS Live Preview boot router (`app/_layout.tsx`) reuses the same store to
  * present an off-menu previewed keyword as a modal over home. Session-only
@@ -25,8 +28,10 @@ interface IPageModalState {
     keyword: string | null;
     /** Public path for parameterized pages; omitted for static routes. */
     resolvePath: string | null;
-    /** Open the page modal on a keyword (optional resolve path for route params). */
-    open: (keyword: string, resolvePath?: string | null) => void;
+    /** The route and query parameters the page is opened with. */
+    params: Record<string, string>;
+    /** Open the page modal on a keyword (optional resolve path for route params, optional query parameters). */
+    open: (keyword: string, resolvePath?: string | null, params?: Record<string, string>) => void;
     /** Close the page modal. */
     close: () => void;
 }
@@ -34,6 +39,7 @@ interface IPageModalState {
 export const usePageModalStore = create<IPageModalState>((set) => ({
     keyword: null,
     resolvePath: null,
-    open: (keyword, resolvePath = null) => set({ keyword, resolvePath: resolvePath ?? null }),
-    close: () => set({ keyword: null, resolvePath: null }),
+    params: {},
+    open: (keyword, resolvePath = null, params = {}) => set({ keyword, resolvePath: resolvePath ?? null, params }),
+    close: () => set({ keyword: null, resolvePath: null, params: {} }),
 }));

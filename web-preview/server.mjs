@@ -54,6 +54,8 @@ export const ALLOWED_GET_PREFIXES = [
     '/cms-api/v1/languages',
     '/cms-api/v1/plugins/manifest',
     '/cms-api/v1/auth/user-data',
+    // Entry lists / data-views: state, history, version, compare, files.
+    '/cms-api/v1/lists',
 ];
 
 /**
@@ -95,6 +97,22 @@ export const ALLOWED_FORM_ROUTES = {
     '/cms-api/v1/forms/update': 'PUT',
     '/cms-api/v1/forms/delete': 'DELETE',
 };
+
+/**
+ * Entry-list / data-view writes (quick action, restore). Paths carry ids, so
+ * matching is by shape — mirrors `MobilePreviewAccessGuard.ALLOWED_FORM_ROUTES`
+ * for `form_list_quick_action_v1` and `form_list_restore_v1`.
+ */
+const LIST_WRITE_ROUTE =
+    /^\/cms-api\/v\d+\/lists\/\d+\/records\/\d+\/(actions\/[a-z][a-z0-9_]{0,31}|restore)$/;
+
+/**
+ * @param {string} backendPath path beginning with `/cms-api/...` (may include `?query`)
+ * @returns {boolean}
+ */
+export function isListWriteRoute(backendPath) {
+    return LIST_WRITE_ROUTE.test(String(backendPath).split('?')[0]);
+}
 
 /**
  * Plugin PUBLIC runtime routes (`/cms-api/v{n}/plugins/...`). Mirrors the
@@ -156,6 +174,10 @@ export function isProxyAllowed(method, backendPath) {
     // page's core forms can be submitted/updated/deleted in the mobile preview
     // exactly as on the live page.
     if (ALLOWED_FORM_ROUTES[path] === method) {
+        return true;
+    }
+    // List quick actions and restores (POST only) — same idea as core forms.
+    if (method === 'POST' && isListWriteRoute(path)) {
         return true;
     }
     if (method === 'GET') {

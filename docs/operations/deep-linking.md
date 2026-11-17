@@ -7,7 +7,7 @@ SPDX-License-Identifier: MPL-2.0
 Audience: Operators and deployers.
 Status: active.
 Applies to: SelfHelp2 mobile app (sh-selfhelp_mobile).
-Last verified: 2026-07-01.
+Last verified: 2026-11-13.
 Source of truth: Runtime configuration, environment variables, scripts, and deployment services.
 
 The app handles three classes of link, all routed through `native/deepLinks.ts`:
@@ -34,6 +34,32 @@ resolves the **full path** against the backend `page_routes` contract with
 parsing. Open-access applies only to the resolve API route; the resolved page
 still enforces full page ACL, so an unauthorized deep link renders nothing
 sensitive.
+
+### Links that carry the state of an entry list
+
+The query of a link is part of where it leads. A page that keeps its state in
+the link, an entry list (`entry-form-list`) or a data view (`data-view`), opens
+in that state, cold or warm, whether it is a route screen (the page is on the
+menu) or a sheet over home (it is not):
+
+```text
+selfhelp://qa-events?events.page=2
+selfhelp://qa-entries?entries.q=invoice&entries.sort=entry_date:desc
+```
+
+`<key>` is the `list_key` of the list. The parameters are the ones of the web
+URL: `<key>.page`, `<key>.q` (search), `<key>.sort`, `<key>.f.<control id>`
+(one filter), `<key>.record` and `<key>.mode` (open a record to view, edit or
+add). A list reads only the parameters of its own key, so two lists on one page
+keep their own state. An unknown or malformed parameter is answered by the list
+with an error state and a way back to the whole list, never by a blank screen.
+
+While the screen is open, a new link to it replaces the state of the list. Typing
+in the search box or turning a page does not add a navigation entry, so the
+Android Back button leaves the page, not the previous search.
+
+To try a link on an emulator: `adb shell am start -a android.intent.action.VIEW -d "selfhelp://qa-events?events.page=2"`
+(in Expo Go the link is `exp://<host>:<port>/--/qa-events?events.page=2`).
 
 ## Configuring the custom scheme
 

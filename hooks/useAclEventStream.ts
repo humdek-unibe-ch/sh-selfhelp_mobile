@@ -22,6 +22,7 @@ import { ENDPOINTS } from '@selfhelp/shared';
 import { getWebPreviewRuntime } from '@/config/webPreview';
 import { getApiClient } from '@/services/apiClient';
 import { debugLogger } from '@/services/debugLogger';
+import { invalidateFormListQueries } from '@/services/formListQueryKeys';
 import { userDataQueryKey } from '@/services/userService';
 import { useAuthStore } from '@/stores/authStore';
 import { useServerStore } from '@/stores/serverStore';
@@ -130,7 +131,9 @@ export function useAclEventStream(): void {
         };
 
         const invalidateUserData = (): void => {
-            debugLogger.info('acl-changed event received -> invalidate user-data', 'aclEvents');
+            debugLogger.info('acl-changed event received -> invalidate user-data and lists', 'aclEvents');
+            // Which rows a list shows depends on the groups of the person: read every visible list again.
+            invalidateFormListQueries(queryClient);
             const baseURL = useServerStore.getState().serverUrl;
             if (!baseURL) return;
             void queryClient.invalidateQueries({ queryKey: userDataQueryKey(baseURL) });

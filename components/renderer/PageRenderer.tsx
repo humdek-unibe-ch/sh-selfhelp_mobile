@@ -31,11 +31,16 @@ export function PageRenderer({ page }: IPageRendererProps): React.ReactElement {
             page_id: page.id,
             page_keyword: page.keyword,
             language: locale ?? 'en',
+            // The declared route parameters of this page (`/team/{record_id}` -> { record_id: '3' }): a form list
+            // repeats them in its request, because the layout of a record can read `{{route.record_id}}`.
+            page_route_params: page.route_params ?? null,
         };
-    }, [page.id, page.keyword, locale]);
+    }, [page.id, page.keyword, page.route_params, locale]);
 
     return (
-        <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+        // `handled`: a tap on a button or a list control while a keyboard is open is delivered at once
+        // (it only dismisses the keyboard when it lands on nothing that handles it).
+        <ScrollView contentContainerStyle={{ paddingBottom: 32 }} keyboardShouldPersistTaps="handled">
             {page.sections.map((section) => (
                 <BasicStyle key={section.id} section={section} values={values} />
             ))}

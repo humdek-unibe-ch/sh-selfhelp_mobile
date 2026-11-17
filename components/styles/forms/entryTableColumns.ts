@@ -17,7 +17,7 @@ export interface IEntryTableColumn {
     label: string;
 }
 
-const INTERNAL_KEYS = new Set(['record_id', 'id_users', '_can_delete', '_can_edit', 'entry_date']);
+const INTERNAL_KEYS = new Set(['record_id', 'id_users', '_can_delete', '_can_edit', '_version', 'entry_date']);
 
 function parseLegacyLabelOverrides(raw: string | undefined): Record<string, string> {
     if (!raw) return {};

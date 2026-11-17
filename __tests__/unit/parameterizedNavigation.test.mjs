@@ -48,7 +48,7 @@ function concretePathAfterResolve(
 }
 
 test('navigateToPage routes parameterized targets through navigateToResolvedPath', () => {
-    assert.match(navSource, /isParameterizedNavigationPath\(target\)/);
+    assert.match(navSource, /isParameterizedNavigationPath\(path\)/);
     assert.match(navSource, /navigateToResolvedPath/);
     assert.match(navSource, /resolvePageByPath/);
     assert.match(navSource, /concretePathAfterResolve/);
@@ -103,7 +103,7 @@ test('deepLinks resolve case uses navigateToResolvedPath (no keyword fallback)',
     assert.match(deepLinksSource, /navigateToResolvedPath/);
     assert.match(
         deepLinksSource,
-        /case 'resolve':[\s\S]*navigateToResolvedPath\(plan\.path\)/,
+        /case 'resolve':[\s\S]*navigateToResolvedPath\(plan\.path[,)]/,
     );
     assert.doesNotMatch(
         deepLinksSource,

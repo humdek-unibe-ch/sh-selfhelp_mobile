@@ -11,6 +11,8 @@ import { debugLogger } from '@/services/debugLogger';
 import { appQueryClient, QUERY_PERSIST_KEY } from '@/services/queryClient';
 import { clearPersistedAuthSession } from '@/services/authSessionPersistence';
 import { clearClientCaches } from '@/services/clientCaches';
+import { clearHistoricalFiles } from '@/services/formListFileDownload';
+import { invalidateFormListQueries, removeFormListQueries } from '@/services/formListQueryKeys';
 import { useAuthStore } from '@/stores/authStore';
 
 interface IClearAuthSessionOptions {
@@ -59,6 +61,7 @@ export async function clearAuthSession(options: IClearAuthSessionOptions = {}): 
             queryStorage: () => AsyncStorage.removeItem(QUERY_PERSIST_KEY),
             imageDisk: () => Image.clearDiskCache(),
             imageMemory: () => Image.clearMemoryCache(),
+            historyFiles: () => clearHistoricalFiles(),
         });
         if (failed.length > 0) {
             debugLogger.warn(`client caches not fully cleared: ${failed.join(', ')}`, 'session');
@@ -70,10 +73,13 @@ export function removeAuthScopedQueries(): void {
     appQueryClient.removeQueries({ queryKey: ['user-data'] });
     appQueryClient.removeQueries({ queryKey: ['pages'] });
     appQueryClient.removeQueries({ queryKey: ['page'] });
+    // The rows of a list belong to the person who read them.
+    removeFormListQueries(appQueryClient);
 }
 
 export function invalidateAuthScopedQueries(): void {
     void appQueryClient.invalidateQueries({ queryKey: ['user-data'] });
     void appQueryClient.invalidateQueries({ queryKey: ['pages'] });
     void appQueryClient.invalidateQueries({ queryKey: ['page'] });
+    invalidateFormListQueries(appQueryClient);
 }
