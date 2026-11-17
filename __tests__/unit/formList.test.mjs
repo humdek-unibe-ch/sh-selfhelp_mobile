@@ -78,7 +78,7 @@ import {
     failureMessage,
     failureOfError,
     failureOfSeed,
-    findFormChild,
+    resolveListFormSection,
     formatEntryDate,
     formatListCell,
     historyTotalPages,
@@ -578,16 +578,51 @@ test('the server-rendered state and error are read off a section; anything else 
     assert.deepEqual(readFormListSeed({ list_state: [1], list_error: 'x' }), { state: null, error: null });
 });
 
-test('the inline form is the section the server named, found at any depth', () => {
-    const tree = [
-        { id: 1, children: [{ id: 2 }, { id: 3, children: [{ id: 4 }] }] },
-        { id: 5 },
-    ];
-    assert.equal(findFormChild(tree, 4)?.id, 4);
-    assert.equal(findFormChild(tree, 5)?.id, 5);
-    assert.equal(findFormChild(tree, 99), null);
-    assert.equal(findFormChild(tree, null), null);
-    assert.equal(findFormChild(undefined, 4), null);
+test('the list is its own form when form_section_id equals the list id', () => {
+    const list = {
+        id: 361,
+        style_name: 'entry-form-list',
+        fields: { name: { content: 'tasks' }, btn_save_label: { content: 'Save' } },
+        children: [
+            { id: 362, style_name: 'text-input', fields: { name: { content: 'title' } } },
+            { id: 363, style_name: 'text-input', fields: { name: { content: 'note' } } },
+        ],
+    };
+
+    const form = resolveListFormSection(list, 361);
+    assert.ok(form);
+    assert.equal(form.id, 361);
+    assert.equal(form.style_name, 'form-record');
+    assert.equal(form.fields.name.content, 'tasks');
+    assert.deepEqual(
+        form.children.map((child) => child.fields.name.content),
+        ['title', 'note'],
+    );
+    // Submit uses the list section id (FormUserInput reads section.id).
+    assert.equal(form.id, list.id);
+
+    // data-view / foreign table: no form.
+    assert.equal(resolveListFormSection(list, null), null);
+    assert.equal(resolveListFormSection({ id: 99, style_name: 'data-view', children: [] }, null), null);
+    // Nested form child is not used (one model).
+    assert.equal(resolveListFormSection(list, 362), null);
+
+    const submit = buildSubmitRequest({
+        page_id: 10,
+        section_id: form.id,
+        form_data: { title: 'Hello', note: 'World' },
+    });
+    assert.equal(submit.body.kind, 'json');
+    assert.equal(submit.body.data.section_id, 361);
+});
+
+test('collectFormFields walks inputs of a list-as-form and skips a nested entry-form-list', () => {
+    const fields = collectFormFields([
+        field('text-input', 'title', { label: 'Title', is_required: '1' }),
+        field('textarea', 'note'),
+        { style_name: 'entry-form-list', children: [field('text-input', 'inner')] },
+    ]);
+    assert.deepEqual(fields.map((item) => item.name), ['title', 'note']);
 });
 
 // -- the record area ------------------------------------------------------------------------------

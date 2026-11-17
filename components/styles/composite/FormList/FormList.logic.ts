@@ -363,33 +363,34 @@ export function readFormListSeed(section: object): IFormListSeed {
     };
 }
 
-interface ISectionTree {
+interface IListFormSection {
     id?: unknown;
+    style_name?: unknown;
     children?: unknown;
 }
 
 /**
- * The inline form of a list: the section whose id the server named, searched
- * breadth-first in the list's children.
+ * The form of a list. When `form_section_id` is the list's own section id, the
+ * list **is** the form: return a `form-record` view of that section (same id,
+ * fields and input children) so `FormUserInput` submits with
+ * `section_id = <list id>`. `null` for a data view, a foreign `data_table`
+ * (read-only override) or any other mismatch — nested form children are not
+ * used (one model).
  */
-export function findFormChild<T extends ISectionTree>(children: readonly T[] | null | undefined, formSectionId: number | null): T | null {
+export function resolveListFormSection<T extends IListFormSection>(
+    listSection: T,
+    formSectionId: number | null,
+): T | null {
     if (formSectionId === null) {
         return null;
     }
-    let level: T[] = children ? [...children] : [];
-    while (level.length > 0) {
-        const next: T[] = [];
-        for (const child of level) {
-            if (child && child.id === formSectionId) {
-                return child;
-            }
-            if (child && Array.isArray(child.children)) {
-                next.push(...(child.children as T[]));
-            }
-        }
-        level = next;
+    if (listSection.id !== formSectionId) {
+        return null;
     }
-    return null;
+    return {
+        ...listSection,
+        style_name: 'form-record',
+    };
 }
 
 interface IPanelInput {

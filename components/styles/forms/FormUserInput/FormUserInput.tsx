@@ -10,10 +10,10 @@ SPDX-License-Identifier: MPL-2.0
  * entirely by backend `section_data` hydration (`load_record_from` on
  * `entry-record-form` leaves create routes empty and edit routes prefilled).
  *
- * Inside an `entry-form-list` the list decides instead (`FormListFormContext`):
+ * Inside an `entry-form-list` the list is the form (`FormListFormContext`):
  * which record is edited (or that a new one is created), the values the server
- * sent for it and the version the save is based on. The form still draws its
- * own inputs and sends the ordinary form requests.
+ * sent for it and the version the save is based on. Submits use
+ * `section_id = <list id>`. The form still draws the list's input children.
  */
 
 import { useMemo, useState } from 'react';

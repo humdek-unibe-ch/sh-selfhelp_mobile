@@ -36,8 +36,18 @@ const FORM_FIELD_STYLES: ReadonlySet<string> = new Set([
     'rating',
 ]);
 
-/** A form inside a form is its own form: its fields are not ours. */
-const NESTED_FORM_STYLES: ReadonlySet<string> = new Set(['form-log', 'form-record', 'entry-record-form']);
+/**
+ * A form inside a form is its own form: its fields are not ours.
+ * Includes `entry-form-list` (the list is a form) so a nested list's inputs
+ * are not collected into an outer form; collecting fields of a list that is
+ * its own form still works because only its children are visited.
+ */
+const NESTED_FORM_STYLES: ReadonlySet<string> = new Set([
+    'form-log',
+    'form-record',
+    'entry-record-form',
+    'entry-form-list',
+]);
 
 export interface IFormFieldInfo {
     /** The key of the value in the submitted form data. */

@@ -30,7 +30,7 @@ import {
     type IFormStaleVersionData,
 } from '@selfhelp/shared';
 
-import type { IStyleProps, TSectionLike } from '@/components/renderer/types';
+import type { IStyleProps } from '@/components/renderer/types';
 import { readBooleanField, readStringField, useInterpolatedField } from '@/components/renderer/useField';
 import { navigateToPage } from '@/components/shell/usePageNavigation';
 import { useAppColors } from '@/hooks/useAppColors';
@@ -57,7 +57,7 @@ import { ListBanner, ListButton, ListText } from './FormListPrimitives';
 import { listPalette, styles, type IListPalette } from './FormList.styles';
 import type { IFormListDeleteTarget, IFormListNotice, IFormListQuickTarget } from './FormList.types';
 import {
-    findFormChild,
+    resolveListFormSection,
     isNarrowed,
     listDrawing,
     needsConfirmation,
@@ -155,10 +155,7 @@ export function FormList({ section, values }: IStyleProps): React.ReactElement {
     const [notice, setNotice] = useState<IFormListNotice | null>(null);
 
     const formChild = useMemo(
-        () => findFormChild(
-            (section as { children?: TSectionLike[] }).children,
-            state?.list.form_section_id ?? null,
-        ),
+        () => resolveListFormSection(section, state?.list.form_section_id ?? null),
         [section, state?.list.form_section_id],
     );
     const presentation = state?.list.form_presentation ?? (isEntryList && presentationField === 'page' ? 'page' : 'modal');
