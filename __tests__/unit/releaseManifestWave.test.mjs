@@ -37,13 +37,13 @@ test('pins @selfhelp/shared to 1.25.0 (list-is-the-form types + FORM_SECTION_STY
     );
 });
 
-test('lockfile still resolves published 1.24.0 until shared 1.25.0 is on npm (F151)', () => {
+test('lockfile resolves published @selfhelp/shared 1.25.0', () => {
     const lock = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
-    assert.equal(lock.packages[''].dependencies['@selfhelp/shared'], '1.24.0');
-    assert.equal(lock.packages['node_modules/@selfhelp/shared'].version, '1.24.0');
+    assert.equal(lock.packages[''].dependencies['@selfhelp/shared'], '1.25.0');
+    assert.equal(lock.packages['node_modules/@selfhelp/shared'].version, '1.25.0');
     assert.equal(
         lock.packages['node_modules/@selfhelp/shared'].resolved,
-        'https://registry.npmjs.org/@selfhelp/shared/-/shared-1.24.0.tgz',
+        'https://registry.npmjs.org/@selfhelp/shared/-/shared-1.25.0.tgz',
     );
 });
 

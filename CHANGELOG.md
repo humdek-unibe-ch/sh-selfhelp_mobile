@@ -13,9 +13,7 @@ with `section_id = <list id>` (`resolveListFormSection`). A `data-view` or a
 list with a foreign `data_table` still has no form. Nested form children are
 not used. Pins `@selfhelp/shared` 1.25.0 in `package.json` /
 `config/appLibraries.generated.json`; `release-manifest.json` `supports.core`
-is `>=0.1.45 <0.2.0`. The lockfile stays on published 1.24.0 until 1.25.0 is
-on npm (F151); verify consumers with the packed artifact
-(`npm install --no-save`).
+is `>=0.1.45 <0.2.0`. Lockfile resolves published `@selfhelp/shared` 1.25.0.
 
 ## 0.1.36
 
