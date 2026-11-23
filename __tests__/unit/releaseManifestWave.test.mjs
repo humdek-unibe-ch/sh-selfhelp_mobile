@@ -23,10 +23,14 @@ test('supports.core requires >=0.1.45 (authoritative vs package version)', () =>
     assert.equal(manifest.supports.core, '>=0.1.45 <0.2.0');
 });
 
-test('pins @selfhelp/shared to 1.25.0 (list-is-the-form types + FORM_SECTION_STYLE_NAMES)', () => {
-    assert.equal(pkg.dependencies['@selfhelp/shared'], '1.25.0');
+const SHARED_PACKAGE = '@selfhelp/shared';
+const EXACT_VERSION = /^\d+\.\d+\.\d+$/;
+
+test('pins @selfhelp/shared to one exact published version', () => {
+    const pinned = pkg.dependencies[SHARED_PACKAGE];
+    assert.match(pinned, EXACT_VERSION, 'the pin must be an exact version, not a range or tag');
     assert.equal(
-        pkg.overrides['@selfhelp/shared'],
+        pkg.overrides[SHARED_PACKAGE],
         '$@selfhelp/shared',
         'the override must follow the dependency pin (a literal version makes `npm install --no-save <packed artifact>` fail with EOVERRIDE)',
     );
@@ -37,18 +41,20 @@ test('pins @selfhelp/shared to 1.25.0 (list-is-the-form types + FORM_SECTION_STY
     );
 });
 
-test('lockfile resolves published @selfhelp/shared 1.25.0', () => {
+test('lockfile resolves the pinned @selfhelp/shared from the npm registry', () => {
+    const pinned = pkg.dependencies[SHARED_PACKAGE];
     const lock = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
-    assert.equal(lock.packages[''].dependencies['@selfhelp/shared'], '1.25.0');
-    assert.equal(lock.packages['node_modules/@selfhelp/shared'].version, '1.25.0');
+    const installed = lock.packages[`node_modules/${SHARED_PACKAGE}`];
+    assert.equal(lock.packages[''].dependencies[SHARED_PACKAGE], pinned);
+    assert.equal(installed.version, pinned);
     assert.equal(
-        lock.packages['node_modules/@selfhelp/shared'].resolved,
-        'https://registry.npmjs.org/@selfhelp/shared/-/shared-1.25.0.tgz',
+        installed.resolved,
+        `https://registry.npmjs.org/${SHARED_PACKAGE}/-/shared-${pinned}.tgz`,
     );
 });
 
-test('mobile package 0.1.37 + supports.core accepts core 0.1.45 and rejects 0.1.44', () => {
-    assert.equal(pkg.version, '0.1.37');
+test('mobile package 0.1.38 + supports.core accepts core 0.1.45 and rejects 0.1.44', () => {
+    assert.equal(pkg.version, '0.1.38');
     const range = manifest.supports.core;
     assert.equal(semver.satisfies('0.1.45', range, { includePrerelease: true }), true);
     assert.equal(semver.satisfies('0.1.44', range, { includePrerelease: true }), false);

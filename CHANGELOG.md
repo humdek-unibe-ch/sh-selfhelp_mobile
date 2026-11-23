@@ -4,6 +4,33 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.38
+
+**Live sync and the open page** (task `2026-11-20-live-sync-and-edit-lock`, part 5;
+needs `@selfhelp/shared` 1.28.0 and a core with live sync):
+
+- The Mercure stream also serves guests (public topic) and subscribes to
+  `syncTopics`; it runs only while the app is in the foreground and catches up on
+  return. A `changed` message reads again only what its tags name: pages by
+  `sync.depends_on`, `navigation`, lists, and everything on `acl`
+  (`services/syncApply.ts`, `services/syncStream.ts`).
+- `X-Acl-Stamp` of every reply is compared with `acl_stamp`; a difference reads
+  user data again once per new stamp (`services/aclStamp.ts`).
+- `sync.valid_until` reads the open page again once, at that moment plus 0–2 s
+  (`services/validUntil.ts`).
+- `X-Page-View: 1` is sent only on the fetch that opens a page screen.
+- A refetch keeps what is typed in a form, leaves a notice where a section with
+  unsaved input vanished, and keeps a page that lost access on screen with a
+  notice (no kick-out).
+- A quick action's new version is in the list row at once, so a Delete right
+  after it is not refused as a conflict (F186).
+- A page read from the server keeps its `sync` block (what it depends on, until
+  when it is valid); the block comes next to the page in the reply and was dropped
+  before, so an open page did not update by itself.
+- Pins the published `@selfhelp/shared` 1.28.0 (`package.json`, lockfile,
+  `config/appLibraries.generated.json`); the version tests read the pin from
+  `package.json` instead of a fixed number.
+
 ## 0.1.37
 
 **Entry List with Form is its own form** (pairs with core `0.1.45`, shared
