@@ -181,37 +181,72 @@ error screen with Retry and (in dev/preview) Change-server actions.
 ## Live Updates (Mercure SSE)
 
 The backend exposes the same Mercure bootstrap endpoint to mobile that
-the web frontend already uses:
+the web frontend already uses. A guest may call it too:
 
 ```
 GET /cms-api/v1/auth/events
-→ { hubUrl, topic, token, expiresIn }
+→ { hubUrl, topic, syncTopics, token, expiresIn }
 ```
+
+`syncTopics` is `[sync/users/<id>, sync/groups/<id>…, sync/roles/<id>…, sync/public]`
+for a signed-in person and `[sync/public]` for a guest (`topic` and `token`
+are `null` for a guest, who needs no subscriber JWT for the public topic). An
+older core without `syncTopics` names only `topic`, which still carries
+`acl-changed`.
 
 The mobile app subscribes **directly** to the Mercure hub — no BFF —
 via `react-native-sse`, which is an XHR-backed `EventSource`
 implementation that supports custom headers. That matters because
 Mercure authenticates subscribers with a JWT in
 `Authorization: Bearer …`, and the standard browser `EventSource`
-cannot set headers.
+cannot set headers. Expo Web uses the browser `EventSource` with the
+Mercure cookie instead.
 
 ### Wire flow (`hooks/useAclEventStream.ts`)
 
-1. After `bootstrapped` and an access token exist, call
-   `GET /cms-api/v1/auth/events` (the standard apiClient handles auth,
-   retries, and 401 refresh). Backend returns
-   `{ hubUrl, topic, token, expiresIn }`.
-2. Open an SSE connection to `${hubUrl}?topic=${topic}` with the
-   `Authorization: Bearer ${token}` header.
-3. On `acl-changed`, invalidate `['user-data', serverUrl]`. The refetch
-   picks up the new `acl_version`, `useAclVersionWatcher` invalidates
-   `['pages']` and `['page']`, and the rest of the menu/page content
-   refreshes without any user interaction. Same wire contract as the
-   web frontend's `useAclEventStream`.
+1. When the app is open (**foreground only**: it closes in the background
+   and opens again on return) and not in the CMS preview, call
+   `GET /cms-api/v1/auth/events`, signed in or as a guest.
+2. Open an SSE connection to the hub with one `topic=` parameter per
+   `syncTopics` entry (and the `Authorization: Bearer ${token}` header when
+   there is a token).
+3. On `changed` (`{ v: 1, tags: [...] }`, names and ids only), merge what
+   arrives within a random 0–300 ms delay and read again only what the tags
+   name (`services/syncApply.ts`):
+   - `page:<id>`, `page_draft:<id>`, `table:<id>`, `global_values` — the cached
+     pages whose `sync.depends_on` names the tag, and the lists on them;
+   - `navigation` — menus and the page list;
+   - `acl` — user data, pages, navigation and lists, and a new bootstrap
+     (the groups or roles of the person may have changed, so the topics do);
+   - other tags are editor tags and ignored.
+   The legacy `acl-changed` event still invalidates user data.
 4. On error, exponential backoff (1s → 2s → … → 30s capped). Reset on
    the next successful `open`.
 5. ~30 seconds before the subscriber JWT expires, reconnect with a
    fresh token so an idle reconnect doesn't drop a real event.
+6. On return from the background the access queries are read again once
+   (the stream heard nothing meanwhile).
+
+### Backstops
+
+- **Access stamp.** Every reply to a signed-in person carries `X-Acl-Stamp`,
+  and user data carries `acl_stamp`. A reply with another stamp reads user
+  data again once per new stamp (`services/aclStamp.ts`, fed by the API
+  client). A lost push is repaired by the next request.
+- **`sync.valid_until`.** A page may name the moment its result changes by
+  itself; the open page is read again once, at that moment plus 0–2 s
+  (`services/validUntil.ts`). It does not fire in the background or after
+  the screen closed, and a read never follows another within a minute.
+- **One view per opening.** `X-Page-View: 1` is sent only on the first fetch
+  of a page by a screen that opens it (`countView: true` of
+  `usePageContent`), never on a live refetch, never in preview.
+
+### What the screen does with a refetch
+
+The new page swaps in. A form the person is typing in keeps its input
+(`mergeRefreshedInitialValues`); a section that vanished while its form had
+unsaved input leaves a notice where it was. A page that is refused on the
+refetch (401/403/404) stays with a notice until the person leaves it.
 
 ### CORS and the Expo Web preview
 
