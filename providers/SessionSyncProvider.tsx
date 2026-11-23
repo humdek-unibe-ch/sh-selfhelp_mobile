@@ -11,14 +11,18 @@ SPDX-License-Identifier: MPL-2.0
  *   1. Holds the long-lived `['user-data', serverUrl]` query observer
  *      so any component using `useAuthStore.user` sees the latest
  *      payload (id, name, language, `acl_version`, …).
- *   2. Watches `user.acl_version` and surgically invalidates `pages`
- *      and `page` queries whenever the server bumps it. Same pattern
- *      as the web frontend's `useAclVersionWatcher`.
- *   3. Subscribes to the backend's Mercure ACL stream via
- *      `useAclEventStream`. On `acl-changed` it invalidates user-data
- *      immediately, the watcher above sees the bumped version, and
- *      page/menu caches refresh without any user interaction. This is
- *      the same wire contract as the web frontend.
+ *   2. Watches `user.acl_version` and `user.acl_stamp` and invalidates the
+ *      page list, pages, menus and lists whenever either changes. Same
+ *      pattern as the web frontend's `useAclVersionWatcher`; the stamp also
+ *      covers a change of a group or role of the person.
+ *   3. Subscribes to the backend's Mercure live-sync stream via
+ *      `useAclEventStream` (guests too). A `changed` message with the tag
+ *      `acl` invalidates user-data, the watcher above sees the bumped
+ *      version or stamp, and page/menu caches refresh without any user
+ *      interaction; other tags read the pages, menus and lists that depend
+ *      on them. A reply whose `X-Acl-Stamp` differs from the user data's
+ *      `acl_stamp` does the same (`useAclStampWatcher`): the backstop for a
+ *      lost message.
  *   4. Falls back to a slow safety-net poll (every 5 minutes) so a
  *      missed Mercure event (e.g. CORS-blocked dev preview, hub down,
  *      flaky network) eventually catches up.
@@ -35,6 +39,8 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAclEventStream } from '@/hooks/useAclEventStream';
+import { useAclStampWatcher } from '@/hooks/useAclStampWatcher';
+import { invalidateAccessQueries } from '@/services/syncApply';
 import { fetchCurrentUser, userDataQueryKey } from '@/services/userService';
 import { useAuthStore } from '@/stores/authStore';
 import { useServerStore } from '@/stores/serverStore';
@@ -57,6 +63,7 @@ export function SessionSyncProvider({ children }: ISessionSyncProviderProps): Re
     useAuthenticatedUserQuery();
     useAclVersionWatcher();
     useAclEventStream();
+    useAclStampWatcher();
     useUserDataPollingFallback();
 
     return children;
@@ -85,8 +92,10 @@ function useAuthenticatedUserQuery(): void {
 function useAclVersionWatcher(): void {
     const queryClient = useQueryClient();
     const user = useAuthStore((s) => s.user);
-    const previousVersionRef = useRef<string | number | null | undefined>(undefined);
-    const currentVersion = user?.acl_version ?? null;
+    const previousVersionRef = useRef<string | null | undefined>(undefined);
+    // One fingerprint of everything that decides what the person sees: their own version and the access stamp
+    // (their groups' and roles' versions, which move without touching the person's own `acl_version`).
+    const currentVersion = user ? `${user.acl_version ?? ''}|${user.acl_stamp ?? ''}` : null;
 
     useEffect(() => {
         if (previousVersionRef.current === undefined) {
@@ -96,8 +105,8 @@ function useAclVersionWatcher(): void {
 
         if (currentVersion !== previousVersionRef.current) {
             previousVersionRef.current = currentVersion;
-            void queryClient.invalidateQueries({ queryKey: ['pages'] });
-            void queryClient.invalidateQueries({ queryKey: ['page'] });
+            // Pages, the page list, the menus (F251) and the lists: what the person sees depends on their access.
+            invalidateAccessQueries(queryClient);
         }
     }, [currentVersion, queryClient]);
 }

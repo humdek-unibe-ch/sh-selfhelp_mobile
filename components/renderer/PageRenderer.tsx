@@ -8,12 +8,21 @@ SPDX-License-Identifier: MPL-2.0
  * each section through `BasicStyle`.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
-import type { IPageContent } from '@selfhelp/shared';
+import type { IPageContent, IPageSectionWithFields } from '@selfhelp/shared';
 
 import { useLanguageStore } from '@/stores/languageStore';
 import { BasicStyle } from './BasicStyle';
+import { PageDirtyRegistryContext, VanishedSectionNotice, VanishedSectionsContext } from './VanishedSections';
+import {
+    createPageDirtyRegistry,
+    findVanishedDirtySections,
+    isUnanchored,
+    keepVanished,
+    placeNotices,
+    type IVanishedSection,
+} from './vanishedSectionLogic';
 
 interface IPageRendererProps {
     page: IPageContent;
@@ -37,13 +46,45 @@ export function PageRenderer({ page }: IPageRendererProps): React.ReactElement {
         };
     }, [page.id, page.keyword, page.route_params, locale]);
 
+    // The forms of the page report their unsaved state here. When the page is read again (a live change) and a
+    // section whose form has unsaved input is gone, a notice takes its place instead of it vanishing silently.
+    const [registry] = useState(createPageDirtyRegistry);
+    const [seen, setSeen] = useState<{ pageId: number; sections: IPageSectionWithFields[] }>({
+        pageId: page.id,
+        sections: page.sections,
+    });
+    const [vanished, setVanished] = useState<IVanishedSection[]>([]);
+    if (seen.sections !== page.sections || seen.pageId !== page.id) {
+        // Adjusting state while rendering, as React documents: the forms of the old tree are still mounted here.
+        if (seen.pageId !== page.id) {
+            setVanished([]);
+        } else {
+            const added = findVanishedDirtySections(seen.sections, page.sections, registry.isDirty);
+            setVanished((current) => keepVanished(current, added, page.sections));
+        }
+        setSeen({ pageId: page.id, sections: page.sections });
+    }
+    const unanchored = vanished.filter(isUnanchored);
+    const anchored = vanished.filter((ghost) => !isUnanchored(ghost));
+
     return (
         // `handled`: a tap on a button or a list control while a keyboard is open is delivered at once
         // (it only dismisses the keyboard when it lands on nothing that handles it).
         <ScrollView contentContainerStyle={{ paddingBottom: 32 }} keyboardShouldPersistTaps="handled">
-            {page.sections.map((section) => (
-                <BasicStyle key={section.id} section={section} values={values} />
-            ))}
+            <PageDirtyRegistryContext.Provider value={registry}>
+                <VanishedSectionsContext.Provider value={anchored}>
+                    {unanchored.map((ghost) => (
+                        <VanishedSectionNotice key={`vanished-${ghost.id}`} ghost={ghost} />
+                    ))}
+                    {placeNotices(page.sections, anchored).map((item) =>
+                        item.kind === 'section' ? (
+                            <BasicStyle key={item.section.id} section={item.section} values={values} />
+                        ) : (
+                            <VanishedSectionNotice key={`vanished-${item.ghost.id}`} ghost={item.ghost} />
+                        ),
+                    )}
+                </VanishedSectionsContext.Provider>
+            </PageDirtyRegistryContext.Provider>
         </ScrollView>
     );
 }

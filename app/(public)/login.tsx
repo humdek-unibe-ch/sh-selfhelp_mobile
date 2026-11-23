@@ -23,7 +23,7 @@ import { useAppColors } from '@/hooks/useAppColors';
 export default function LoginScreen(): React.ReactElement {
     const { t } = useTranslation();
     const colors = useAppColors();
-    const { data, isLoading, error, refetch } = usePageContent('login');
+    const { data, isLoading, error, refetch } = usePageContent('login', null, { countView: true });
 
     if (isLoading) return <LoadingScreen message={t('loading')} />;
     if (error || !data)
