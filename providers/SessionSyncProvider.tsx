@@ -6,7 +6,7 @@ SPDX-License-Identifier: MPL-2.0
  * Keeps the authenticated session in sync with the backend after the
  * initial bootstrap.
  *
- * Concretely it does four things:
+ * Concretely it does three things:
  *
  *   1. Holds the long-lived `['user-data', serverUrl]` query observer
  *      so any component using `useAuthStore.user` sees the latest
@@ -22,10 +22,9 @@ SPDX-License-Identifier: MPL-2.0
  *      interaction; other tags read the pages, menus and lists that depend
  *      on them. A reply whose `X-Acl-Stamp` differs from the user data's
  *      `acl_stamp` does the same (`useAclStampWatcher`): the backstop for a
- *      lost message.
- *   4. Falls back to a slow safety-net poll (every 5 minutes) so a
- *      missed Mercure event (e.g. CORS-blocked dev preview, hub down,
- *      flaky network) eventually catches up.
+ *      lost message. Returning to the foreground after background also
+ *      reapplies the `acl` tag so user data and screens catch up (rule 6.3:
+ *      clients never poll).
  *
  * The Mercure hub does not allow cross-origin browser subscriptions
  * from arbitrary origins. For Expo Web preview, ensure the hub's
@@ -49,22 +48,11 @@ interface ISessionSyncProviderProps {
     children: ReactNode;
 }
 
-/**
- * Safety-net poll. Mercure events are the primary live-update channel;
- * this only kicks in if the SSE subscription is unavailable (CORS-
- * blocked dev preview, intermittent hub outage). 5 minutes is gentle
- * enough that a logged-in tab leaves no visible traffic on the network
- * panel and aggressive enough that an ACL change on a freshly-rebuilt
- * dev backend lands within a few minutes.
- */
-const USER_POLL_FALLBACK_INTERVAL_MS = 5 * 60_000;
-
 export function SessionSyncProvider({ children }: ISessionSyncProviderProps): ReactNode {
     useAuthenticatedUserQuery();
     useAclVersionWatcher();
     useAclEventStream();
     useAclStampWatcher();
-    useUserDataPollingFallback();
 
     return children;
 }
@@ -109,27 +97,4 @@ function useAclVersionWatcher(): void {
             invalidateAccessQueries(queryClient);
         }
     }, [currentVersion, queryClient]);
-}
-
-/**
- * Slow background poll for `user-data`. With the Mercure subscription
- * carrying the heavy lifting, this is just a fallback for the cases
- * where SSE can't connect (CORS-blocked dev preview, hub outage,
- * mobile networks that buffer long-lived connections).
- */
-function useUserDataPollingFallback(): void {
-    const queryClient = useQueryClient();
-    const serverUrl = useServerStore((s) => s.serverUrl);
-    const accessToken = useAuthStore((s) => s.accessToken);
-    const bootstrapped = useAuthStore((s) => s.bootstrapped);
-
-    useEffect(() => {
-        if (!serverUrl || !accessToken || !bootstrapped) return undefined;
-
-        const interval = setInterval(() => {
-            void queryClient.invalidateQueries({ queryKey: userDataQueryKey(serverUrl) });
-        }, USER_POLL_FALLBACK_INTERVAL_MS);
-
-        return () => clearInterval(interval);
-    }, [accessToken, bootstrapped, queryClient, serverUrl]);
 }
