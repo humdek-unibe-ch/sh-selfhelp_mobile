@@ -25,10 +25,17 @@ import {
 } from '@selfhelp/shared';
 
 import { getApiClient } from '@/services/apiClient';
+import { pageFromPayload } from '@/services/pagePayload';
+import { pageViewHeaders } from '@/services/pageViewPolicy';
 
 interface IFetchPageOptions {
     languageId?: number;
     preview?: boolean;
+    /**
+     * This fetch is the view of the opening of the page (`X-Page-View: 1`, contract C7). Only the first fetch of a
+     * screen sets it: never a refetch, a prefetch or a preview.
+     */
+    view?: boolean;
 }
 
 export async function fetchPageByKeyword(keyword: string, options: IFetchPageOptions = {}): Promise<IPageContent> {
@@ -39,9 +46,11 @@ export async function fetchPageByKeyword(keyword: string, options: IFetchPageOpt
 
     const resp = await client.get<IGetPageResponse>(ENDPOINTS.PAGES.BY_KEYWORD(keyword), {
         params: Object.keys(params).length ? params : undefined,
+        headers: pageViewHeaders(options.view),
     });
-    if (!resp.data.data?.page) throw new Error(resp.data.error ?? 'Page not found');
-    return resp.data.data.page;
+    const page = pageFromPayload(resp.data.data);
+    if (!page) throw new Error(resp.data.error ?? 'Page not found');
+    return page;
 }
 
 /**
@@ -54,9 +63,10 @@ export async function resolvePageByPath(path: string, options: IFetchPageOptions
         languageId: options.languageId,
         preview: options.preview,
     });
-    const resp = await client.get<IResolvePageResponse>(url);
-    if (!resp.data.data?.page) throw new Error(resp.data.error ?? 'Page not found');
-    return resp.data.data.page;
+    const resp = await client.get<IResolvePageResponse>(url, { headers: pageViewHeaders(options.view) });
+    const page = pageFromPayload(resp.data.data);
+    if (!page) throw new Error(resp.data.error ?? 'Page not found');
+    return page;
 }
 
 export async function fetchPages(languageId?: number): Promise<IPageItem[]> {
