@@ -28,7 +28,7 @@ import {
     placeNotices,
 } from '../../components/renderer/vanishedSectionLogic.ts';
 import { rememberRecordVersion, withRecordVersion } from '../../services/formListQueryKeys.ts';
-import { pageFromPayload } from '../../services/pagePayload.ts';
+import { pageFromPayload } from '@selfhelp/shared';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const source = (path) => readFileSync(join(root, path), 'utf8');
@@ -173,4 +173,14 @@ test('the page keeps the sync block that the server sends next to it, so a chang
     assert.equal(pageFromPayload({ page: null, sync }), null);
     assert.equal(pageFromPayload(undefined), null);
     assert.match(source('services/pageService.ts'), /pageFromPayload\(resp\.data\.data\)/, 'both fetchers go through it');
+    assert.match(
+        source('services/pageService.ts'),
+        /pageFromPayload/,
+        'pageService imports pageFromPayload from shared',
+    );
+    assert.doesNotMatch(
+        source('services/pageService.ts'),
+        /from ['"]@\/services\/pagePayload['"]/,
+        'no local pagePayload import remains',
+    );
 });

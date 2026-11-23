@@ -16,6 +16,7 @@ SPDX-License-Identifier: MPL-2.0
 import {
     ENDPOINTS,
     buildPagesResolveUrl,
+    pageFromPayload,
     transformPagesData,
     type IGetPageResponse,
     type IGetPagesResponse,
@@ -25,7 +26,6 @@ import {
 } from '@selfhelp/shared';
 
 import { getApiClient } from '@/services/apiClient';
-import { pageFromPayload } from '@/services/pagePayload';
 import { pageViewHeaders } from '@/services/pageViewPolicy';
 
 interface IFetchPageOptions {
