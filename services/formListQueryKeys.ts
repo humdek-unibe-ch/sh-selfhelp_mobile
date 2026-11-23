@@ -18,7 +18,7 @@ SPDX-License-Identifier: MPL-2.0
  *
  * Pure (no React Native), so `node --test` covers it.
  */
-import { formListCacheKey, type IFormListCacheScope } from '@selfhelp/shared';
+import { formListCacheKey, type IFormListCacheScope, type IFormListState } from '@selfhelp/shared';
 
 /** Root of every list's state. */
 export const FORM_LIST_ROOT = 'form-list';
@@ -123,4 +123,40 @@ export function invalidateFormListQueries(cache: IFormListQueryCache, options: {
     if (options.history !== false) {
         void cache.invalidateQueries({ queryKey: [FORM_LIST_HISTORY_ROOT] });
     }
+}
+
+/**
+ * The list state with one record's version replaced, in its row and in the open record. The same object comes
+ * back when the record is not in the state, so nothing re-renders for a list that does not show it.
+ */
+export function withRecordVersion(state: IFormListState, recordId: number, version: number): IFormListState {
+    const rowShown = state.rows.some((row) => row.record_id === recordId && row.version !== version);
+    const selectedShown = state.selected !== null && state.selected.record_id === recordId && state.selected.version !== version;
+    if (!rowShown && !selectedShown) {
+        return state;
+    }
+    return {
+        ...state,
+        rows: rowShown ? state.rows.map((row) => (row.record_id === recordId ? { ...row, version } : row)) : state.rows,
+        selected: selectedShown && state.selected !== null ? { ...state.selected, version } : state.selected,
+    };
+}
+
+/** The minimal cache `rememberRecordVersion` needs (a TanStack `QueryClient` satisfies it). */
+export interface IFormListVersionCache {
+    setQueriesData(
+        filters: { queryKey: readonly unknown[] },
+        updater: (data: IFormListState | undefined) => IFormListState | undefined,
+    ): unknown;
+}
+
+/**
+ * Take the version a write returned into every cached list that shows the record (F186). A quick action
+ * changes the record, and the list is read again afterwards; until that read returns, a Delete or Edit pressed
+ * on the same row would still name the old version and be refused as a conflict with the person's own change.
+ */
+export function rememberRecordVersion(cache: IFormListVersionCache, recordId: number, version: number): void {
+    cache.setQueriesData({ queryKey: [FORM_LIST_ROOT] }, (data) =>
+        data !== undefined && Array.isArray(data.rows) ? withRecordVersion(data, recordId, version) : data,
+    );
 }

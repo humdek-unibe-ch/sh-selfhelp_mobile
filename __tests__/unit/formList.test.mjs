@@ -1110,8 +1110,14 @@ test('the app wires the list caches into the places that clear or persist them',
     assert.match(session, /invalidateFormListQueries\(appQueryClient\)/);
     assert.match(session, /queryMemory: \(\) => appQueryClient\.clear\(\)/);
 
+    // The live-sync stream reads the lists again through `applySyncTags` (`acl` reads every list, a page or
+    // table tag the lists on the pages that named it); the access watcher does the same for a changed stamp.
     const acl = read('hooks/useAclEventStream.ts');
-    assert.match(acl, /invalidateFormListQueries\(queryClient\)/);
+    assert.match(acl, /applySyncTags\(/);
+    const syncApply = read('services/syncApply.ts');
+    assert.match(syncApply, /queryKey: \[FORM_LIST_ROOT\]/);
+    assert.match(syncApply, /queryKey: \[FORM_LIST_HISTORY_ROOT\]/);
+    assert.match(read('providers/SessionSyncProvider.tsx'), /invalidateAccessQueries\(queryClient\)/);
 
     // The rows of a list are never written to the persisted query cache.
     const provider = read('providers/QueryProvider.tsx');
