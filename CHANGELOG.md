@@ -4,6 +4,16 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.39
+
+**Live sync follow-ups** (task `2026-11-23-live-sync-follow-ups`, part 5;
+needs `@selfhelp/shared` 1.29.0 after it is published and pinned):
+
+- Stops the 5-minute user-data poll. The Mercure stream, `X-Acl-Stamp` and a
+  foreground catch-up remain the backstops (rule 6.3 / F261).
+- Reads pages through shared `pageFromPayload` / `IPagePayload` and drops the
+  local copy (`services/pagePayload.ts`).
+
 ## 0.1.38
 
 **Live sync and the open page** (task `2026-11-20-live-sync-and-edit-lock`, part 5;
