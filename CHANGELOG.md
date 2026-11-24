@@ -7,12 +7,14 @@ SPDX-License-Identifier: MPL-2.0
 ## 0.1.39
 
 **Live sync follow-ups** (task `2026-11-23-live-sync-follow-ups`, part 5;
-needs `@selfhelp/shared` 1.29.0 after it is published and pinned):
+needs `@selfhelp/shared` 1.29.0 and a core with the follow-up lock contract):
 
 - Stops the 5-minute user-data poll. The Mercure stream, `X-Acl-Stamp` and a
   foreground catch-up remain the backstops (rule 6.3 / F261).
 - Reads pages through shared `pageFromPayload` / `IPagePayload` and drops the
   local copy (`services/pagePayload.ts`).
+- Pins the published `@selfhelp/shared` 1.29.0 (`package.json`, lockfile,
+  `config/appLibraries.generated.json`).
 
 ## 0.1.38
 
