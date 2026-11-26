@@ -53,8 +53,8 @@ test('lockfile resolves the pinned @selfhelp/shared from the npm registry', () =
     );
 });
 
-test('mobile package 0.1.39 + supports.core accepts core 0.1.45 and rejects 0.1.44', () => {
-    assert.equal(pkg.version, '0.1.39');
+test('mobile package 0.1.40 + supports.core accepts core 0.1.45 and rejects 0.1.44', () => {
+    assert.equal(pkg.version, '0.1.40');
     const range = manifest.supports.core;
     assert.equal(semver.satisfies('0.1.45', range, { includePrerelease: true }), true);
     assert.equal(semver.satisfies('0.1.44', range, { includePrerelease: true }), false);
