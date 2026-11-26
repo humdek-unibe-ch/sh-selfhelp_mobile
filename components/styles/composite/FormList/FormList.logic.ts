@@ -21,6 +21,7 @@ import {
     formListQueryString,
     getFormListFailure,
     isFormListParam,
+    isLanguageIndependent,
     parseFormListQuery,
     type IFormListCacheScope,
     type IFormListColumn,
@@ -38,6 +39,11 @@ import {
     type TFormListMode,
     type TFormListUrlChange,
 } from '@selfhelp/shared';
+
+/** True when a change row should show a language badge (real languages only). */
+export function showsLanguageBadge(languageId: number): boolean {
+    return !isLanguageIndependent(languageId);
+}
 
 /**
  * The words a list draws around the author's content. Author text (the add

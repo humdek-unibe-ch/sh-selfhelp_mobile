@@ -21,6 +21,7 @@ import { Modal, Pressable, Text, View } from 'react-native';
 import {
     colorToHex,
     flattenFormRecordPrefillValues,
+    LANGUAGE_INDEPENDENT_ID,
     parseFormRecordPrefill,
 } from '@selfhelp/shared';
 
@@ -122,7 +123,7 @@ function FormBase({ section, values, isLog }: IFormBaseProps): React.ReactElemen
             const sectionData = Array.isArray(listPrefill)
                 ? listPrefill
                 : listPrefill && typeof listPrefill === 'object'
-                  ? [{ record_id: listRecordId, id_languages: languageId ?? 1, ...listPrefill }]
+                  ? [{ record_id: listRecordId, id_languages: languageId ?? LANGUAGE_INDEPENDENT_ID, ...listPrefill }]
                   : [];
             const fromList = parseFormRecordPrefill({
                 ...(section as object),

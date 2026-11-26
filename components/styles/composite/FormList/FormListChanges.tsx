@@ -8,7 +8,7 @@ import type { IFormListHistoricalFile, TFormListChange } from '@selfhelp/shared'
 import type { IChangeVersions } from '@/services/formListFiles';
 import { ListButton, ListText } from './FormListPrimitives';
 import { styles, type IListPalette } from './FormList.styles';
-import type { TFormListText } from './FormList.logic';
+import { showsLanguageBadge, type TFormListText } from './FormList.logic';
 import type { IFormListFileDownload } from './FormList.types';
 
 const CHANGE_WORDS: Record<TFormListChange['change'], string> = {
@@ -109,7 +109,7 @@ export function FormListChanges({ changes, palette, text, versions, onDownload, 
                         <View style={[styles.badge, { borderColor: palette.border, backgroundColor: palette.surfaceMuted }]}>
                             <Text style={[styles.badgeText, { color: palette.text }]}>{CHANGE_WORDS[change.change]}</Text>
                         </View>
-                        {change.language_id > 1 ? (
+                        {showsLanguageBadge(change.language_id) ? (
                             <Text style={{ color: palette.textMuted, fontSize: 12 }}>{`language ${change.language_id}`}</Text>
                         ) : null}
                     </View>
