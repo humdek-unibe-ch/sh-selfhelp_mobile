@@ -111,6 +111,7 @@ import {
     toggleMultiValue,
     urlStateOfQuery,
     FORM_LIST_TEXT,
+    showsLanguageBadge,
 } from '../../components/styles/composite/FormList/FormList.logic.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -1080,6 +1081,13 @@ test('a file of a change belongs to the version that held it: the revision itsel
     // A comparison is ordered by version whatever order the person picked.
     assert.deepEqual(fileVersionsOfComparison(2, 5), { before: 2, after: 5 });
     assert.deepEqual(fileVersionsOfComparison(5, 2), { before: 2, after: 5 });
+});
+
+test('a change row shows a language badge only for a real language', () => {
+    assert.equal(showsLanguageBadge(1), false);
+    assert.equal(showsLanguageBadge(2), true);
+    const changes = read('components/styles/composite/FormList/FormListChanges.tsx');
+    assert.match(changes, /showsLanguageBadge\(change\.language_id\)/);
 });
 
 test('the history offers a download for a file that is still there, through the app session, and says why one failed', () => {

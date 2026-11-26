@@ -57,3 +57,9 @@ test('FormUserInput imports parseFormRecordPrefill from @selfhelp/shared', () =>
     assert.match(formSource, /@selfhelp\/shared/);
     assert.doesNotMatch(formSource, /sectionDataArray\s*=\s*style\.section_data/);
 });
+
+test('FormUserInput falls back to LANGUAGE_INDEPENDENT_ID when the store has no language', () => {
+    assert.match(formSource, /LANGUAGE_INDEPENDENT_ID/);
+    assert.match(formSource, /languageId \?\? LANGUAGE_INDEPENDENT_ID/);
+    assert.doesNotMatch(formSource, /languageId \?\? 1\b/);
+});
