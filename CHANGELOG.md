@@ -6,10 +6,10 @@ SPDX-License-Identifier: MPL-2.0
 
 ## 0.1.40
 
-**Language independent** (task `2026-11-24-language-independent`, part 4;
-needs `@selfhelp/shared` 1.30.0 for the constant — pin published 1.30.0 at
-release, F151):
+**Language independent** (task `2026-11-24-language-independent`, part 4):
 
+- Pins the published `@selfhelp/shared` 1.30.0 (`package.json`, lockfile,
+  `config/appLibraries.generated.json`).
 - Form list history badges use `isLanguageIndependent` so language id 1 (the
   language-independent sentinel) no longer shows a language label.
 - List-form prefill falls back to `LANGUAGE_INDEPENDENT_ID` when the store has
