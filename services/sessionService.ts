@@ -13,6 +13,7 @@ import { clearPersistedAuthSession } from '@/services/authSessionPersistence';
 import { clearClientCaches } from '@/services/clientCaches';
 import { clearHistoricalFiles } from '@/services/formListFileDownload';
 import { invalidateFormListQueries, removeFormListQueries } from '@/services/formListQueryKeys';
+import { clearAllPluginStorage } from '@/services/pluginStorage';
 import { useAuthStore } from '@/stores/authStore';
 
 interface IClearAuthSessionOptions {
@@ -62,6 +63,7 @@ export async function clearAuthSession(options: IClearAuthSessionOptions = {}): 
             imageDisk: () => Image.clearDiskCache(),
             imageMemory: () => Image.clearMemoryCache(),
             historyFiles: () => clearHistoricalFiles(),
+            pluginStorage: () => clearAllPluginStorage(AsyncStorage),
         });
         if (failed.length > 0) {
             debugLogger.warn(`client caches not fully cleared: ${failed.join(', ')}`, 'session');

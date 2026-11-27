@@ -30,26 +30,13 @@ import {
     buildDeleteRequest,
     buildSubmitRequest,
     buildUpdateRequest,
+    toFormData,
     type IFormRequest,
-    type TMultipartPart,
     type TPickedFiles,
 } from '@/services/formRequests';
 import { failureOf, normalizeFormResponse, type TFormResult } from '@/services/formResults';
 
 export type { TFormResult } from '@/services/formResults';
-
-/** A multipart body for the native HTTP stack: file parts are `{ uri, name, type }` objects. */
-function toFormData(parts: readonly TMultipartPart[]): FormData {
-    const form = new FormData();
-    for (const part of parts) {
-        if ('file' in part) {
-            form.append(part.name, part.file as unknown as Blob);
-        } else {
-            form.append(part.name, part.value);
-        }
-    }
-    return form;
-}
 
 async function send<T>(request: IFormRequest): Promise<T> {
     const client = getApiClient();

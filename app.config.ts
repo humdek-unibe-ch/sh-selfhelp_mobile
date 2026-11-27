@@ -61,10 +61,12 @@ const config: ExpoConfig = {
             process.env.APP_BUNDLE_ID ?? (isDevInstance ? 'com.selfhelp.dev' : `com.selfhelp.${slug}`),
         infoPlist: {
             ITSAppUsesNonExemptEncryption: false,
+            // The purpose texts name what the permissions are for: photos, videos and recorded audio as
+            // answers in forms and surveys (including a plugin's survey asking through the host).
             NSCameraUsageDescription:
-                'SelfHelp uses your camera so you can attach photos and videos to forms and entries.',
+                'SelfHelp uses your camera so you can take photos and videos as answers in forms and surveys.',
             NSMicrophoneUsageDescription:
-                'SelfHelp uses your microphone so you can attach audio to forms and entries.',
+                'SelfHelp uses your microphone so you can record audio as answers in forms and surveys.',
             NSPhotoLibraryUsageDescription:
                 'SelfHelp can read photos from your library when you attach them to forms.',
             NSPhotoLibraryAddUsageDescription:
