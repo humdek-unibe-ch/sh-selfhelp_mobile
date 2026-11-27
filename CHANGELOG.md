@@ -7,8 +7,10 @@ SPDX-License-Identifier: MPL-2.0
 ## 0.1.41
 
 **Plugin resource hooks** (task `2026-11-25-plugin-resource-hooks`, part 5;
-needs `@selfhelp/shared` 1.31.0 overlay for C10 while the pin stays 1.30.0):
+pins published `@selfhelp/shared` 1.31.0):
 
+- Pins `@selfhelp/shared` **1.31.0** (`package.json`, lockfile,
+  `config/appLibraries.generated.json`).
 - Live sync treats `res:<type>:<id>` like other page dependency tags and
   invalidates query keys from each bundled plugin's declarative `sync` map
   (`matchPluginSyncEntries`), including on `acl` through
@@ -18,8 +20,7 @@ needs `@selfhelp/shared` 1.31.0 overlay for C10 while the pin stays 1.30.0):
   registers them with the sync applyer.
 
 **Mobile plugin host services, renderer 0.4.0** (same task, part 15, contracts
-C27 to C30; needs the `@selfhelp/shared` 1.31.0 overlay while the pin stays
-1.30.0):
+C27 to C30; pairs with `@selfhelp/shared` 1.31.0):
 
 - The host services bridge (`services/pluginHostServices.ts`) gains four
   optional members a plugin feature-detects: `upload` (multipart through the
