@@ -680,6 +680,7 @@ export const SOURCE_WORDS = {
     job: 'scheduled job',
     import: 'import',
     system: 'system',
+    plugin: 'plugin',
 } as const;
 
 interface IRevisionLike {
