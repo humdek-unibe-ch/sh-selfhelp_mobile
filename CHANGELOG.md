@@ -4,6 +4,47 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.41
+
+**Plugin resource hooks** (task `2026-11-25-plugin-resource-hooks`, part 5;
+needs `@selfhelp/shared` 1.31.0 overlay for C10 while the pin stays 1.30.0):
+
+- Live sync treats `res:<type>:<id>` like other page dependency tags and
+  invalidates query keys from each bundled plugin's declarative `sync` map
+  (`matchPluginSyncEntries`), including on `acl` through
+  `invalidateAccessQueries` (`services/syncApply.ts`).
+- `scripts/plugins-sync.mjs` regenerates `components/styles/registered.ts`
+  with `registeredPluginSyncEntries` (empty when a plugin declares none) and
+  registers them with the sync applyer.
+
+**Mobile plugin host services, renderer 0.4.0** (same task, part 15, contracts
+C27 to C30; needs the `@selfhelp/shared` 1.31.0 overlay while the pin stays
+1.30.0):
+
+- The host services bridge (`services/pluginHostServices.ts`) gains four
+  optional members a plugin feature-detects: `upload` (multipart through the
+  host with the usual token and one 401 refresh, files by `uri` or `base64`,
+  one 25 MB limit, `invalid_upload` / `file_too_large` refused without sending),
+  `requestPermission` (`microphone` and `camera` through the helpers in
+  `native/permissions.ts`; answers `granted`, `denied` or `blocked`), `openAppSettings` and `getPluginStorage`.
+  The rules are pure and tested (`services/pluginHostBridge.ts`).
+- New `services/pluginStorage.ts`: a device key-value store per server, user
+  (guest `0`) and plugin, 256 KB in total, `plugin_storage_full` over it.
+  `clearClientCaches` gets a `pluginStorage` step, passed by `sessionService.ts`,
+  so logout, a server switch and a rejected token refresh empty it (rule 3.3).
+- `native/permissions.ts`: one microphone helper, `ensureMicrophonePermission`,
+  now asks through `expo-audio` (the library a recording uses); the plugin host
+  imports no `expo-audio` or `expo-camera` itself.
+- Record history in a form list names a version a plugin wrote "via plugin"
+  (`SOURCE_WORDS`, pairs with `@selfhelp/shared` 1.31.0).
+- `app.config.ts`: the iOS purpose texts for camera and microphone now say the
+  permissions are for photos, videos and recorded audio as answers in forms and
+  surveys.
+- `toFormData` moved from `services/formsService.ts` to `services/formRequests.ts`
+  so the form writes and the plugin upload build multipart bodies the same way.
+- `web-preview/preview-plugins.json` and `selfhelp.plugins.mobile.lock.json`
+  advertise `mobileRendererVersion` `0.4.0`.
+
 ## 0.1.40
 
 **Language independent** (task `2026-11-24-language-independent`, part 4):

@@ -3,7 +3,9 @@ SPDX-FileCopyrightText: 2026 Humdek, University of Bern
 SPDX-License-Identifier: MPL-2.0
 */
 /**
- * Live sync, mobile (task `2026-11-20-live-sync-and-edit-lock`, P5-A1): what each `changed` tag reads again.
+ * Live sync, mobile (task `2026-11-20-live-sync-and-edit-lock`, P5-A1;
+ * extended by `2026-11-25-plugin-resource-hooks` C10 / P5-A1): what each
+ * `changed` tag reads again, including the plugin sync map.
  * A fake query cache records which cached queries an invalidation would touch.
  */
 import test from 'node:test';
@@ -16,6 +18,12 @@ import {
 } from '../../services/syncApply.ts';
 
 const USER_KEY = ['user-data', 'https://x.test'];
+
+const PLUGIN_SYNC = [
+    { tags: ['acl'], queryKey: ['plugin', 'bootstrap'] },
+    { tags: ['res:surveyjs_survey:*'], queryKey: ['plugin', 'survey'] },
+    { tags: ['table:*'], queryKey: ['plugin', 'table-rows'] },
+];
 
 function page(id, dependsOn) {
     return { queryKey: ['page', 'https://x.test', `p${id}`], state: { data: { id, sync: { depends_on: dependsOn, valid_until: null } } } };
@@ -32,7 +40,7 @@ function fakeCache(queries) {
         touched,
         calls,
         invalidateQueries(filters, options) {
-            calls.push({ root: filters.queryKey[0], options });
+            calls.push({ root: filters.queryKey[0], key: filters.queryKey.join('|'), options });
             for (const query of queries) {
                 const matchesRoot = filters.queryKey.every((part, i) => query.queryKey[i] === part);
                 if (matchesRoot && (!filters.predicate || filters.predicate(query))) {
@@ -126,4 +134,66 @@ test('an access read keeps a read that already runs (cancelRefetch false), so on
 test('the page of a list is read from its key', () => {
     assert.equal(pageIdOfFormListKey(['form-list', 's', 'u', 'en', 'ios', 5, 1]), 5);
     assert.equal(pageIdOfFormListKey(['page', 's', 'u', 'en', 'ios', 5]), null);
+});
+
+test('acl invalidates a plugin key declared with acl (C10)', () => {
+    const cache = fakeCache([
+        ...world(),
+        { queryKey: ['plugin', 'bootstrap'], state: { data: {} } },
+        { queryKey: ['plugin', 'survey'], state: { data: {} } },
+    ]);
+    applySyncTags(['acl'], cache, { ...options, pluginSyncEntries: PLUGIN_SYNC });
+    assert.ok(cache.touched.includes('plugin|bootstrap'));
+    assert.ok(!cache.touched.includes('plugin|survey'));
+    assert.ok(
+        cache.calls.some(
+            (call) => call.key === 'plugin|bootstrap' && call.options?.cancelRefetch === false,
+        ),
+    );
+});
+
+test('res:surveyjs_survey:12 invalidates a res:surveyjs_survey:* key and a page that depends on it', () => {
+    const cache = fakeCache([
+        page(1, ['page:1', 'res:surveyjs_survey:12']),
+        page(2, ['page:2']),
+        list(1),
+        list(2),
+        { queryKey: ['plugin', 'survey'], state: { data: {} } },
+        { queryKey: ['plugin', 'table-rows'], state: { data: {} } },
+    ]);
+    applySyncTags(['res:surveyjs_survey:12'], cache, { ...options, pluginSyncEntries: PLUGIN_SYNC });
+    assert.deepEqual(cache.touched.sort(), [
+        'form-list|https://x.test|u|en|ios|1|7|',
+        'page|https://x.test|p1',
+        'plugin|survey',
+    ]);
+});
+
+test('table:7 invalidates a table:* plugin key', () => {
+    const cache = fakeCache([
+        page(1, ['page:1']),
+        { queryKey: ['plugin', 'table-rows'], state: { data: {} } },
+        { queryKey: ['plugin', 'survey'], state: { data: {} } },
+    ]);
+    applySyncTags(['table:7'], cache, { ...options, pluginSyncEntries: PLUGIN_SYNC });
+    assert.deepEqual(cache.touched.sort(), ['plugin|table-rows']);
+});
+
+test('res:other:1 touches no plugin key and no unmatched page', () => {
+    const cache = fakeCache([
+        page(1, ['page:1', 'res:surveyjs_survey:12']),
+        { queryKey: ['plugin', 'survey'], state: { data: {} } },
+        { queryKey: ['plugin', 'bootstrap'], state: { data: {} } },
+    ]);
+    applySyncTags(['res:other:1'], cache, { ...options, pluginSyncEntries: PLUGIN_SYNC });
+    assert.deepEqual(cache.touched, []);
+});
+
+test('invalidateAccessQueries also invalidates plugin acl keys (C10)', () => {
+    const cache = fakeCache([
+        ...world(),
+        { queryKey: ['plugin', 'bootstrap'], state: { data: {} } },
+    ]);
+    invalidateAccessQueries(cache, PLUGIN_SYNC);
+    assert.ok(cache.touched.includes('plugin|bootstrap'));
 });

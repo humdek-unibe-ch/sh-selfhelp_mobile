@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "generatedBy": "plugins-sync@web-preview",
-  "generatedAt": "2026-06-24T22:30:33.180Z",
+  "generatedAt": "2026-11-26T12:42:06.670Z",
   "profile": "web-preview",
   "plugins": [
     {
@@ -20,5 +20,5 @@
       "mobilePackageVersion": "0.3.3"
     }
   ],
-  "mobileRendererVersion": "0.3.0"
+  "mobileRendererVersion": "0.4.0"
 }
