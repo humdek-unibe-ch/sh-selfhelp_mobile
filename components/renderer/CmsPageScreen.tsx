@@ -21,12 +21,14 @@ import {
 
 import { LoadingScreen } from '@/components/feedback/LoadingScreen';
 import { ErrorScreen } from '@/components/feedback/ErrorScreen';
+import { PageNotice } from '@/components/feedback/PageNotice';
 import { usePageContent } from '@/hooks/usePageContent';
 import { usePages } from '@/hooks/usePages';
 import { useAppColors } from '@/hooks/useAppColors';
 import { useAuthStore } from '@/stores/authStore';
 import { useNavigation } from '@/hooks/useNavigation';
 import { recordLastVisited } from '@/services/navigationService';
+import { pageScreenOutcome } from '@/services/pageScreenOutcome';
 import { findPageByKeyword } from '@/components/shell/navigationUtils';
 import { PageRenderer } from './PageRenderer';
 import { RouteParamsContext } from './RouteParamsContext';
@@ -66,10 +68,12 @@ export function CmsPageScreen({
         }
         return buildPublicPathFromRoute(navPage.url, routeParams);
     }, [navPage?.url, resolvePathProp, routeParams]);
-    const { data, isLoading, error, refetch } = usePageContent(keyword, resolvePath);
+    // A screen that opens a page: its first read counts as the page view, and every opening reads the page again.
+    const { data, isLoading, error, refetch } = usePageContent(keyword, resolvePath, { countView: true });
     const accessToken = useAuthStore((s) => s.accessToken);
     const status = httpErrorStatus(error);
-    const shouldRedirectToLogin = !accessToken && (status === 401 || status === 403);
+    // A page that is already on screen is never taken away by a later refusal: it keeps a notice (see below).
+    const shouldRedirectToLogin = !accessToken && !data && (status === 401 || status === 403);
     const pathname = usePathname();
     const redirectedRef = useRef(false);
     const holderRedirectRef = useRef(false);
@@ -180,8 +184,9 @@ export function CmsPageScreen({
         <MobileBranchNavigation navigation={navigation} currentPageId={resolvedPageId} />
     ) : null;
 
-    if (isLoading) return <LoadingScreen message={t('loading')} />;
-    if (error || !data) {
+    const outcome = pageScreenOutcome({ isLoading, hasData: Boolean(data), status, hasError: Boolean(error) });
+    if (outcome === 'loading') return <LoadingScreen message={t('loading')} />;
+    if (outcome === 'error' || !data) {
         if (status === 404) {
             return (
                 <ErrorScreen
@@ -237,6 +242,16 @@ export function CmsPageScreen({
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             {branchNav}
+            {outcome === 'page-lost-access' ? (
+                <PageNotice
+                    testID="page-lost-access-notice"
+                    title={t('page.lostAccess.title', 'You can no longer view this page')}
+                    message={t(
+                        'page.lostAccess.message',
+                        'Your access changed. The page stays here until you leave it.',
+                    )}
+                />
+            ) : null}
             <GestureDetector gesture={swipeGesture}>
                 <View style={{ flex: 1 }} collapsable={false}>
                     {/* The link's parameters (a list's `<key>.record`, `<key>.q`, ...) reach the styles that read them. */}

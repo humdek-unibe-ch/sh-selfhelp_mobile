@@ -24,11 +24,13 @@ import {
     buildFormData,
     findMissingRequired,
     isFormDirty,
+    mergeRefreshedInitialValues,
     requiredFieldErrors,
     requiredMessage,
     withUntouchedDefaults,
     type IFormFieldInfo,
 } from '../formFields';
+import { useRegisterDirtySection } from '@/components/renderer/VanishedSections';
 import { navigateToPage } from '@/components/shell/usePageNavigation';
 import { useWritePreview } from '@/hooks/useWritePreview';
 import type { IPickedFile, TPickedFiles } from '@/services/formRequests';
@@ -117,7 +119,17 @@ export function useFormController(args: IUseFormControllerArgs): {
     // The banner that names the missing fields goes away when the last one is filled.
     const requiredBannerRef = useRef(false);
 
+    // What the form started with the last time it was set up, and which record that was. The page is read again
+    // when the server says something changed (live sync): for the same record the person's typing survives.
+    const hydratedRef = useRef<{ key: string; initial: Record<string, string> } | null>(null);
     useEffect(() => {
+        const previous = hydratedRef.current;
+        hydratedRef.current = { key: hydrationKey, initial: initialRef.current };
+        if (previous !== null && previous.key === hydrationKey) {
+            // The same record with new values from the server: keep what was typed, take the rest.
+            setFormValues((current) => mergeRefreshedInitialValues(previous.initial, initialRef.current, current));
+            return;
+        }
         setFormValues(initialRef.current);
         setFiles({});
         setErrors({});
@@ -133,6 +145,13 @@ export function useFormController(args: IUseFormControllerArgs): {
             setResultIsError(false);
         }
     }, [errors]);
+
+    // The page asks, when a refresh removes this form's section, whether the person had typed something.
+    const isDirtyNow = useCallback(
+        () => isFormDirty(initialRef.current, valuesRef.current, filesRef.current),
+        [],
+    );
+    useRegisterDirtySection(sectionId, isDirtyNow);
 
     const registerDirtyCheck = listForm?.registerDirtyCheck;
     useEffect(() => {

@@ -20,20 +20,46 @@ SPDX-License-Identifier: MPL-2.0
  *
  * Security: absolute URLs are rejected so a plugin cannot redirect a protected,
  * token-bearing call off-origin.
+ *
+ * Renderer 0.4.0 adds four optional services a plugin feature-detects:
+ * `upload` (a multipart request with the same token, headers and refresh as
+ * `request`), `requestPermission` and `openAppSettings` (only the app asks the
+ * system for microphone and camera access; a plugin in a WebView cannot) and
+ * `getPluginStorage` (a small device store per server, user and plugin, emptied
+ * with the other caches on logout). The rules behind them are pure and tested
+ * in `pluginHostBridge.ts` and `pluginStorage.ts`; this file wires the HTTP
+ * client, the file system and the permission libraries into them.
  */
 
-import { type AxiosError } from 'axios';
-import { Linking } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Directory, File, Paths } from 'expo-file-system';
+import { Linking, Platform } from 'react-native';
 import {
     setMobileHostServices,
     type IMobileHostRequest,
     type IMobileHostResponse,
     type IMobileHostServices,
+    type IMobileHostUploadRequest,
+    type TMobileHostPermission,
+    type TMobileHostPermissionState,
 } from '@selfhelp/shared/plugin-sdk';
 
 import { navigateToPage } from '@/components/shell/usePageNavigation';
+import { ensureCameraPermission, ensureMicrophonePermission } from '@/native/permissions';
 import { getApiClient } from '@/services/apiClient';
 import { debugLogger } from '@/services/debugLogger';
+import { toFormData, type TMultipartPart } from '@/services/formRequests';
+import {
+    ABSOLUTE_URL_ERROR,
+    hostFailure,
+    isAbsoluteUrl,
+    performHostUpload,
+    requestHostPermission,
+    type IUploadCall,
+    type IUploadDeps,
+    type IUploadTempFile,
+} from '@/services/pluginHostBridge';
+import { createPluginStorage, type IPluginStorageContext } from '@/services/pluginStorage';
 import { useAuthStore } from '@/stores/authStore';
 import { useServerStore } from '@/stores/serverStore';
 
@@ -59,26 +85,9 @@ function performHostNavigate(target: string, external = false): void {
     navigateToPage(target);
 }
 
-function extractReason(body: unknown): string | undefined {
-    if (body && typeof body === 'object' && 'reason' in body) {
-        const reason = (body as { reason?: unknown }).reason;
-        if (typeof reason === 'string') return reason;
-    }
-    return undefined;
-}
-
-function extractError(body: unknown, fallback: string): string {
-    if (body && typeof body === 'object') {
-        const record = body as { error?: unknown; message?: unknown };
-        if (typeof record.error === 'string' && record.error !== '') return record.error;
-        if (typeof record.message === 'string' && record.message !== '') return record.message;
-    }
-    return fallback;
-}
-
 async function performHostRequest<TData>(req: IMobileHostRequest): Promise<IMobileHostResponse<TData>> {
-    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(req.path)) {
-        return { ok: false, status: 0, data: null, error: 'Absolute URLs are not allowed for host requests.' };
+    if (isAbsoluteUrl(req.path)) {
+        return { ok: false, status: 0, data: null, error: ABSOLUTE_URL_ERROR };
     }
     try {
         const resp = await getApiClient().request<TData>({
@@ -90,24 +99,119 @@ async function performHostRequest<TData>(req: IMobileHostRequest): Promise<IMobi
         });
         return { ok: true, status: resp.status, data: (resp.data ?? null) as TData | null };
     } catch (err) {
-        const axiosError = err as AxiosError;
-        const status = axiosError.response?.status ?? 0;
-        const body = axiosError.response?.data ?? null;
-        const sessionExpired = status === 401;
+        const failure = hostFailure<TData>(err);
         debugLogger.warn(
-            `plugin host request failed: ${req.method ?? 'GET'} ${req.path} -> ${status}`,
+            `plugin host request failed: ${req.method ?? 'GET'} ${req.path} -> ${failure.status}`,
             'pluginHostServices',
-            { sessionExpired },
+            { sessionExpired: failure.sessionExpired },
         );
-        return {
-            ok: false,
-            status,
-            data: body as TData | null,
-            reason: extractReason(body),
-            error: extractError(body, axiosError.message),
-            sessionExpired,
-        };
+        return failure;
     }
+}
+
+/** Where `base64` upload inputs are written for the request; each file is removed right after it. */
+const UPLOAD_TEMP_FOLDER = 'selfhelp-plugin-upload';
+let uploadTempCounter = 0;
+
+/**
+ * Native: the base64 goes to a temporary file in the app cache. Web preview: a
+ * `data:` URI, read into a Blob when the body is built.
+ */
+async function materializeBase64(file: { base64: string; name: string; type: string }): Promise<IUploadTempFile> {
+    if (Platform.OS === 'web') {
+        return { uri: `data:${file.type};base64,${file.base64}`, cleanup: () => undefined };
+    }
+    const directory = new Directory(Paths.cache, UPLOAD_TEMP_FOLDER);
+    directory.create({ idempotent: true, intermediates: true });
+    uploadTempCounter += 1;
+    // The name is the host's own: nothing a plugin sent becomes part of the path.
+    const temp = new File(directory, `upload-${Date.now()}-${uploadTempCounter}.bin`);
+    temp.create({ overwrite: true });
+    temp.write(file.base64, { encoding: 'base64' });
+    return {
+        uri: temp.uri,
+        cleanup: () => {
+            if (temp.exists) temp.delete();
+        },
+    };
+}
+
+async function sizeOfUri(uri: string): Promise<number | null> {
+    if (Platform.OS === 'web') return null;
+    try {
+        const file = new File(uri);
+        return file.exists ? file.size : null;
+    } catch {
+        return null;
+    }
+}
+
+/** Web preview: a file part is a Blob read from its `blob:` / `data:` URI. */
+async function toWebFormData(parts: readonly TMultipartPart[]): Promise<FormData> {
+    const form = new FormData();
+    for (const part of parts) {
+        if ('file' in part) {
+            const blob = await (await fetch(part.file.uri)).blob();
+            form.append(part.name, new Blob([blob], { type: part.file.type }), part.file.name);
+        } else {
+            form.append(part.name, part.value);
+        }
+    }
+    return form;
+}
+
+async function sendMultipart(call: IUploadCall): Promise<{ status: number; data: unknown }> {
+    const isWeb = Platform.OS === 'web';
+    const data = isWeb ? await toWebFormData(call.parts) : toFormData(call.parts);
+    // The browser adds the boundary itself; the native stack needs the type (as the form writes do).
+    const headers = isWeb ? { ...call.headers } : { ...call.headers, 'Content-Type': 'multipart/form-data' };
+    const resp = await getApiClient().request({
+        url: call.path,
+        method: call.method,
+        data,
+        params: call.query,
+        headers,
+    });
+    return { status: resp.status, data: resp.data };
+}
+
+const uploadDeps: IUploadDeps = {
+    materializeBase64,
+    sizeOfUri,
+    send: sendMultipart,
+    onFailure: (response, call) =>
+        debugLogger.warn(
+            `plugin host upload failed: ${call.method} ${call.path} -> ${response.status}`,
+            'pluginHostServices',
+            { sessionExpired: response.sessionExpired },
+        ),
+};
+
+function performUpload<TData>(req: IMobileHostUploadRequest): Promise<IMobileHostResponse<TData>> {
+    return performHostUpload<TData>(req, uploadDeps);
+}
+
+/**
+ * Both kinds ask through the app's own permission helpers (`native/permissions.ts`),
+ * and only when the permission is not yet given.
+ */
+function requestPermission(kind: TMobileHostPermission): Promise<TMobileHostPermissionState> {
+    return requestHostPermission(kind, {
+        microphone: () => ensureMicrophonePermission(),
+        camera: () => ensureCameraPermission(),
+    });
+}
+
+function openAppSettings(): void {
+    if (Platform.OS === 'web') return;
+    Linking.openSettings().catch(() => undefined);
+}
+
+function pluginStorageContext(): IPluginStorageContext {
+    return {
+        serverUrl: useServerStore.getState().serverUrl,
+        userId: useAuthStore.getState().user?.id ?? null,
+    };
 }
 
 export function createMobileHostServices(): IMobileHostServices {
@@ -116,6 +220,10 @@ export function createMobileHostServices(): IMobileHostServices {
         getAccessToken: () => useAuthStore.getState().accessToken ?? null,
         request: performHostRequest,
         navigate: performHostNavigate,
+        upload: performUpload,
+        requestPermission,
+        openAppSettings,
+        getPluginStorage: (pluginId) => createPluginStorage(AsyncStorage, pluginStorageContext, pluginId),
     };
 }
 

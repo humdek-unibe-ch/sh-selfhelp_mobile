@@ -27,6 +27,7 @@ import { CLIENT_TYPE_MOBILE, HEADER_CLIENT_TYPE } from '@selfhelp/shared';
 
 import { useAuthStore } from '@/stores/authStore';
 import { useServerStore } from '@/stores/serverStore';
+import { observeAclStampHeaders } from '@/services/aclStamp';
 import { debugLogger } from '@/services/debugLogger';
 import { refreshAccessToken } from '@/services/tokenRefreshService';
 
@@ -85,6 +86,8 @@ export function getApiClient(): AxiosInstance {
 
     client.interceptors.response.use(
         (resp) => {
+            // A changed access stamp means the person's access moved: the user data is read again (once per stamp).
+            observeAclStampHeaders(resp.headers, resp.config?.url);
             const cfg = resp.config as IRetriableConfig;
             const ms = cfg._shStartedAt ? Date.now() - cfg._shStartedAt : null;
             debugLogger.info(
@@ -96,6 +99,8 @@ export function getApiClient(): AxiosInstance {
             return resp;
         },
         async (error: AxiosError) => {
+            // A refused request carries the stamp too (a lost page answers 403 or 404 with a new one).
+            observeAclStampHeaders(error.response?.headers, error.config?.url);
             const cfg = error.config as IRetriableConfig | undefined;
             const status = error.response?.status;
             const ms = cfg?._shStartedAt ? Date.now() - cfg._shStartedAt : null;

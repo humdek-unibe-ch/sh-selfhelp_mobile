@@ -4,6 +4,98 @@ SPDX-License-Identifier: MPL-2.0
 */
 # Changelog
 
+## 0.1.41
+
+**Plugin resource hooks** (task `2026-11-25-plugin-resource-hooks`, part 5;
+pins published `@selfhelp/shared` 1.31.0):
+
+- Pins `@selfhelp/shared` **1.31.0** (`package.json`, lockfile,
+  `config/appLibraries.generated.json`).
+- Live sync treats `res:<type>:<id>` like other page dependency tags and
+  invalidates query keys from each bundled plugin's declarative `sync` map
+  (`matchPluginSyncEntries`), including on `acl` through
+  `invalidateAccessQueries` (`services/syncApply.ts`).
+- `scripts/plugins-sync.mjs` regenerates `components/styles/registered.ts`
+  with `registeredPluginSyncEntries` (empty when a plugin declares none) and
+  registers them with the sync applyer.
+
+**Mobile plugin host services, renderer 0.4.0** (same task, part 15, contracts
+C27 to C30; pairs with `@selfhelp/shared` 1.31.0):
+
+- The host services bridge (`services/pluginHostServices.ts`) gains four
+  optional members a plugin feature-detects: `upload` (multipart through the
+  host with the usual token and one 401 refresh, files by `uri` or `base64`,
+  one 25 MB limit, `invalid_upload` / `file_too_large` refused without sending),
+  `requestPermission` (`microphone` and `camera` through the helpers in
+  `native/permissions.ts`; answers `granted`, `denied` or `blocked`), `openAppSettings` and `getPluginStorage`.
+  The rules are pure and tested (`services/pluginHostBridge.ts`).
+- New `services/pluginStorage.ts`: a device key-value store per server, user
+  (guest `0`) and plugin, 256 KB in total, `plugin_storage_full` over it.
+  `clearClientCaches` gets a `pluginStorage` step, passed by `sessionService.ts`,
+  so logout, a server switch and a rejected token refresh empty it (rule 3.3).
+- `native/permissions.ts`: one microphone helper, `ensureMicrophonePermission`,
+  now asks through `expo-audio` (the library a recording uses); the plugin host
+  imports no `expo-audio` or `expo-camera` itself.
+- Record history in a form list names a version a plugin wrote "via plugin"
+  (`SOURCE_WORDS`, pairs with `@selfhelp/shared` 1.31.0).
+- `app.config.ts`: the iOS purpose texts for camera and microphone now say the
+  permissions are for photos, videos and recorded audio as answers in forms and
+  surveys.
+- `toFormData` moved from `services/formsService.ts` to `services/formRequests.ts`
+  so the form writes and the plugin upload build multipart bodies the same way.
+- `web-preview/preview-plugins.json` and `selfhelp.plugins.mobile.lock.json`
+  advertise `mobileRendererVersion` `0.4.0`.
+
+## 0.1.40
+
+**Language independent** (task `2026-11-24-language-independent`, part 4):
+
+- Pins the published `@selfhelp/shared` 1.30.0 (`package.json`, lockfile,
+  `config/appLibraries.generated.json`).
+- Form list history badges use `isLanguageIndependent` so language id 1 (the
+  language-independent sentinel) no longer shows a language label.
+- List-form prefill falls back to `LANGUAGE_INDEPENDENT_ID` when the store has
+  no language yet, instead of a bare `1`.
+
+## 0.1.39
+
+**Live sync follow-ups** (task `2026-11-23-live-sync-follow-ups`, part 5;
+needs `@selfhelp/shared` 1.29.0 and a core with the follow-up lock contract):
+
+- Stops the 5-minute user-data poll. The Mercure stream, `X-Acl-Stamp` and a
+  foreground catch-up remain the backstops (rule 6.3 / F261).
+- Reads pages through shared `pageFromPayload` / `IPagePayload` and drops the
+  local copy (`services/pagePayload.ts`).
+- Pins the published `@selfhelp/shared` 1.29.0 (`package.json`, lockfile,
+  `config/appLibraries.generated.json`).
+
+## 0.1.38
+
+**Live sync and the open page** (task `2026-11-20-live-sync-and-edit-lock`, part 5;
+needs `@selfhelp/shared` 1.28.0 and a core with live sync):
+
+- The Mercure stream also serves guests (public topic) and subscribes to
+  `syncTopics`; it runs only while the app is in the foreground and catches up on
+  return. A `changed` message reads again only what its tags name: pages by
+  `sync.depends_on`, `navigation`, lists, and everything on `acl`
+  (`services/syncApply.ts`, `services/syncStream.ts`).
+- `X-Acl-Stamp` of every reply is compared with `acl_stamp`; a difference reads
+  user data again once per new stamp (`services/aclStamp.ts`).
+- `sync.valid_until` reads the open page again once, at that moment plus 0–2 s
+  (`services/validUntil.ts`).
+- `X-Page-View: 1` is sent only on the fetch that opens a page screen.
+- A refetch keeps what is typed in a form, leaves a notice where a section with
+  unsaved input vanished, and keeps a page that lost access on screen with a
+  notice (no kick-out).
+- A quick action's new version is in the list row at once, so a Delete right
+  after it is not refused as a conflict (F186).
+- A page read from the server keeps its `sync` block (what it depends on, until
+  when it is valid); the block comes next to the page in the reply and was dropped
+  before, so an open page did not update by itself.
+- Pins the published `@selfhelp/shared` 1.28.0 (`package.json`, lockfile,
+  `config/appLibraries.generated.json`); the version tests read the pin from
+  `package.json` instead of a fixed number.
+
 ## 0.1.37
 
 **Entry List with Form is its own form** (pairs with core `0.1.45`, shared

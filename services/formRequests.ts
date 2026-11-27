@@ -51,6 +51,23 @@ export type TPickedFiles = Readonly<Record<string, IPickedFile>>;
 
 const DEFAULT_FILE_TYPE = 'application/octet-stream';
 
+/**
+ * A multipart body for the native HTTP stack: file parts are `{ uri, name, type }`
+ * objects. Shared by the form writes (`formsService.ts`) and the plugin host
+ * upload (`pluginHostUpload.ts`), so both build the body the same way.
+ */
+export function toFormData(parts: readonly TMultipartPart[]): FormData {
+    const form = new FormData();
+    for (const part of parts) {
+        if ('file' in part) {
+            form.append(part.name, part.file as unknown as Blob);
+        } else {
+            form.append(part.name, part.value);
+        }
+    }
+    return form;
+}
+
 /** A form value as a multipart text part: nothing is an empty part, structures are JSON. */
 function partText(value: unknown): string {
     if (value === null || value === undefined) {

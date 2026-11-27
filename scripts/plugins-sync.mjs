@@ -17,7 +17,8 @@ SPDX-License-Identifier: MPL-2.0
  *      `mobileRendererVersion` (the mobile renderer contract the image targets).
  *   2. `components/styles/registered.ts` — generated TypeScript that
  *      imports every bundled plugin's `registerMobile` and merges the
- *      contributed style impls into the mobile renderer.
+ *      contributed style impls into the mobile renderer, and exports each
+ *      plugin's declarative `sync` map (empty when none) for live sync (C10).
  *   3. `package.json` — adds / updates the mobile plugin packages
  *      under `dependencies` so they are installed by `npm install`
  *      before the EAS build runs.
@@ -202,10 +203,13 @@ function buildRegisteredFile(lock) {
         ` * Profile: ${lock.profile}`,
         ` * Generated at: ${lock.generatedAt}`,
         ' *',
-        ' * Mobile plugin style impls. Re-run `npm run plugins:sync -- <profile>` to update.',
+        ' * Mobile plugin style impls and declarative sync map (C10).',
+        ' * Re-run `npm run plugins:sync -- <profile>` to update.',
         ' */',
         '',
         "import type { TPluginStyleImplMap } from '@/components/renderer/types';",
+        "import type { IPluginSyncEntry } from '@selfhelp/shared/plugin-sdk';",
+        "import { registerPluginSyncEntries } from '@/services/syncApply';",
         '',
     ];
 
@@ -217,6 +221,9 @@ function buildRegisteredFile(lock) {
         lines.push('export const registeredPluginStyleOwners: Record<string, string> = {};');
         lines.push('');
         lines.push('export const registeredPluginVersions: Record<string, string> = {};');
+        lines.push('');
+        lines.push('export const registeredPluginSyncEntries: IPluginSyncEntry[] = [];');
+        lines.push('registerPluginSyncEntries(registeredPluginSyncEntries);');
         lines.push('');
         return lines.join('\n');
     }
@@ -262,6 +269,18 @@ function buildRegisteredFile(lock) {
     lines.push('}');
     lines.push('');
 
+    lines.push('function buildSyncEntries(): IPluginSyncEntry[] {');
+    lines.push('    const entries: IPluginSyncEntry[] = [];');
+    lines.push('    for (const registration of registrations) {');
+    lines.push('        if (!registration?.sync?.length) continue;');
+    lines.push('        for (const entry of registration.sync) {');
+    lines.push('            entries.push(entry);');
+    lines.push('        }');
+    lines.push('    }');
+    lines.push('    return entries;');
+    lines.push('}');
+    lines.push('');
+
     lines.push('export const registeredPluginStyleImpls: TPluginStyleImplMap = buildStyleImpls();');
     lines.push('export const registeredPluginStyleOwners: Record<string, string> = buildOwners();');
     lines.push('');
@@ -273,6 +292,10 @@ function buildRegisteredFile(lock) {
         lines.push(`    ${id}: ${version},`);
     }
     lines.push('};');
+    lines.push('');
+
+    lines.push('export const registeredPluginSyncEntries: IPluginSyncEntry[] = buildSyncEntries();');
+    lines.push('registerPluginSyncEntries(registeredPluginSyncEntries);');
     lines.push('');
 
     return lines.join('\n');

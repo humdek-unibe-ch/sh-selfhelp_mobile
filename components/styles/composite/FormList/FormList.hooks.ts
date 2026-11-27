@@ -50,6 +50,7 @@ import {
     formListVersionKey,
     invalidateFormListQueries,
     isSameFormList,
+    rememberRecordVersion,
     type IFormListHistoryScope,
 } from '@/services/formListQueryKeys';
 import { deleteFormRecord, type TFormResult } from '@/services/formsService';
@@ -369,7 +370,10 @@ export function useFormListQuickActionMutation(pageId: number, sectionId: number
                 expected_version: expectedVersion,
                 ...(preview ? { preview: true } : {}),
             }),
-        onSuccess: () => {
+        onSuccess: (data) => {
+            // The row names the record's new version at once (F186): a Delete pressed right after Approve is
+            // based on it, not on the version the list read before the action.
+            rememberRecordVersion(queryClient, data.record_id, data.version);
             invalidateFormListQueries(queryClient);
         },
     });

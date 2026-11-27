@@ -22,7 +22,7 @@ export function ProfileContent(): React.ReactElement {
     const { t } = useTranslation();
     const user = useAuthStore((s) => s.user);
     const colors = useAppColors();
-    const { data, isLoading, error } = usePageContent('profile');
+    const { data, isLoading, error } = usePageContent('profile', null, { countView: true });
 
     if (isLoading) return <LoadingScreen message={t('loading')} />;
 

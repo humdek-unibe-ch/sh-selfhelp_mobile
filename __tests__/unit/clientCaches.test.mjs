@@ -19,7 +19,7 @@ import { clearClientCaches } from '../../services/clientCaches.ts';
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (path) => readFileSync(join(here, '../..', path), 'utf8');
 
-/** Five steps that record when they ran; `overrides` replaces single steps. */
+/** Six steps that record when they ran; `overrides` replaces single steps. */
 function steps(calls, overrides = {}) {
     return {
         queryMemory: () => {
@@ -39,15 +39,18 @@ function steps(calls, overrides = {}) {
         historyFiles: async () => {
             calls.push('historyFiles');
         },
+        pluginStorage: async () => {
+            calls.push('pluginStorage');
+        },
         ...overrides,
     };
 }
 
-test('every cache is emptied: queries (memory and persisted), images (disk and memory) and downloaded history files', async () => {
+test('every cache is emptied: queries (memory and persisted), images (disk and memory), downloaded history files and plugin storage', async () => {
     const calls = [];
     const failed = await clearClientCaches(steps(calls));
 
-    assert.deepEqual([...calls].sort(), ['historyFiles', 'imageDisk', 'imageMemory', 'queryMemory', 'queryStorage']);
+    assert.deepEqual([...calls].sort(), ['historyFiles', 'imageDisk', 'imageMemory', 'pluginStorage', 'queryMemory', 'queryStorage']);
     assert.deepEqual(failed, []);
 });
 
@@ -62,7 +65,7 @@ test('a step that throws does not stop the others and is reported', async () => 
         }),
     );
 
-    assert.deepEqual([...calls].sort(), ['historyFiles', 'imageDisk', 'imageMemory', 'queryMemory', 'queryStorage']);
+    assert.deepEqual([...calls].sort(), ['historyFiles', 'imageDisk', 'imageMemory', 'pluginStorage', 'queryMemory', 'queryStorage']);
     assert.deepEqual(failed, ['queryMemory']);
 });
 
@@ -75,7 +78,7 @@ test('a step that rejects does not stop the others and failures are listed in a 
         }),
     );
 
-    assert.deepEqual([...calls].sort(), ['historyFiles', 'imageDisk', 'queryMemory']);
+    assert.deepEqual([...calls].sort(), ['historyFiles', 'imageDisk', 'pluginStorage', 'queryMemory']);
     assert.deepEqual(failed, ['queryStorage', 'imageMemory']);
 });
 
@@ -89,9 +92,10 @@ test('signing out never throws, even when every cache step fails', async () => {
         imageDisk: fail,
         imageMemory: fail,
         historyFiles: fail,
+        pluginStorage: fail,
     });
 
-    assert.deepEqual(failed, ['queryMemory', 'queryStorage', 'imageDisk', 'imageMemory', 'historyFiles']);
+    assert.deepEqual(failed, ['queryMemory', 'queryStorage', 'imageDisk', 'imageMemory', 'historyFiles', 'pluginStorage']);
 });
 
 test('a cache that reports false (the web build cannot clear the image cache) is not a failure', async () => {
@@ -138,6 +142,18 @@ test('clearAuthSession feeds the image caches into the cache step', () => {
     assert.match(source, /imageMemory: \(\) => Image\.clearMemoryCache\(\)/);
     // A downloaded file of an earlier record version is a private copy on the device too.
     assert.match(source, /historyFiles: \(\) => clearHistoricalFiles\(\)/);
+    // So is a draft a plugin saved on the device (`host.getPluginStorage`).
+    assert.match(source, /pluginStorage: \(\) => clearAllPluginStorage\(AsyncStorage\)/);
+});
+
+test('a failing plugin storage step is reported like the others and does not stop them', async () => {
+    const calls = [];
+    const failed = await clearClientCaches(
+        steps(calls, { pluginStorage: () => Promise.reject(new Error('storage unavailable')) }),
+    );
+
+    assert.deepEqual([...calls].sort(), ['historyFiles', 'imageDisk', 'imageMemory', 'queryMemory', 'queryStorage']);
+    assert.deepEqual(failed, ['pluginStorage']);
 });
 
 test('logout, a rejected refresh and a server switch all clear the caches', () => {

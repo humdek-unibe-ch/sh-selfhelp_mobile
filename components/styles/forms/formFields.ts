@@ -176,6 +176,26 @@ export function isFormDirty(
 }
 
 /**
+ * The values a form shows after the page was read again while the person was filling it in (a live change
+ * of the same record: a job wrote a result, someone published an edit). Every field the person changed keeps
+ * what they typed; every field they left alone takes the new value. `previous` is what the form started with
+ * before the refresh, `next` what the new page says, `current` what the form shows now.
+ */
+export function mergeRefreshedInitialValues(
+    previous: Readonly<Record<string, unknown>>,
+    next: Readonly<Record<string, unknown>>,
+    current: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
+    const merged: Record<string, unknown> = { ...next };
+    for (const name of Object.keys(current)) {
+        if (text(previous[name]) !== text(current[name])) {
+            merged[name] = current[name];
+        }
+    }
+    return merged;
+}
+
+/**
  * The values of a form as it is about to be sent: what the person typed or
  * chose, and for every input they left alone the value it showed (its default).
  * A browser form sends every field it holds; so does this one.

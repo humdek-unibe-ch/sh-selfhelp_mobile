@@ -34,7 +34,7 @@ interface ILoginAuxModalProps {
 
 function AuxPageBody({ keyword }: { keyword: string }): React.ReactElement {
     const colors = useAppColors();
-    const { data, isLoading, error } = usePageContent(keyword);
+    const { data, isLoading, error } = usePageContent(keyword, null, { countView: true });
 
     if (isLoading) return <LoadingScreen />;
 
